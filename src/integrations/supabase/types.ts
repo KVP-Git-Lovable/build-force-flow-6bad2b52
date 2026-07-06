@@ -4264,6 +4264,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_security_management_access: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
+      }
       recalculate_monthly_leave_accruals: {
         Args: { _target_user_id?: string }
         Returns: undefined
