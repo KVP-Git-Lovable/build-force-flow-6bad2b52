@@ -88,14 +88,19 @@ export default function Auth() {
         <CardContent className="p-8 pt-10 pb-8">
           {/* Logo */}
           <div className="flex flex-col items-center mb-6">
-            <div className="w-20 h-20 rounded-2xl bg-card shadow-elevated flex items-center justify-center mb-4 p-2">
-              <img src={bbLogo} alt="Bharath Builders" className="w-full h-full object-contain" />
+            <div className="w-20 h-20 rounded-2xl bg-card shadow-elevated flex items-center justify-center mb-4 p-2 overflow-hidden">
+              {logoSrc ? (
+                <img src={logoSrc} alt={companyName} className="w-full h-full object-contain" />
+              ) : (
+                <Building2 className="w-10 h-10 text-primary" />
+              )}
             </div>
-            <h1 className="text-xl font-bold text-primary">Bharath Builders</h1>
+            <h1 className="text-xl font-bold text-primary text-center">{companyName}</h1>
             <p className="text-xs text-muted-foreground tracking-wide uppercase mt-0.5">
               Field Force Management
             </p>
           </div>
+
 
           {/* Welcome text */}
           <div className="text-center mb-6">
