@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Phone, PhoneOff, Search, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DeviceStatusBadges } from "@/components/team/DeviceStatusBadges";
 
 interface TeamMember {
   id: string;
@@ -17,6 +18,10 @@ interface TeamMember {
   is_active: boolean;
   role_name: string | null;
   site_name: string | null;
+  battery_level: number | null;
+  battery_charging: boolean | null;
+  network_type: string | null;
+  device_status_at: string | null;
 }
 
 export default function MyTeam() {
@@ -26,11 +31,12 @@ export default function MyTeam() {
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["my-team-members"],
+    refetchInterval: 60_000,
     queryFn: async () => {
       const [usersRes, profilesRes, siteRes] = await Promise.all([
         supabase
           .from("users")
-          .select("id, full_name, username, phone, is_active, roles(name)")
+          .select("id, full_name, username, phone, is_active, roles(name), battery_level, battery_charging, network_type, device_status_at")
           .order("full_name", { ascending: true }),
         supabase
           .from("profiles")
@@ -70,9 +76,13 @@ export default function MyTeam() {
         is_active: u.is_active,
         role_name: u.roles?.name || null,
         site_name: siteMap.get(u.id) || null,
+        battery_level: u.battery_level ?? null,
+        battery_charging: u.battery_charging ?? null,
+        network_type: u.network_type ?? null,
+        device_status_at: u.device_status_at ?? null,
       })) as TeamMember[];
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const sites = useMemo(() => {
@@ -210,6 +220,12 @@ export default function MyTeam() {
                     <span className="text-xs text-muted-foreground">No role/site assigned</span>
                   )}
                 </div>
+                <DeviceStatusBadges
+                  batteryLevel={member.battery_level}
+                  batteryCharging={member.battery_charging}
+                  networkType={member.network_type}
+                  statusAt={member.device_status_at}
+                />
               </div>
 
               {/* Call Button */}
