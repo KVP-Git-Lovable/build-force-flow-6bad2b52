@@ -31,11 +31,12 @@ export default function MyTeam() {
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["my-team-members"],
+    refetchInterval: 60_000,
     queryFn: async () => {
       const [usersRes, profilesRes, siteRes] = await Promise.all([
         supabase
           .from("users")
-          .select("id, full_name, username, phone, is_active, roles(name)")
+          .select("id, full_name, username, phone, is_active, roles(name), battery_level, battery_charging, network_type, device_status_at")
           .order("full_name", { ascending: true }),
         supabase
           .from("profiles")
@@ -75,9 +76,13 @@ export default function MyTeam() {
         is_active: u.is_active,
         role_name: u.roles?.name || null,
         site_name: siteMap.get(u.id) || null,
+        battery_level: u.battery_level ?? null,
+        battery_charging: u.battery_charging ?? null,
+        network_type: u.network_type ?? null,
+        device_status_at: u.device_status_at ?? null,
       })) as TeamMember[];
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const sites = useMemo(() => {
