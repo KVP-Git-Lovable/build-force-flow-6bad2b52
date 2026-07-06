@@ -21,6 +21,23 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const { data: company } = useQuery({
+    queryKey: ["company-profile-public"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("company_profile")
+        .select("company_name, logo_url")
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const companyName = company?.company_name || "Bharath Builders";
+  const logoSrc = company?.logo_url || bbLogo;
+
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) navigate("/dashboard", { replace: true });
