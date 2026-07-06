@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Phone, PhoneOff, Search, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DeviceStatusBadges } from "@/components/team/DeviceStatusBadges";
 
 interface TeamMember {
   id: string;
@@ -17,6 +18,10 @@ interface TeamMember {
   is_active: boolean;
   role_name: string | null;
   site_name: string | null;
+  battery_level: number | null;
+  battery_charging: boolean | null;
+  network_type: string | null;
+  device_status_at: string | null;
 }
 
 export default function MyTeam() {
