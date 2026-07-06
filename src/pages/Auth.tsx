@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Building2 } from "lucide-react";
 import bbLogo from "@/assets/bb_logo.png";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -18,6 +20,23 @@ export default function Auth() {
   const [rememberDuration, setRememberDuration] = useState<15 | 30>(30);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const { data: company } = useQuery({
+    queryKey: ["company-profile-public"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("company_profile")
+        .select("company_name, logo_url")
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const companyName = company?.company_name || "Bharath Builders";
+  const logoSrc = company?.logo_url || bbLogo;
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -69,14 +88,19 @@ export default function Auth() {
         <CardContent className="p-8 pt-10 pb-8">
           {/* Logo */}
           <div className="flex flex-col items-center mb-6">
-            <div className="w-20 h-20 rounded-2xl bg-card shadow-elevated flex items-center justify-center mb-4 p-2">
-              <img src={bbLogo} alt="Bharath Builders" className="w-full h-full object-contain" />
+            <div className="w-20 h-20 rounded-2xl bg-card shadow-elevated flex items-center justify-center mb-4 p-2 overflow-hidden">
+              {logoSrc ? (
+                <img src={logoSrc} alt={companyName} className="w-full h-full object-contain" />
+              ) : (
+                <Building2 className="w-10 h-10 text-primary" />
+              )}
             </div>
-            <h1 className="text-xl font-bold text-primary">Bharath Builders</h1>
+            <h1 className="text-xl font-bold text-primary text-center">{companyName}</h1>
             <p className="text-xs text-muted-foreground tracking-wide uppercase mt-0.5">
               Field Force Management
             </p>
           </div>
+
 
           {/* Welcome text */}
           <div className="text-center mb-6">
