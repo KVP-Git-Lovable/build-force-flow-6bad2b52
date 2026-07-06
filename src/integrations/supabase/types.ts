@@ -3946,11 +3946,16 @@ export type Database = {
       }
       users: {
         Row: {
+          battery_charging: boolean | null
+          battery_level: number | null
           created_at: string
+          device_platform: string | null
+          device_status_at: string | null
           email: string
           full_name: string | null
           id: string
           is_active: boolean
+          network_type: string | null
           phone: string | null
           reporting_manager_id: string | null
           role_id: string | null
@@ -3958,11 +3963,16 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          battery_charging?: boolean | null
+          battery_level?: number | null
           created_at?: string
+          device_platform?: string | null
+          device_status_at?: string | null
           email: string
           full_name?: string | null
           id: string
           is_active?: boolean
+          network_type?: string | null
           phone?: string | null
           reporting_manager_id?: string | null
           role_id?: string | null
@@ -3970,11 +3980,16 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          battery_charging?: boolean | null
+          battery_level?: number | null
           created_at?: string
+          device_platform?: string | null
+          device_status_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
           is_active?: boolean
+          network_type?: string | null
           phone?: string | null
           reporting_manager_id?: string | null
           role_id?: string | null
@@ -4251,6 +4266,15 @@ export type Database = {
       }
       recalculate_monthly_leave_accruals: {
         Args: { _target_user_id?: string }
+        Returns: undefined
+      }
+      report_device_status: {
+        Args: {
+          _battery: number
+          _charging: boolean
+          _network: string
+          _platform: string
+        }
         Returns: undefined
       }
       send_notification: {
