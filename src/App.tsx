@@ -113,6 +113,12 @@ const App = () => (
             
             <Route path="/procurement" element={<Suspense fallback={<PageFallback />}><Procurement /></Suspense>} />
             <Route path="/grn" element={<Suspense fallback={<PageFallback />}><GRN /></Suspense>} />
+            <Route path="/customers" element={<Suspense fallback={<PageFallback />}><Customers /></Suspense>} />
+            <Route path="/customers/:id" element={<Suspense fallback={<PageFallback />}><CustomerDetail /></Suspense>} />
+            <Route path="/opportunities" element={<Suspense fallback={<PageFallback />}><Opportunities /></Suspense>} />
+            <Route path="/opportunities/:id" element={<Suspense fallback={<PageFallback />}><OpportunityDetail /></Suspense>} />
+            <Route path="/master-data/opportunity-stages" element={<Suspense fallback={<PageFallback />}><OpportunityStagesMaster /></Suspense>} />
+            <Route path="/master-data/opportunity-types" element={<Suspense fallback={<PageFallback />}><OpportunityTypesMaster /></Suspense>} />
             <Route path="/reports" element={<Suspense fallback={<PageFallback />}><Analytics /></Suspense>} />
             <Route path="/reports/:type" element={<Navigate to="/reports" replace />} />
             <Route path="/analytics" element={<Navigate to="/reports" replace />} />
