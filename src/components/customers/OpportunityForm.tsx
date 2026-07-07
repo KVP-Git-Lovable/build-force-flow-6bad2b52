@@ -8,6 +8,7 @@ import {
   Opportunity, useCreateOpportunity, useUpdateOpportunity,
   useOppTypes, useOppStages, useUserLookup,
 } from "@/hooks/useCustomers";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export function OpportunityForm({
   open, onOpenChange, opportunity,
@@ -21,6 +22,8 @@ export function OpportunityForm({
   const { data: types = [] } = useOppTypes();
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
+  const { userId } = useCurrentUser();
+  const isEdit = !!opportunity;
 
   const [form, setForm] = useState({
     name: "", type: "", stage: "", probability: 0, close_date: "", amount: 0, owner_id: "",
@@ -51,10 +54,14 @@ export function OpportunityForm({
       probability: Number(form.probability) || 0,
       close_date: form.close_date || null,
       amount: Number(form.amount) || 0,
-      owner_id: form.owner_id || null,
     };
-    if (opportunity) await update.mutateAsync({ id: opportunity.id, ...payload });
-    else await create.mutateAsync(payload);
+    if (opportunity) {
+      payload.owner_id = form.owner_id || null;
+      await update.mutateAsync({ id: opportunity.id, ...payload });
+    } else {
+      payload.owner_id = userId ?? null;
+      await create.mutateAsync(payload);
+    }
     onOpenChange(false);
   };
 
@@ -96,16 +103,18 @@ export function OpportunityForm({
             <Label>Close Date</Label>
             <Input type="date" value={form.close_date} onChange={(e) => setForm({ ...form, close_date: e.target.value })} />
           </div>
-          <div>
-            <Label>Owner</Label>
-            <Select value={form.owner_id || "none"} onValueChange={(v) => setForm({ ...form, owner_id: v === "none" ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="Select owner" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Unassigned</SelectItem>
-                {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name || u.username || u.email}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          {isEdit && (
+            <div>
+              <Label>Owner</Label>
+              <Select value={form.owner_id || "none"} onValueChange={(v) => setForm({ ...form, owner_id: v === "none" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="Select owner" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name || u.username || u.email}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
