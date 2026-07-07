@@ -44,6 +44,7 @@ const GRN = lazy(() => import("./pages/GRN"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Customers = lazy(() => import("./pages/Customers"));
 const OpportunityDetail = lazy(() => import("./pages/OpportunityDetail"));
+const Opportunities = lazy(() => import("./pages/Opportunities"));
 const OpportunityStagesMaster = lazy(() => import("./pages/master/OpportunityStagesMaster"));
 const OpportunityTypesMaster = lazy(() => import("./pages/master/OpportunityTypesMaster"));
 
@@ -114,7 +115,7 @@ const App = () => (
             <Route path="/customers" element={<Suspense fallback={<PageFallback />}><Customers /></Suspense>} />
             <Route path="/crm" element={<Navigate to="/customers" replace />} />
             <Route path="/customers/:id" element={<Navigate to="/customers" replace />} />
-            <Route path="/opportunities" element={<Navigate to="/customers" replace />} />
+            <Route path="/opportunities" element={<Suspense fallback={<PageFallback />}><Opportunities /></Suspense>} />
             <Route path="/opportunities/:id" element={<Suspense fallback={<PageFallback />}><OpportunityDetail /></Suspense>} />
             <Route path="/master-data/opportunity-stages" element={<Suspense fallback={<PageFallback />}><OpportunityStagesMaster /></Suspense>} />
             <Route path="/master-data/opportunity-types" element={<Suspense fallback={<PageFallback />}><OpportunityTypesMaster /></Suspense>} />
