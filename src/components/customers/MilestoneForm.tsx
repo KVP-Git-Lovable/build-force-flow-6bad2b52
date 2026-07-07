@@ -3,7 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateMilestone } from "@/hooks/useCustomers";
+
+const STATUSES = ["Pending", "Invoiced", "Paid"];
 
 export function MilestoneForm({
   open, onOpenChange, opportunityId,
@@ -11,7 +14,7 @@ export function MilestoneForm({
   open: boolean; onOpenChange: (v: boolean) => void; opportunityId: string;
 }) {
   const create = useCreateMilestone();
-  const [form, setForm] = useState({ name: "", invoice_value: 0, invoice_number: "", invoice_date: "" });
+  const [form, setForm] = useState({ name: "", invoice_value: 0, invoice_number: "", status: "Pending", invoice_date: "" });
 
   const submit = async () => {
     if (!form.name.trim()) return;
@@ -21,10 +24,10 @@ export function MilestoneForm({
       invoice_value: Number(form.invoice_value) || 0,
       invoice_number: form.invoice_number || null,
       invoice_date: form.invoice_date || null,
-      status: "Pending",
+      status: form.status,
     });
     onOpenChange(false);
-    setForm({ name: "", invoice_value: 0, invoice_number: "", invoice_date: "" });
+    setForm({ name: "", invoice_value: 0, invoice_number: "", status: "Pending", invoice_date: "" });
   };
 
   return (
@@ -38,6 +41,13 @@ export function MilestoneForm({
               onChange={(e) => setForm({ ...form, invoice_value: Number(e.target.value) })} />
           </div>
           <div><Label>Invoice Number</Label><Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} /></div>
+          <div>
+            <Label>Status</Label>
+            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
           <div><Label>Invoice Date</Label><Input type="date" value={form.invoice_date} onChange={(e) => setForm({ ...form, invoice_date: e.target.value })} /></div>
         </div>
         <DialogFooter>
