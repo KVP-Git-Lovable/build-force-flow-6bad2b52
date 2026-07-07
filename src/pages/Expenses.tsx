@@ -162,7 +162,28 @@ export default function Expenses() {
         totalKm={summary?.total_km || 0}
         loading={summaryLoading}
         onTotalClick={() => setBreakdownOpen(true)}
+        taType={policy?.ta_type}
+        taPerKmRate={Number(policy?.ta_per_km_rate || 0)}
+        fixedTaAmount={Number(policy?.fixed_ta_amount || 0)}
+        daBasis={policy?.da_calculation_basis}
+        daAmount={Number(policy?.fixed_da_amount || 0)}
       />
+
+      {policy && (
+        <Card className="shadow-card border-l-4 border-l-blue-500">
+          <CardContent className="p-3 text-xs text-muted-foreground space-y-1">
+            <p><span className="font-semibold text-foreground">TA policy:</span>{" "}
+              {policy.ta_type === "from_gps"
+                ? <>From GPS tracking · <span className="font-medium text-foreground">₹{Number(policy.ta_per_km_rate || 0)}/km</span> × total km driven this month ({(summary?.total_km || 0).toFixed(1)} km = ₹{Math.round(summary?.ta || 0).toLocaleString("en-IN")})</>
+                : <>Fixed · <span className="font-medium text-foreground">₹{Number(policy.fixed_ta_amount || 0)}/day</span> per present day</>}
+            </p>
+            <p><span className="font-semibold text-foreground">DA policy:</span>{" "}
+              <span className="font-medium text-foreground">₹{Number(policy.fixed_da_amount || 0)}</span>{" "}
+              {policy.da_calculation_basis === "per_half_day" ? "per half-day (half-day = 0.5)" : "per present day"}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-3">
