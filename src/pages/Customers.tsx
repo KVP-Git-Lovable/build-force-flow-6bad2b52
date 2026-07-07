@@ -103,51 +103,168 @@ export default function Customers() {
         </TabsList>
 
         {/* OVERVIEW */}
-        <TabsContent value="overview" className="space-y-4 mt-4">
+        <TabsContent value="overview" className="space-y-6 mt-4">
+          {/* KPI CARDS */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <StatTile label="Total Opportunities" value={String(stats.total)} />
-            <StatTile label="Open Pipeline" value={inr(stats.openPipeline)} />
-            <StatTile label="Won Value" value={inr(stats.wonValue)} />
-            <StatTile label="Total Contacts" value={String(stats.contacts)} />
-            <StatTile label="Last Activity" value={stats.lastActivity ? format(new Date(stats.lastActivity), "dd MMM yyyy") : "—"} />
+            <KpiCard label="Total Opportunities" value={String(stats.total)} icon={Target} accent="indigo" />
+            <KpiCard label="Open Pipeline" value={inr(stats.openPipeline)} icon={Wallet} accent="blue" />
+            <KpiCard label="Won Value" value={inr(stats.wonValue)} icon={Trophy} accent="emerald" />
+            <KpiCard label="Total Contacts" value={String(stats.contacts)} icon={Users} accent="violet" />
+            <KpiCard label="Last Activity" value={stats.lastActivity ? format(new Date(stats.lastActivity), "dd MMM yyyy") : "—"} icon={Clock} accent="amber" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <h3 className="font-semibold text-sm">Recent Activities</h3>
-                {activities.slice(0, 5).map((a) => (
-                  <div key={a.id} className="border-b last:border-0 pb-2 last:pb-0">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">{a.subject}</span>
-                      <span className="text-xs text-muted-foreground">{format(new Date(a.activity_date), "dd MMM")}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {a.type}{a.opportunity_id ? ` · ${oppMap[a.opportunity_id]?.name ?? "Opportunity"}` : ""}
-                    </div>
+          {/* VISUAL BREAKDOWNS */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold">Pipeline Insights</h2>
+              <span className="text-xs text-muted-foreground">Live snapshot</span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Pipeline by Stage — donut */}
+              <Card className="shadow-card hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold">Pipeline by Stage</h3>
+                  <p className="text-xs text-muted-foreground mb-2">Opportunities grouped by stage</p>
+                  <div className="h-[220px]">
+                    {pipelineByStage.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={pipelineByStage} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                            innerRadius={50} outerRadius={80} paddingAngle={2}>
+                            {pipelineByStage.map((s, i) => <Cell key={i} fill={s.hex} />)}
+                          </Pie>
+                          <RTooltip formatter={(v: any, n: any) => [`${v}`, n]} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : <EmptyChart label="No opportunities yet" />}
                   </div>
-                ))}
-                {activities.length === 0 && <p className="text-xs text-muted-foreground">No activities yet.</p>}
-              </CardContent>
-            </Card>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                    {pipelineByStage.map((s) => (
+                      <div key={s.name} className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full" style={{ background: s.hex }} />
+                        <span className="text-muted-foreground">{s.name}</span>
+                        <span className="font-semibold">{s.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <h3 className="font-semibold text-sm">Recent Documents</h3>
-                {docs.slice(0, 5).map((d) => (
-                  <div key={d.id} className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="truncate">{d.file_name}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{format(new Date(d.created_at), "dd MMM")}</span>
+              {/* Pipeline by Type — horizontal bars */}
+              <Card className="shadow-card hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold">Pipeline by Type</h3>
+                  <p className="text-xs text-muted-foreground mb-2">Total value per type</p>
+                  <div className="h-[220px]">
+                    {pipelineByType.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={pipelineByType} layout="vertical" margin={{ left: 8, right: 16 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
+                          <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                          <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
+                          <RTooltip formatter={(v: any) => inr(Number(v))} />
+                          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                            {pipelineByType.map((t, i) => <Cell key={i} fill={t.hex} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <EmptyChart label="No pipeline data" />}
                   </div>
-                ))}
-                {docs.length === 0 && <p className="text-xs text-muted-foreground">No documents yet.</p>}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Win Rate gauge */}
+              <Card className="shadow-card hover:shadow-lg transition-shadow bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-transparent">
+                <CardContent className="p-4 h-full flex flex-col">
+                  <h3 className="text-sm font-semibold">Win Rate</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Won vs total closed opportunities</p>
+                  <div className="flex-1 flex flex-col items-center justify-center">
+                    <WinRateGauge percent={winRate.percent} />
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-center w-full">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Won</div>
+                        <div className="text-lg font-bold text-emerald-600">{winRate.won}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Closed</div>
+                        <div className="text-lg font-bold">{winRate.closed}</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* RECENT ACTIVITY & DOCS */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold">Recent Activity</h2>
+              <span className="text-xs text-muted-foreground">Latest 5 entries</span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card className="shadow-card">
+                <CardContent className="p-4 space-y-2">
+                  <h3 className="font-semibold text-sm mb-1">Activities</h3>
+                  {activities.slice(0, 5).map((a) => {
+                    const style = activityStyle(a.type);
+                    const Icon = style.icon;
+                    return (
+                      <div key={a.id} className="flex items-start gap-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors p-2.5">
+                        <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+                          <Icon className={`h-4 w-4 ${style.text}`} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex justify-between gap-2">
+                            <span className="font-medium text-sm truncate">{a.subject}</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(a.activity_date), "dd MMM")}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <Badge variant="outline" className={`text-[10px] py-0 h-4 ${style.badge}`}>{a.type}</Badge>
+                            {a.opportunity_id && (
+                              <Badge variant="secondary" className="text-[10px] py-0 h-4">{oppMap[a.opportunity_id]?.name ?? "Opportunity"}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {activities.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No activities yet.</p>}
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-card">
+                <CardContent className="p-4 space-y-2">
+                  <h3 className="font-semibold text-sm mb-1">Documents</h3>
+                  {docs.slice(0, 5).map((d) => {
+                    const style = docStyle(d.file_name, d.file_type);
+                    const Icon = style.icon;
+                    return (
+                      <div key={d.id} className="flex items-center gap-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors p-2.5">
+                        <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+                          <Icon className={`h-4 w-4 ${style.text}`} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex justify-between gap-2">
+                            <span className="font-medium text-sm truncate">{d.file_name}</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(d.created_at), "dd MMM")}</span>
+                          </div>
+                          <div className="mt-1">
+                            {d.opportunity_id && (
+                              <Badge variant="secondary" className="text-[10px] py-0 h-4">{oppMap[d.opportunity_id]?.name ?? "Opportunity"}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {docs.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No documents yet.</p>}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
+
 
         {/* OPPORTUNITIES */}
         <TabsContent value="opportunities" className="mt-4 space-y-3">
