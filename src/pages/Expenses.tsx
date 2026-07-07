@@ -40,6 +40,7 @@ export default function Expenses() {
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const yearMonth = format(selectedMonth, "yyyy-MM");
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useMonthlyExpenseSummary(userId, yearMonth);
+  const [policy, setPolicy] = useState<{ ta_type: "from_gps" | "fixed"; ta_per_km_rate: number; fixed_ta_amount: number; fixed_da_amount: number; da_calculation_basis: "per_day" | "per_half_day" } | null>(null);
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
