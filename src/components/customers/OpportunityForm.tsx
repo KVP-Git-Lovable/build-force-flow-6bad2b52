@@ -10,11 +10,10 @@ import {
 } from "@/hooks/useCustomers";
 
 export function OpportunityForm({
-  open, onOpenChange, customerId, opportunity,
+  open, onOpenChange, opportunity,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  customerId: string;
   opportunity?: Opportunity;
 }) {
   const create = useCreateOpportunity();
@@ -46,7 +45,6 @@ export function OpportunityForm({
   const submit = async () => {
     if (!form.name.trim()) return;
     const payload: any = {
-      customer_id: customerId,
       name: form.name.trim(),
       type: form.type || null,
       stage: form.stage || null,

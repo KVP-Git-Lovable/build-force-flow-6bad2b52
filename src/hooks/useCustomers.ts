@@ -2,20 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export interface Customer {
-  id: string;
-  name: string;
-  industry: string | null;
-  status: string;
-  owner_id: string | null;
-  primary_contact_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Opportunity {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
   name: string;
   type: string | null;
   stage: string | null;
@@ -29,7 +18,7 @@ export interface Opportunity {
 
 export interface Contact {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
   name: string;
   title: string | null;
   email: string | null;
@@ -52,7 +41,7 @@ export interface Milestone {
 
 export interface CustomerActivity {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
   opportunity_id: string | null;
   type: string;
   subject: string;
@@ -64,7 +53,7 @@ export interface CustomerActivity {
 
 export interface CustomerDocument {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
   opportunity_id: string | null;
   file_name: string;
   file_url: string;
@@ -80,79 +69,12 @@ export interface OppStage {
   is_won: boolean; is_closed: boolean; is_active: boolean;
 }
 
-// ---------- Customers ----------
-export function useCustomers() {
-  return useQuery({
-    queryKey: ["customers"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("customers").select("*").order("name");
-      if (error) throw error;
-      return data as Customer[];
-    },
-  });
-}
-
-export function useCustomer(id?: string) {
-  return useQuery({
-    queryKey: ["customer", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("customers").select("*").eq("id", id!).single();
-      if (error) throw error;
-      return data as Customer;
-    },
-    enabled: !!id,
-  });
-}
-
-export function useCreateCustomer() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (v: Partial<Customer>) => {
-      const { data, error } = await supabase.from("customers").insert(v as any).select().single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["customers"] }); toast.success("Customer created"); },
-    onError: (e: any) => toast.error(e.message),
-  });
-}
-
-export function useUpdateCustomer() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, ...v }: Partial<Customer> & { id: string }) => {
-      const { data, error } = await supabase.from("customers").update(v).eq("id", id).select().single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (d: any) => {
-      qc.invalidateQueries({ queryKey: ["customers"] });
-      qc.invalidateQueries({ queryKey: ["customer", d.id] });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-}
-
-export function useDeleteCustomer() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("customers").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["customers"] }); toast.success("Deleted"); },
-    onError: (e: any) => toast.error(e.message),
-  });
-}
-
 // ---------- Opportunities ----------
-export function useOpportunities(customerId?: string) {
+export function useOpportunities() {
   return useQuery({
-    queryKey: ["opportunities", customerId ?? "all"],
+    queryKey: ["opportunities"],
     queryFn: async () => {
-      let q = supabase.from("customer_opportunities").select("*").order("updated_at", { ascending: false });
-      if (customerId) q = q.eq("customer_id", customerId);
-      const { data, error } = await q;
+      const { data, error } = await supabase.from("customer_opportunities").select("*").order("updated_at", { ascending: false });
       if (error) throw error;
       return data as Opportunity[];
     },
@@ -266,16 +188,14 @@ export function useDeleteMilestone() {
 }
 
 // ---------- Contacts ----------
-export function useContacts(customerId?: string) {
+export function useContacts() {
   return useQuery({
-    queryKey: ["contacts", customerId],
+    queryKey: ["contacts"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customer_contacts").select("*")
-        .eq("customer_id", customerId!).order("name");
+      const { data, error } = await supabase.from("customer_contacts").select("*").order("name");
       if (error) throw error;
       return data as Contact[];
     },
-    enabled: !!customerId,
   });
 }
 
@@ -287,7 +207,7 @@ export function useCreateContact() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (d: any) => { qc.invalidateQueries({ queryKey: ["contacts", d.customer_id] }); toast.success("Contact added"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["contacts"] }); toast.success("Contact added"); },
     onError: (e: any) => toast.error(e.message),
   });
 }
@@ -300,7 +220,7 @@ export function useUpdateContact() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (d: any) => qc.invalidateQueries({ queryKey: ["contacts", d.customer_id] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["contacts"] }),
     onError: (e: any) => toast.error(e.message),
   });
 }
@@ -308,29 +228,26 @@ export function useUpdateContact() {
 export function useDeleteContact() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, customerId }: { id: string; customerId: string }) => {
+    mutationFn: async (id: string) => {
       const { error } = await supabase.from("customer_contacts").delete().eq("id", id);
       if (error) throw error;
-      return customerId;
     },
-    onSuccess: (customerId) => qc.invalidateQueries({ queryKey: ["contacts", customerId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["contacts"] }),
     onError: (e: any) => toast.error(e.message),
   });
 }
 
 // ---------- Activities ----------
-export function useCustomerActivities(customerId?: string, opportunityId?: string) {
+export function useCustomerActivities(opportunityId?: string) {
   return useQuery({
-    queryKey: ["customer-activities", customerId, opportunityId ?? "all"],
+    queryKey: ["customer-activities", opportunityId ?? "all"],
     queryFn: async () => {
-      let q = supabase.from("customer_activities").select("*")
-        .eq("customer_id", customerId!).order("activity_date", { ascending: false });
+      let q = supabase.from("customer_activities").select("*").order("activity_date", { ascending: false });
       if (opportunityId) q = q.eq("opportunity_id", opportunityId);
       const { data, error } = await q;
       if (error) throw error;
       return data as CustomerActivity[];
     },
-    enabled: !!customerId,
   });
 }
 
@@ -342,8 +259,8 @@ export function useCreateCustomerActivity() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (d: any) => {
-      qc.invalidateQueries({ queryKey: ["customer-activities", d.customer_id] });
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["customer-activities"] });
       toast.success("Activity added");
     },
     onError: (e: any) => toast.error(e.message),
@@ -351,18 +268,16 @@ export function useCreateCustomerActivity() {
 }
 
 // ---------- Documents ----------
-export function useCustomerDocuments(customerId?: string, opportunityId?: string) {
+export function useCustomerDocuments(opportunityId?: string) {
   return useQuery({
-    queryKey: ["customer-documents", customerId, opportunityId ?? "all"],
+    queryKey: ["customer-documents", opportunityId ?? "all"],
     queryFn: async () => {
-      let q = supabase.from("customer_documents").select("*")
-        .eq("customer_id", customerId!).order("created_at", { ascending: false });
+      let q = supabase.from("customer_documents").select("*").order("created_at", { ascending: false });
       if (opportunityId) q = q.eq("opportunity_id", opportunityId);
       const { data, error } = await q;
       if (error) throw error;
       return data as CustomerDocument[];
     },
-    enabled: !!customerId,
   });
 }
 
@@ -374,8 +289,8 @@ export function useCreateCustomerDocument() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (d: any) => {
-      qc.invalidateQueries({ queryKey: ["customer-documents", d.customer_id] });
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["customer-documents"] });
       toast.success("Document uploaded");
     },
     onError: (e: any) => toast.error(e.message),
@@ -385,13 +300,12 @@ export function useCreateCustomerDocument() {
 export function useDeleteCustomerDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, customerId, fileUrl }: { id: string; customerId: string; fileUrl: string }) => {
+    mutationFn: async ({ id, fileUrl }: { id: string; fileUrl: string }) => {
       await supabase.storage.from("customer-documents").remove([fileUrl]);
       const { error } = await supabase.from("customer_documents").delete().eq("id", id);
       if (error) throw error;
-      return customerId;
     },
-    onSuccess: (customerId) => qc.invalidateQueries({ queryKey: ["customer-documents", customerId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["customer-documents"] }),
     onError: (e: any) => toast.error(e.message),
   });
 }

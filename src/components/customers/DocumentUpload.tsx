@@ -5,11 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCreateCustomerDocument } from "@/hooks/useCustomers";
 import { toast } from "sonner";
 
-export function DocumentUpload({
-  customerId, opportunityId,
-}: {
-  customerId: string; opportunityId?: string;
-}) {
+export function DocumentUpload({ opportunityId }: { opportunityId?: string }) {
   const ref = useRef<HTMLInputElement>(null);
   const create = useCreateCustomerDocument();
   const [uploading, setUploading] = useState(false);
@@ -20,11 +16,10 @@ export function DocumentUpload({
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const path = `${customerId}/${opportunityId ?? "general"}/${Date.now()}.${ext}`;
+      const path = `${opportunityId ?? "general"}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("customer-documents").upload(path, file);
       if (error) throw error;
       await create.mutateAsync({
-        customer_id: customerId,
         opportunity_id: opportunityId ?? null,
         file_name: file.name,
         file_url: path,

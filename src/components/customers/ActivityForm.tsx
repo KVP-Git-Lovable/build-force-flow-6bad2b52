@@ -10,16 +10,15 @@ import { useCreateCustomerActivity, useOpportunities } from "@/hooks/useCustomer
 const TYPES = ["Note", "Call", "Meeting", "Email", "Task"];
 
 export function ActivityForm({
-  open, onOpenChange, customerId, opportunityId, lockOpportunity,
+  open, onOpenChange, opportunityId, lockOpportunity,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  customerId: string;
   opportunityId?: string;
   lockOpportunity?: boolean;
 }) {
   const create = useCreateCustomerActivity();
-  const { data: opps = [] } = useOpportunities(customerId);
+  const { data: opps = [] } = useOpportunities();
 
   const [form, setForm] = useState({
     type: "Note", subject: "", notes: "", activity_date: new Date().toISOString().slice(0, 10),
@@ -33,7 +32,6 @@ export function ActivityForm({
   const submit = async () => {
     if (!form.subject.trim()) return;
     await create.mutateAsync({
-      customer_id: customerId,
       opportunity_id: form.opportunity_id || null,
       type: form.type,
       subject: form.subject.trim(),
@@ -69,9 +67,9 @@ export function ActivityForm({
               <Label>Link to Opportunity</Label>
               <Select value={form.opportunity_id || "none"}
                 onValueChange={(v) => setForm({ ...form, opportunity_id: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder="General (customer only)" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="General" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">General (customer only)</SelectItem>
+                  <SelectItem value="none">General</SelectItem>
                   {opps.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
