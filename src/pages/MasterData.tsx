@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Handshake, ListChecks, FolderTree, Package, MapPin } from "lucide-react";
+import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
 const allMasterModules = [
@@ -45,6 +45,22 @@ const allMasterModules = [
     color: "bg-rose-100 text-rose-600",
     path: "/master-data/addresses",
     module: null as string | null,
+  },
+  {
+    title: "Opportunity Stages",
+    description: "Manage sales pipeline stages and colors",
+    icon: Target,
+    color: "bg-fuchsia-100 text-fuchsia-600",
+    path: "/master-data/opportunity-stages",
+    module: "module_opportunities" as string | null,
+  },
+  {
+    title: "Opportunity Types",
+    description: "Manage opportunity types (Upsell, Renewal, New…)",
+    icon: Tags,
+    color: "bg-sky-100 text-sky-600",
+    path: "/master-data/opportunity-types",
+    module: "module_opportunities" as string | null,
   },
 ];
 

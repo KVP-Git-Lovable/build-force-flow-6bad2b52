@@ -1,0 +1,119 @@
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Opportunity, useCreateOpportunity, useUpdateOpportunity,
+  useOppTypes, useOppStages, useUserLookup,
+} from "@/hooks/useCustomers";
+
+export function OpportunityForm({
+  open, onOpenChange, customerId, opportunity,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  customerId: string;
+  opportunity?: Opportunity;
+}) {
+  const create = useCreateOpportunity();
+  const update = useUpdateOpportunity();
+  const { data: types = [] } = useOppTypes();
+  const { data: stages = [] } = useOppStages();
+  const { data: users = [] } = useUserLookup();
+
+  const [form, setForm] = useState({
+    name: "", type: "", stage: "", probability: 0, close_date: "", amount: 0, owner_id: "",
+  });
+
+  useEffect(() => {
+    if (opportunity) {
+      setForm({
+        name: opportunity.name,
+        type: opportunity.type ?? "",
+        stage: opportunity.stage ?? "",
+        probability: opportunity.probability,
+        close_date: opportunity.close_date ?? "",
+        amount: Number(opportunity.amount),
+        owner_id: opportunity.owner_id ?? "",
+      });
+    } else {
+      setForm({ name: "", type: types[0]?.name ?? "", stage: stages[0]?.name ?? "", probability: 20, close_date: "", amount: 0, owner_id: "" });
+    }
+  }, [opportunity, open, types, stages]);
+
+  const submit = async () => {
+    if (!form.name.trim()) return;
+    const payload: any = {
+      customer_id: customerId,
+      name: form.name.trim(),
+      type: form.type || null,
+      stage: form.stage || null,
+      probability: Number(form.probability) || 0,
+      close_date: form.close_date || null,
+      amount: Number(form.amount) || 0,
+      owner_id: form.owner_id || null,
+    };
+    if (opportunity) await update.mutateAsync({ id: opportunity.id, ...payload });
+    else await create.mutateAsync(payload);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{opportunity ? "Edit Opportunity" : "New Opportunity"}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div><Label>Opportunity Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Type</Label>
+              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{types.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Stage</Label>
+              <Select value={form.stage} onValueChange={(v) => setForm({ ...form, stage: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{stages.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Probability (%)</Label>
+              <Input type="number" min={0} max={100} value={form.probability}
+                onChange={(e) => setForm({ ...form, probability: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label>Amount</Label>
+              <Input type="number" min={0} value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
+            </div>
+          </div>
+          <div>
+            <Label>Close Date</Label>
+            <Input type="date" value={form.close_date} onChange={(e) => setForm({ ...form, close_date: e.target.value })} />
+          </div>
+          <div>
+            <Label>Owner</Label>
+            <Select value={form.owner_id || "none"} onValueChange={(v) => setForm({ ...form, owner_id: v === "none" ? "" : v })}>
+              <SelectTrigger><SelectValue placeholder="Select owner" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Unassigned</SelectItem>
+                {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name || u.username || u.email}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={submit} disabled={!form.name.trim()}>{opportunity ? "Save" : "Create"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,60 +1,99 @@
-## Goal
+# Customers & Opportunities Module
 
-When any active user's device drops **below 30% battery (not charging)** or goes **offline / switched off**, send an in-app notification to that user's **reporting manager** (the "Manager" column of Users & Roles). Repeat while the condition persists, without spamming.
+A full CRM-style module: Customers (list + detail with 5 tabs), a reusable Opportunity page, and a standalone Opportunities module — all sharing the same data.
 
-## What already exists
+## 1. Database (Lovable Cloud)
 
-- `useDeviceStatusReporter` posts `battery_level`, `battery_charging`, `network_type`, `device_platform`, and stamps `device_status_at` on `public.users` every 60s via the `report_device_status` RPC.
-- Trigger `trg_notify_manager_low_battery` fires once when battery crosses into <30% and notifies both the manager AND all admins. It does NOT re-alert, and it also alerts admins (which you don't want).
-- `public.notifications` table + `NotificationBell` already render in-app notifications.
-- `public.users.reporting_manager_id` holds the manager link.
+New tables (all under `public`, RLS on, GRANTs to `authenticated` + `service_role`):
 
-## Changes
+- **customers** — `name`, `industry`, `status`, `owner_id` (→ users), `primary_contact_id` (nullable → customer_contacts).
+- **customer_opportunities** — `customer_id`, `name`, `type`, `stage`, `probability` (0–100), `close_date`, `amount`, `owner_id`.
+- **opportunity_milestones** — `opportunity_id`, `name`, `invoice_number`, `invoice_date`, `invoice_value`, `status` (Pending/Invoiced/Paid).
+- **customer_contacts** — `customer_id`, `name`, `title`, `email`, `phone`, `reports_to_id` (self-FK, builds org chart), `last_contact_at`.
+- **customer_activities** — `customer_id`, `opportunity_id` (nullable), `type`, `subject`, `notes`, `activity_date`, `created_by`.
+- **customer_documents** — `customer_id`, `opportunity_id` (nullable), `file_name`, `file_url`, `file_size`, `file_type`, `uploaded_by`.
+- **Master Data** — extend Master Data with `opportunity_types` and `opportunity_stages` (name + color + sort_order) so admins can edit dropdowns later.
+- Storage bucket: `customer-documents` (private, signed URLs).
 
-### 1. Low-battery notifications → manager only, repeat every 10 min
+RLS: any authenticated user can read/write (matches existing modules like Vendors/Procurement). Owner recorded via `auth.uid()`.
 
-Replace the current trigger logic with a check that:
+## 2. Master Data extension
 
-- Fires only for the **reporting manager** of the affected user (no admin fan-out).
-- Sends the first alert when battery drops <30% and not charging.
-- Re-alerts every **10 minutes** while battery stays <30% and not charging, by looking up the most recent low-battery notification for that (manager, user) pair in `notifications` and skipping if it's <10 min old.
-- Resets automatically once battery recovers ≥30% or device starts charging — the next low episode alerts again immediately.
+Add two new sections in `/master-data`:
+- **Opportunity Types** — CRUD list (default seeds: Upsell, Renewal, New).
+- **Opportunity Stages** — CRUD list with color + sort order (default seeds: Discovery=gray, Proposal=blue, Negotiation=amber, Closed Won=green).
 
-Message: `Battery level is below 30% for user <Full Name>` (title: `Low battery: <Full Name>`, type: `warning`, related_table: `users`, related_id: user id).
+The Opportunity forms read from these tables so the dropdowns stay editable.
 
-Implementation: rewrite `notify_manager_low_battery()` with the throttle + manager-only logic; keep the existing `AFTER UPDATE OF battery_level` trigger. Because heartbeats fire every 60s, the trigger re-evaluates naturally and can emit a repeat notification once 10 minutes have elapsed.
+## 3. Navigation & Routes
 
-### 2. Phone-off / offline notifications → manager, immediate + every 10 min
+Add two top-level nav items (respect `hasModuleAccess` gating like the rest):
+- `module_customers` → `/customers`
+- `module_opportunities` → `/opportunities`
 
-A device is considered "switched off" when `device_status_at` is older than a small grace window (2 min — one missed heartbeat) AND `is_active = true`. Because a switched-off phone can't call the RPC itself, this can't be a trigger; it needs a scheduled sweep.
+Register two new permission definitions in `permission_definitions` so Role Permissions picks them up automatically.
 
-Add a scheduled job that runs every minute and, for each active user whose `device_status_at` is stale:
+Routes:
+- `/customers` — list
+- `/customers/:id` — detail with tabs
+- `/opportunities` — standalone list/kanban
+- `/opportunities/:id` — full opportunity page (shared)
 
-- Sends the **first** notification to the reporting manager as soon as staleness is detected.
-- Re-notifies every **10 minutes** thereafter while the device stays offline, throttled by looking up the most recent offline notification for that (manager, user) pair.
-- Stops automatically the moment `device_status_at` refreshes (device came back online).
+## 4. Customers list page (`/customers`)
 
-Message: `User <Full Name>'s phone appears to be switched off or offline` (title: `Device offline: <Full Name>`, type: `warning`, related_table: `users`, related_id: user id).
+- Card grid: name, industry, colored status badge, owner avatar, open-opps count, total pipeline value (sum of open opps).
+- Search box + status filter + owner filter.
+- "New Customer" button → modal form (Name, Industry, Status, Owner).
+- Row click → `/customers/:id`.
 
-Implementation: a new SECURITY DEFINER SQL function `public.sweep_offline_device_alerts()` scheduled via `pg_cron` every 1 minute. No edge function needed — pure SQL keeps it inside the DB.
+## 5. Customer detail page (`/customers/:id`)
 
-### 3. Safeguards
+**Header:** name, industry, editable status dropdown, and 4 stat tiles — Total Opportunities, Open Pipeline Value, Won Value, Primary Contact.
 
-- Skip users with no `reporting_manager_id` (nothing to notify).
-- Never notify a user about themselves (manager ≠ user).
-- Only consider `is_active = true` users.
-- Only consider users who have reported at least once (`device_status_at IS NOT NULL`) so brand-new accounts aren't flagged as offline.
+**Tabs:**
+
+- **Overview** — 4 summary cards (Total Opps, Open Pipeline, Won Value, Last Activity Date) + Recent Activities (5, merged customer+opps) + Recent Documents (5) + Top Contacts preview.
+- **Opportunities** — table (Name, Type, Stage badge, Probability, Close Date, Amount) + "New Opportunity" modal (Name, Type, Stage, Probability, Close Date, Amount). Row click → `/opportunities/:id`.
+- **Contacts** — toggle List / Org Chart.
+  - Add Contact modal (Name, Title, Email, Phone, Reports To — searchable dropdown of this customer's contacts).
+  - List View: table.
+  - Org Chart View: recursive tree built from `reports_to_id`, horizontally scrollable, rounded avatar-initial cards with name + title, light-gray SVG connectors. (Reference the uploaded screenshot for card style — but with no rating/badge chips since we skip influence scoring.)
+  - Below chart: "Contact Relationship Matrix" — Contact, Title, Last Contact only.
+- **Activities** — merged customer + all-opportunity timeline, each entry tagged with opportunity name or "General". "+ New Activity" modal (Type, Subject, Notes, Date, optional Opportunity link).
+- **Documents** — merged list tagged by source. Upload button, file-type icon, size, uploader, date.
+
+## 6. Opportunity full page (`/opportunities/:id`) — shared
+
+- **a) Overview:** two-column layout — name, customer (linked back to `/customers/:customer_id`), type, stage, probability, close date, amount, owner.
+- **b) Payment Milestones:** rolled-up total at top; list of milestones (Name, Invoice #, Invoice Date, Invoice Value, Status badge). "+ Add" modal (Milestone Name, Invoice Value, Invoice Number, Invoice Date; status defaults to Pending, editable inline).
+- **c) Activities:** scoped list + "+ New Activity" (Type, Subject, Notes, Date) — automatically shows under parent customer's Activities tab because they share `customer_activities` with `opportunity_id` set.
+- **d) Documents:** scoped upload/list — automatically shows under parent customer's Documents tab via `opportunity_id`.
+
+## 7. Standalone Opportunities module (`/opportunities`)
+
+- Summary header: Total Pipeline Value, Weighted Pipeline (Σ amount × probability/100), Won This Quarter.
+- View toggle: **Table** (Customer linked, Name, Type, Stage, Probability, Close Date, Amount, Owner) with filters (Stage, Type, Owner, Close Date range).
+- **Kanban** view: columns = stages from Master Data, cards = opportunities, drag between columns updates `stage`.
+- Row/card click → same `/opportunities/:id` page.
+
+## 8. UI/UX
+
+- Semantic tokens only (matches existing Navy & Gold system) — no hardcoded colors.
+- Rounded cards, subtle shadows, colored stage/status badges pulled from Master Data color field.
+- Org chart nodes: rounded cards, circular initials avatar, bold name, muted title, gray SVG connectors, horizontal overflow scroll.
+- Fully responsive: cards stack on mobile, tabs scroll horizontally, tables become stacked cards on small screens.
+
+## Technical notes
+
+- Hooks: `useCustomers`, `useCustomer(id)`, `useOpportunities(filters?)`, `useOpportunity(id)`, `useOpportunityMilestones`, `useCustomerContacts`, `useCustomerActivities`, `useCustomerDocuments`, `useOpportunityMasterData`.
+- Kanban uses existing dnd pattern from `pm/KanbanBoard.tsx`.
+- Documents reuse the same signed-URL resolution pattern as `pm-attachments` (per memory note on storage RLS).
+- Org chart is a pure React recursive component + SVG connectors — no extra library.
+- Permission gating via `useProfilePermissions().hasModuleAccess('module_customers' | 'module_opportunities')` on nav + routes.
+- Master Data types/stages seeded on first migration; dropdowns everywhere read from these tables.
 
 ## Out of scope
 
-- No changes to `useDeviceStatusReporter`, notification UI, push delivery, or any other module.
-- Admins are removed from the low-battery fan-out per your requirement that only the manager receives it.
-
-## Technical details
-
-- New/updated SQL objects (all via one migration):
-  - `notify_manager_low_battery()` rewritten: manager-only, 10-minute throttle keyed off `notifications.title LIKE 'Low battery:%' AND related_id = NEW.id AND user_id = manager_id`.
-  - New `sweep_offline_device_alerts()` SECURITY DEFINER function: scans `users` for `is_active AND device_status_at < now() - interval '2 minutes'`, applies the same throttle against `'Device offline:%'` notifications with a 10-minute window, inserts one row per due manager/user pair.
-- Enable `pg_cron` extension (if not already) and schedule `sweep_offline_device_alerts()` every minute via `cron.schedule`.
-- Throttle windows: `10 minutes` for both cases.
-- Offline detection window: `2 minutes` since last heartbeat.
+- No influence/relationship-strength scoring on contacts.
+- No engagement heatmap or strategy tabs (screenshot is style reference only for the org chart look).
+- No changes to existing modules beyond adding two Master Data sections and two nav items.
