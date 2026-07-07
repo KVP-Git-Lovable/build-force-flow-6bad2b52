@@ -20,6 +20,8 @@ import {
   HelpCircle,
   FileText,
   FileBarChart,
+  Building2,
+  Target,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
