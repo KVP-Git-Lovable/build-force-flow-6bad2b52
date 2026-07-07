@@ -42,6 +42,12 @@ const AddressBook = lazy(() => import("./pages/master/AddressBook"));
 const Procurement = lazy(() => import("./pages/Procurement"));
 const GRN = lazy(() => import("./pages/GRN"));
 const Analytics = lazy(() => import("./pages/Analytics"));
+const Customers = lazy(() => import("./pages/Customers"));
+const CustomerDetail = lazy(() => import("./pages/CustomerDetail"));
+const Opportunities = lazy(() => import("./pages/Opportunities"));
+const OpportunityDetail = lazy(() => import("./pages/OpportunityDetail"));
+const OpportunityStagesMaster = lazy(() => import("./pages/master/OpportunityStagesMaster"));
+const OpportunityTypesMaster = lazy(() => import("./pages/master/OpportunityTypesMaster"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
