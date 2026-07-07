@@ -1,71 +1,60 @@
-# Add Battery % and Network Strength to My Team + low-battery alerts to managers
+## Goal
 
-## What we're building
+When any active user's device drops **below 30% battery (not charging)** or goes **offline / switched off**, send an in-app notification to that user's **reporting manager** (the "Manager" column of Users & Roles). Repeat while the condition persists, without spamming.
 
-1. Every device running the app reports its own battery %, charging state, and network type to the backend once per minute while the app is open.
-2. `/my-team` shows each teammate's latest battery % and network strength next to their name, with a stale-data indicator when the reading is older than ~3 minutes.
-3. When a teammate's battery drops below 30%, a push + in-app notification fires to their **reporting manager** (and admins) — not to the teammate themselves.
+## What already exists
 
-## Storage
+- `useDeviceStatusReporter` posts `battery_level`, `battery_charging`, `network_type`, `device_platform`, and stamps `device_status_at` on `public.users` every 60s via the `report_device_status` RPC.
+- Trigger `trg_notify_manager_low_battery` fires once when battery crosses into <30% and notifies both the manager AND all admins. It does NOT re-alert, and it also alerts admins (which you don't want).
+- `public.notifications` table + `NotificationBell` already render in-app notifications.
+- `public.users.reporting_manager_id` holds the manager link.
 
-Add four columns directly on `public.users` (per your choice):
+## Changes
 
-- `battery_level int` — 0-100, nullable
-- `battery_charging boolean` — nullable
-- `network_type text` — one of `wifi | 4g | 3g | 2g | slow-2g | offline | unknown`
-- `device_status_at timestamptz` — last report time
-- (also) `device_platform text` — `web-android | web-ios | web-desktop | android-native | ios-native` — needed so the UI can show "—" for iOS web where battery is unreadable
+### 1. Low-battery notifications → manager only, repeat every 10 min
 
-RLS: user can UPDATE only their own row's status columns; SELECT is already permitted for team lookups. A partial policy will restrict writes to these five columns via a `SECURITY DEFINER` RPC (`report_device_status`) — safer than granting broad UPDATE.
+Replace the current trigger logic with a check that:
 
-## Client — reporting side (every device, every 1 min)
+- Fires only for the **reporting manager** of the affected user (no admin fan-out).
+- Sends the first alert when battery drops <30% and not charging.
+- Re-alerts every **10 minutes** while battery stays <30% and not charging, by looking up the most recent low-battery notification for that (manager, user) pair in `notifications` and skipping if it's <10 min old.
+- Resets automatically once battery recovers ≥30% or device starts charging — the next low episode alerts again immediately.
 
-New hook `src/hooks/useDeviceStatusReporter.ts` mounted once in `AppLayout`:
+Message: `Battery level is below 30% for user <Full Name>` (title: `Low battery: <Full Name>`, type: `warning`, related_table: `users`, related_id: user id).
 
-- Reads battery from `navigator.getBattery()` when available (Android Chrome, desktop Chrome/Edge). iOS Safari returns undefined → we send `null`.
-- Reads network from `navigator.connection.effectiveType` (`4g` / `3g` / `2g` / `slow-2g`) plus `navigator.onLine`. iOS Safari → `unknown`.
-- Detects platform from `navigator.userAgent` + Capacitor detection so we can set `device_platform`.
-- Calls the `report_device_status` RPC every 60s while document is visible; pauses on `visibilitychange` hidden; resumes + sends immediately on visible.
-- On native Capacitor (Android APK), swaps in `@capacitor/device` + `@capacitor/network` for reliable values and detects `Device.getBatteryInfo()` — this covers the APK case since your project already ships Capacitor.
+Implementation: rewrite `notify_manager_low_battery()` with the throttle + manager-only logic; keep the existing `AFTER UPDATE OF battery_level` trigger. Because heartbeats fire every 60s, the trigger re-evaluates naturally and can emit a repeat notification once 10 minutes have elapsed.
 
-We will **not** add `@capacitor-community/battery-status` right now to keep dependencies minimal; `@capacitor/device` (already commonly present) exposes battery info sufficiently.
+### 2. Phone-off / offline notifications → manager, immediate + every 10 min
 
-## Client — display side (`src/pages/MyTeam.tsx`)
+A device is considered "switched off" when `device_status_at` is older than a small grace window (2 min — one missed heartbeat) AND `is_active = true`. Because a switched-off phone can't call the RPC itself, this can't be a trigger; it needs a scheduled sweep.
 
-Extend the `TeamMember` shape with the four new fields, then in each row render two small badges after the name:
+Add a scheduled job that runs every minute and, for each active user whose `device_status_at` is stale:
 
-- **Battery**: icon + `72%` (green ≥50, amber 30-49, red <30). If `battery_level` is null → show `—` with tooltip "Not reported by device (e.g. iOS Safari)".
-- **Network**: signal-bars icon mapped from `network_type` (`wifi`/`4g` = 4 bars, `3g` = 3, `2g` = 2, `slow-2g` = 1, `offline` = 0, `unknown` = —).
-- **Stale indicator**: if `device_status_at` is older than 3 minutes, dim both badges and show a tiny "· 12m ago" text.
+- Sends the **first** notification to the reporting manager as soon as staleness is detected.
+- Re-notifies every **10 minutes** thereafter while the device stays offline, throttled by looking up the most recent offline notification for that (manager, user) pair.
+- Stops automatically the moment `device_status_at` refreshes (device came back online).
 
-No layout change to the existing card — badges sit between the role/site line and the phone button, wrapping on narrow screens.
+Message: `User <Full Name>'s phone appears to be switched off or offline` (title: `Device offline: <Full Name>`, type: `warning`, related_table: `users`, related_id: user id).
 
-## Manager low-battery alert (server-side)
+Implementation: a new SECURITY DEFINER SQL function `public.sweep_offline_device_alerts()` scheduled via `pg_cron` every 1 minute. No edge function needed — pure SQL keeps it inside the DB.
 
-Trigger on `public.users` AFTER UPDATE of `battery_level`:
+### 3. Safeguards
 
-- When new `battery_level < 30` AND old value ≥ 30 (crossing the threshold, not spamming every 1-min tick while still low), and `battery_charging = false`:
-  - Look up the teammate's reporting manager via `users.reporting_manager_id` (walking up 1 level) plus all admins.
-  - Insert a row into `public.notifications` for each recipient: title `"Low battery: {full_name}"`, message `"{full_name}'s device is at {level}% and not charging."`, type `warning`, related_table `users`, related_id = teammate id.
-  - Invoke existing `dispatch-notification` edge function so managers who opted in get a web/native push too.
+- Skip users with no `reporting_manager_id` (nothing to notify).
+- Never notify a user about themselves (manager ≠ user).
+- Only consider `is_active = true` users.
+- Only consider users who have reported at least once (`device_status_at IS NOT NULL`) so brand-new accounts aren't flagged as offline.
 
-Re-arms when battery goes back ≥ 30 (either by charging or reconnecting a fresher device), so the next drop below 30 fires again.
+## Out of scope
 
-## Notifications UI
+- No changes to `useDeviceStatusReporter`, notification UI, push delivery, or any other module.
+- Admins are removed from the low-battery fan-out per your requirement that only the manager receives it.
 
-Existing `NotificationBell` component already renders `public.notifications` rows, so managers will see the low-battery alerts in the bell + as a push (if push is enabled) — no new UI needed beyond that.
+## Technical details
 
-## Files to change / add
-
-- Migration: add 5 columns to `public.users`; create `report_device_status(_battery int, _charging bool, _network text, _platform text)` SECURITY DEFINER RPC; create `notify_manager_low_battery()` trigger fn + trigger.
-- New: `src/hooks/useDeviceStatusReporter.ts`.
-- Edit: `src/components/layout/AppLayout.tsx` — mount the reporter hook once.
-- Edit: `src/pages/MyTeam.tsx` — select the four new fields, render battery/network badges.
-- New: `src/components/team/DeviceStatusBadges.tsx` — small presentational component for the two badges.
-
-## Trade-offs / caveats you should know
-
-- **iOS Safari users show "—" for both metrics.** Only fix is the native APK path (already available via Capacitor).
-- **1-min reporting = ~1,440 writes/user/day.** For a 50-person team that's ~72k row updates/day on `public.users`. Acceptable but noticeable on Cloud usage. If you later see cost pressure, we can switch to "significant change only" without touching the schema.
-- **Network "strength" is coarse.** The Web APIs don't give bars/dBm — the badge shows the connection *type*, which most users read as "signal quality" anyway. If you need actual signal bars, that requires a fully native module (not just Capacitor's standard plugins).
-- **Trigger fires only on threshold cross.** If a phone stays at 15% for hours, the manager gets one alert, not one every minute. That's intentional; tell me if you'd rather get repeated reminders every N minutes.
+- New/updated SQL objects (all via one migration):
+  - `notify_manager_low_battery()` rewritten: manager-only, 10-minute throttle keyed off `notifications.title LIKE 'Low battery:%' AND related_id = NEW.id AND user_id = manager_id`.
+  - New `sweep_offline_device_alerts()` SECURITY DEFINER function: scans `users` for `is_active AND device_status_at < now() - interval '2 minutes'`, applies the same throttle against `'Device offline:%'` notifications with a 10-minute window, inserts one row per due manager/user pair.
+- Enable `pg_cron` extension (if not already) and schedule `sweep_offline_device_alerts()` every minute via `cron.schedule`.
+- Throttle windows: `10 minutes` for both cases.
+- Offline detection window: `2 minutes` since last heartbeat.
