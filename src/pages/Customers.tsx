@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,8 @@ function inr(n: number) { return `₹ ${(n ?? 0).toLocaleString()}`; }
 
 export default function Customers() {
   const nav = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") ?? "overview";
   const { data: opps = [] } = useOpportunities();
   const { data: contacts = [] } = useContacts();
   const { data: activities = [] } = useCustomerActivities();
@@ -80,11 +82,11 @@ export default function Customers() {
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">CRM</h1>
+        <h1 className="text-2xl font-bold">Customers</h1>
         <p className="text-sm text-muted-foreground">Opportunities, contacts, activities & documents</p>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={(v) => setSearchParams(v === "overview" ? {} : { tab: v })}>
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
