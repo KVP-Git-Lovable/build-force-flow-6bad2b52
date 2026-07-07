@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Plus, FileText, Trash2, Download } from "lucide-react";
 import {
-  useOpportunity, useCustomer, useMilestones, useUpdateMilestone, useDeleteMilestone,
+  useOpportunity, useMilestones, useUpdateMilestone, useDeleteMilestone,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
   useOppStages, useUserLookup, stageColorClasses,
 } from "@/hooks/useCustomers";
@@ -27,10 +27,9 @@ export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
   const { data: opp } = useOpportunity(id);
-  const { data: customer } = useCustomer(opp?.customer_id);
   const { data: milestones = [] } = useMilestones(id);
-  const { data: activities = [] } = useCustomerActivities(opp?.customer_id, id);
-  const { data: docs = [] } = useCustomerDocuments(opp?.customer_id, id);
+  const { data: activities = [] } = useCustomerActivities(id);
+  const { data: docs = [] } = useCustomerDocuments(id);
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
   const usersMap = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u.full_name || u.username || u.email])), [users]);
@@ -52,7 +51,7 @@ export default function OpportunityDetail() {
     }
   };
 
-  if (!opp || !customer) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (!opp) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
 
   return (
     <div className="p-4 md:p-6 space-y-4">
@@ -65,10 +64,7 @@ export default function OpportunityDetail() {
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold">{opp.name}</h1>
-              <p className="text-sm text-muted-foreground">
-                <Link to={`/customers/${customer.id}`} className="text-primary hover:underline">{customer.name}</Link>
-                {" · "}{opp.type || "—"}
-              </p>
+              <p className="text-sm text-muted-foreground">{opp.type || "—"}</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge className={stageColorClasses(stageMap[opp.stage ?? ""]?.color)}>{opp.stage || "—"}</Badge>
@@ -90,7 +86,6 @@ export default function OpportunityDetail() {
           <Card><CardContent className="p-4 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <Field label="Opportunity Name" value={opp.name} />
-              <Field label="Customer" value={<Link to={`/customers/${customer.id}`} className="text-primary hover:underline">{customer.name}</Link>} />
               <Field label="Type" value={opp.type || "—"} />
               <Field label="Stage" value={<Badge className={stageColorClasses(stageMap[opp.stage ?? ""]?.color)}>{opp.stage || "—"}</Badge>} />
               <Field label="Probability" value={`${opp.probability}%`} />
@@ -164,7 +159,7 @@ export default function OpportunityDetail() {
 
         <TabsContent value="documents" className="mt-4 space-y-3">
           <div className="flex justify-end">
-            <DocumentUpload customerId={opp.customer_id} opportunityId={id!} />
+            <DocumentUpload opportunityId={id!} />
           </div>
           <Card><CardContent className="p-0 overflow-x-auto">
             <Table>
@@ -185,7 +180,7 @@ export default function OpportunityDetail() {
                       <Button size="sm" variant="ghost" onClick={() => downloadDoc(d.file_url, d.file_name)}>
                         <Download className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => deleteDoc.mutate({ id: d.id, customerId: opp.customer_id, fileUrl: d.file_url })}>
+                      <Button size="sm" variant="ghost" onClick={() => deleteDoc.mutate({ id: d.id, fileUrl: d.file_url })}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -201,8 +196,8 @@ export default function OpportunityDetail() {
       </Tabs>
 
       <MilestoneForm open={addMs} onOpenChange={setAddMs} opportunityId={id!} />
-      <ActivityForm open={newAct} onOpenChange={setNewAct} customerId={opp.customer_id} opportunityId={id!} lockOpportunity />
-      <OpportunityForm open={editOpp} onOpenChange={setEditOpp} customerId={opp.customer_id} opportunity={opp} />
+      <ActivityForm open={newAct} onOpenChange={setNewAct} opportunityId={id!} lockOpportunity />
+      <OpportunityForm open={editOpp} onOpenChange={setEditOpp} opportunity={opp} />
     </div>
   );
 }

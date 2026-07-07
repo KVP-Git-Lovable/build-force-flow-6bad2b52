@@ -39,8 +39,7 @@ const allNavigationItems = [
   { icon: Receipt, label: "Expenses", href: "/expenses", color: "from-orange-500 to-orange-600", module: "module_expenses" },
   { icon: ShoppingCart, label: "Procurement", href: "/procurement", color: "from-rose-500 to-rose-600", module: "module_procurement" },
   { icon: Handshake, label: "Vendors", href: "/vendors", color: "from-pink-500 to-pink-600", module: "module_vendors" },
-  { icon: Building2, label: "Customers", href: "/customers", color: "from-sky-500 to-sky-600", module: "module_customers" },
-  { icon: Target, label: "Opportunities", href: "/opportunities", color: "from-fuchsia-500 to-fuchsia-600", module: "module_opportunities" },
+  { icon: Building2, label: "CRM", href: "/customers", color: "from-sky-500 to-sky-600", module: "module_customers" },
   { icon: Database, label: "Master Data", href: "/master-data", color: "from-amber-500 to-amber-600", module: "module_master_data" },
   { icon: FileBarChart, label: "Reports", href: "/reports", color: "from-teal-500 to-teal-600", module: "module_reports" },
 ];
