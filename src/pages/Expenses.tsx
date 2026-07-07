@@ -40,6 +40,7 @@ export default function Expenses() {
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const yearMonth = format(selectedMonth, "yyyy-MM");
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useMonthlyExpenseSummary(userId, yearMonth);
+  const [policy, setPolicy] = useState<{ ta_type: "from_gps" | "fixed"; ta_per_km_rate: number; fixed_ta_amount: number; fixed_da_amount: number; da_calculation_basis: "per_day" | "per_half_day" } | null>(null);
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -74,6 +75,9 @@ export default function Expenses() {
     })();
     supabase.from("expense_categories").select("id, name, auto_approval_limit").eq("is_active", true).order("name")
       .then(({ data }) => setCategories((data || []) as Category[]));
+    supabase.from("expense_master_config").select("ta_type, ta_per_km_rate, fixed_ta_amount, fixed_da_amount, da_calculation_basis")
+      .order("updated_at", { ascending: false }).limit(1).maybeSingle()
+      .then(({ data }) => data && setPolicy(data as any));
   }, [userId]);
 
   useEffect(() => { if (userId) fetchExpenses(); }, [userId, yearMonth]);
@@ -158,7 +162,28 @@ export default function Expenses() {
         totalKm={summary?.total_km || 0}
         loading={summaryLoading}
         onTotalClick={() => setBreakdownOpen(true)}
+        taType={policy?.ta_type}
+        taPerKmRate={Number(policy?.ta_per_km_rate || 0)}
+        fixedTaAmount={Number(policy?.fixed_ta_amount || 0)}
+        daBasis={policy?.da_calculation_basis}
+        daAmount={Number(policy?.fixed_da_amount || 0)}
       />
+
+      {policy && (
+        <Card className="shadow-card border-l-4 border-l-blue-500">
+          <CardContent className="p-3 text-xs text-muted-foreground space-y-1">
+            <p><span className="font-semibold text-foreground">TA policy:</span>{" "}
+              {policy.ta_type === "from_gps"
+                ? <>From GPS tracking · <span className="font-medium text-foreground">₹{Number(policy.ta_per_km_rate || 0)}/km</span> × total km driven this month ({(summary?.total_km || 0).toFixed(1)} km = ₹{Math.round(summary?.ta || 0).toLocaleString("en-IN")})</>
+                : <>Fixed · <span className="font-medium text-foreground">₹{Number(policy.fixed_ta_amount || 0)}/day</span> per present day</>}
+            </p>
+            <p><span className="font-semibold text-foreground">DA policy:</span>{" "}
+              <span className="font-medium text-foreground">₹{Number(policy.fixed_da_amount || 0)}</span>{" "}
+              {policy.da_calculation_basis === "per_half_day" ? "per half-day (half-day = 0.5)" : "per present day"}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-3">
