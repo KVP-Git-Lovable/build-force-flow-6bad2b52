@@ -71,6 +71,35 @@ export default function Customers() {
     return { total: opps.length, openPipeline, wonValue, lastActivity, contacts: contacts.length };
   }, [opps, stageMap, activities, contacts]);
 
+  const pipelineByStage = useMemo(() => {
+    const counts = new Map<string, number>();
+    opps.forEach((o) => {
+      const key = o.stage || "Unassigned";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return Array.from(counts.entries()).map(([name, value]) => ({
+      name, value, hex: stageHex(stageMap[name]?.color),
+    }));
+  }, [opps, stageMap]);
+
+  const pipelineByType = useMemo(() => {
+    const totals = new Map<string, number>();
+    opps.forEach((o) => {
+      const key = o.type || "Unspecified";
+      totals.set(key, (totals.get(key) ?? 0) + Number(o.amount || 0));
+    });
+    const palette = ["hsl(217 91% 60%)", "hsl(38 92% 50%)", "hsl(160 84% 39%)", "hsl(280 65% 60%)", "hsl(340 82% 60%)"];
+    return Array.from(totals.entries()).map(([name, value], i) => ({
+      name, value, hex: palette[i % palette.length],
+    }));
+  }, [opps]);
+
+  const winRate = useMemo(() => {
+    const closed = opps.filter((o) => stageMap[o.stage ?? ""]?.is_closed).length;
+    const won = opps.filter((o) => stageMap[o.stage ?? ""]?.is_won).length;
+    return { closed, won, percent: closed > 0 ? Math.round((won / closed) * 100) : 0 };
+  }, [opps, stageMap]);
+
   const filteredOpps = opps.filter((o) => {
     if (fStage !== "all" && o.stage !== fStage) return false;
     if (fType !== "all" && o.type !== fType) return false;
