@@ -7,7 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, FileText, Download, LayoutGrid, List } from "lucide-react";
+import {
+  Plus, Trash2, FileText, Download, LayoutGrid, List,
+  Target, Wallet, Trophy, Users, Clock, Phone, Mail, CalendarDays, StickyNote, CheckSquare, FileImage, FileSpreadsheet, File as FileIcon,
+} from "lucide-react";
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+} from "recharts";
 import {
   useOpportunities, useContacts, useDeleteContact,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
@@ -64,6 +71,35 @@ export default function Customers() {
     return { total: opps.length, openPipeline, wonValue, lastActivity, contacts: contacts.length };
   }, [opps, stageMap, activities, contacts]);
 
+  const pipelineByStage = useMemo(() => {
+    const counts = new Map<string, number>();
+    opps.forEach((o) => {
+      const key = o.stage || "Unassigned";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return Array.from(counts.entries()).map(([name, value]) => ({
+      name, value, hex: stageHex(stageMap[name]?.color),
+    }));
+  }, [opps, stageMap]);
+
+  const pipelineByType = useMemo(() => {
+    const totals = new Map<string, number>();
+    opps.forEach((o) => {
+      const key = o.type || "Unspecified";
+      totals.set(key, (totals.get(key) ?? 0) + Number(o.amount || 0));
+    });
+    const palette = ["hsl(217 91% 60%)", "hsl(38 92% 50%)", "hsl(160 84% 39%)", "hsl(280 65% 60%)", "hsl(340 82% 60%)"];
+    return Array.from(totals.entries()).map(([name, value], i) => ({
+      name, value, hex: palette[i % palette.length],
+    }));
+  }, [opps]);
+
+  const winRate = useMemo(() => {
+    const closed = opps.filter((o) => stageMap[o.stage ?? ""]?.is_closed).length;
+    const won = opps.filter((o) => stageMap[o.stage ?? ""]?.is_won).length;
+    return { closed, won, percent: closed > 0 ? Math.round((won / closed) * 100) : 0 };
+  }, [opps, stageMap]);
+
   const filteredOpps = opps.filter((o) => {
     if (fStage !== "all" && o.stage !== fStage) return false;
     if (fType !== "all" && o.type !== fType) return false;
@@ -96,51 +132,168 @@ export default function Customers() {
         </TabsList>
 
         {/* OVERVIEW */}
-        <TabsContent value="overview" className="space-y-4 mt-4">
+        <TabsContent value="overview" className="space-y-6 mt-4">
+          {/* KPI CARDS */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <StatTile label="Total Opportunities" value={String(stats.total)} />
-            <StatTile label="Open Pipeline" value={inr(stats.openPipeline)} />
-            <StatTile label="Won Value" value={inr(stats.wonValue)} />
-            <StatTile label="Total Contacts" value={String(stats.contacts)} />
-            <StatTile label="Last Activity" value={stats.lastActivity ? format(new Date(stats.lastActivity), "dd MMM yyyy") : "—"} />
+            <KpiCard label="Total Opportunities" value={String(stats.total)} icon={Target} accent="indigo" />
+            <KpiCard label="Open Pipeline" value={inr(stats.openPipeline)} icon={Wallet} accent="blue" />
+            <KpiCard label="Won Value" value={inr(stats.wonValue)} icon={Trophy} accent="emerald" />
+            <KpiCard label="Total Contacts" value={String(stats.contacts)} icon={Users} accent="violet" />
+            <KpiCard label="Last Activity" value={stats.lastActivity ? format(new Date(stats.lastActivity), "dd MMM yyyy") : "—"} icon={Clock} accent="amber" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <h3 className="font-semibold text-sm">Recent Activities</h3>
-                {activities.slice(0, 5).map((a) => (
-                  <div key={a.id} className="border-b last:border-0 pb-2 last:pb-0">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">{a.subject}</span>
-                      <span className="text-xs text-muted-foreground">{format(new Date(a.activity_date), "dd MMM")}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {a.type}{a.opportunity_id ? ` · ${oppMap[a.opportunity_id]?.name ?? "Opportunity"}` : ""}
-                    </div>
+          {/* VISUAL BREAKDOWNS */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold">Pipeline Insights</h2>
+              <span className="text-xs text-muted-foreground">Live snapshot</span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Pipeline by Stage — donut */}
+              <Card className="shadow-card hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold">Pipeline by Stage</h3>
+                  <p className="text-xs text-muted-foreground mb-2">Opportunities grouped by stage</p>
+                  <div className="h-[220px]">
+                    {pipelineByStage.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={pipelineByStage} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                            innerRadius={50} outerRadius={80} paddingAngle={2}>
+                            {pipelineByStage.map((s, i) => <Cell key={i} fill={s.hex} />)}
+                          </Pie>
+                          <RTooltip formatter={(v: any, n: any) => [`${v}`, n]} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : <EmptyChart label="No opportunities yet" />}
                   </div>
-                ))}
-                {activities.length === 0 && <p className="text-xs text-muted-foreground">No activities yet.</p>}
-              </CardContent>
-            </Card>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                    {pipelineByStage.map((s) => (
+                      <div key={s.name} className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full" style={{ background: s.hex }} />
+                        <span className="text-muted-foreground">{s.name}</span>
+                        <span className="font-semibold">{s.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <h3 className="font-semibold text-sm">Recent Documents</h3>
-                {docs.slice(0, 5).map((d) => (
-                  <div key={d.id} className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="truncate">{d.file_name}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{format(new Date(d.created_at), "dd MMM")}</span>
+              {/* Pipeline by Type — horizontal bars */}
+              <Card className="shadow-card hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold">Pipeline by Type</h3>
+                  <p className="text-xs text-muted-foreground mb-2">Total value per type</p>
+                  <div className="h-[220px]">
+                    {pipelineByType.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={pipelineByType} layout="vertical" margin={{ left: 8, right: 16 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
+                          <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                          <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
+                          <RTooltip formatter={(v: any) => inr(Number(v))} />
+                          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                            {pipelineByType.map((t, i) => <Cell key={i} fill={t.hex} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <EmptyChart label="No pipeline data" />}
                   </div>
-                ))}
-                {docs.length === 0 && <p className="text-xs text-muted-foreground">No documents yet.</p>}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Win Rate gauge */}
+              <Card className="shadow-card hover:shadow-lg transition-shadow bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-transparent">
+                <CardContent className="p-4 h-full flex flex-col">
+                  <h3 className="text-sm font-semibold">Win Rate</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Won vs total closed opportunities</p>
+                  <div className="flex-1 flex flex-col items-center justify-center">
+                    <WinRateGauge percent={winRate.percent} />
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-center w-full">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Won</div>
+                        <div className="text-lg font-bold text-emerald-600">{winRate.won}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Closed</div>
+                        <div className="text-lg font-bold">{winRate.closed}</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* RECENT ACTIVITY & DOCS */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold">Recent Activity</h2>
+              <span className="text-xs text-muted-foreground">Latest 5 entries</span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card className="shadow-card">
+                <CardContent className="p-4 space-y-2">
+                  <h3 className="font-semibold text-sm mb-1">Activities</h3>
+                  {activities.slice(0, 5).map((a) => {
+                    const style = activityStyle(a.type);
+                    const Icon = style.icon;
+                    return (
+                      <div key={a.id} className="flex items-start gap-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors p-2.5">
+                        <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+                          <Icon className={`h-4 w-4 ${style.text}`} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex justify-between gap-2">
+                            <span className="font-medium text-sm truncate">{a.subject}</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(a.activity_date), "dd MMM")}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <Badge variant="outline" className={`text-[10px] py-0 h-4 ${style.badge}`}>{a.type}</Badge>
+                            {a.opportunity_id && (
+                              <Badge variant="secondary" className="text-[10px] py-0 h-4">{oppMap[a.opportunity_id]?.name ?? "Opportunity"}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {activities.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No activities yet.</p>}
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-card">
+                <CardContent className="p-4 space-y-2">
+                  <h3 className="font-semibold text-sm mb-1">Documents</h3>
+                  {docs.slice(0, 5).map((d) => {
+                    const style = docStyle(d.file_name, d.file_type);
+                    const Icon = style.icon;
+                    return (
+                      <div key={d.id} className="flex items-center gap-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors p-2.5">
+                        <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+                          <Icon className={`h-4 w-4 ${style.text}`} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex justify-between gap-2">
+                            <span className="font-medium text-sm truncate">{d.file_name}</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(d.created_at), "dd MMM")}</span>
+                          </div>
+                          <div className="mt-1">
+                            {d.opportunity_id && (
+                              <Badge variant="secondary" className="text-[10px] py-0 h-4">{oppMap[d.opportunity_id]?.name ?? "Opportunity"}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {docs.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No documents yet.</p>}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
+
 
         {/* OPPORTUNITIES */}
         <TabsContent value="opportunities" className="mt-4 space-y-3">
@@ -367,11 +520,97 @@ export default function Customers() {
   );
 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
+// ---------- Overview helpers ----------
+
+const ACCENTS: Record<string, { border: string; bg: string; text: string; ring: string }> = {
+  indigo:  { border: "border-l-indigo-500",  bg: "bg-indigo-100 dark:bg-indigo-900/30",   text: "text-indigo-600 dark:text-indigo-300",   ring: "ring-indigo-500/20" },
+  blue:    { border: "border-l-blue-500",    bg: "bg-blue-100 dark:bg-blue-900/30",       text: "text-blue-600 dark:text-blue-300",       ring: "ring-blue-500/20" },
+  emerald: { border: "border-l-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-300", ring: "ring-emerald-500/20" },
+  violet:  { border: "border-l-violet-500",  bg: "bg-violet-100 dark:bg-violet-900/30",   text: "text-violet-600 dark:text-violet-300",   ring: "ring-violet-500/20" },
+  amber:   { border: "border-l-amber-500",   bg: "bg-amber-100 dark:bg-amber-900/30",     text: "text-amber-600 dark:text-amber-300",     ring: "ring-amber-500/20" },
+};
+
+function KpiCard({
+  label, value, icon: Icon, accent,
+}: { label: string; value: string; icon: React.ComponentType<{ className?: string }>; accent: keyof typeof ACCENTS }) {
+  const a = ACCENTS[accent];
   return (
-    <Card><CardContent className="p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-lg font-bold mt-1 truncate">{value}</div>
-    </CardContent></Card>
+    <Card className={`border-l-4 ${a.border} shadow-card hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200`}>
+      <CardContent className="p-3 flex items-start gap-3">
+        <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${a.bg}`}>
+          <Icon className={`h-5 w-5 ${a.text}`} />
+        </div>
+        <div className="min-w-0">
+          <div className="text-[11px] text-muted-foreground leading-tight">{label}</div>
+          <div className="text-base md:text-lg font-bold mt-0.5 truncate">{value}</div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
+
+function EmptyChart({ label }: { label: string }) {
+  return (
+    <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+      {label}
+    </div>
+  );
+}
+
+function WinRateGauge({ percent }: { percent: number }) {
+  const size = 140;
+  const stroke = 12;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (percent / 100) * c;
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size/2} cy={size/2} r={r} strokeWidth={stroke} className="stroke-muted" fill="none" />
+        <circle
+          cx={size/2} cy={size/2} r={r} strokeWidth={stroke}
+          className="stroke-emerald-500 transition-all duration-700"
+          strokeLinecap="round" fill="none"
+          strokeDasharray={c} strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-extrabold text-emerald-600">{percent}%</span>
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Win Rate</span>
+      </div>
+    </div>
+  );
+}
+
+function stageHex(color?: string) {
+  switch (color) {
+    case "blue":   return "hsl(217 91% 60%)";
+    case "amber":  return "hsl(38 92% 50%)";
+    case "green":  return "hsl(160 84% 39%)";
+    case "red":    return "hsl(0 84% 60%)";
+    case "purple": return "hsl(280 65% 60%)";
+    default:       return "hsl(215 16% 55%)";
+  }
+}
+
+function activityStyle(type?: string) {
+  const t = (type || "").toLowerCase();
+  if (t.includes("call"))    return { icon: Phone,        bg: "bg-blue-100 dark:bg-blue-900/30",     text: "text-blue-600 dark:text-blue-300",       badge: "border-blue-300 text-blue-700 dark:text-blue-300" };
+  if (t.includes("meeting")) return { icon: CalendarDays, bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-600 dark:text-violet-300",   badge: "border-violet-300 text-violet-700 dark:text-violet-300" };
+  if (t.includes("email"))   return { icon: Mail,         bg: "bg-amber-100 dark:bg-amber-900/30",   text: "text-amber-600 dark:text-amber-300",     badge: "border-amber-300 text-amber-700 dark:text-amber-300" };
+  if (t.includes("task"))    return { icon: CheckSquare,  bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-300", badge: "border-emerald-300 text-emerald-700 dark:text-emerald-300" };
+  return                            { icon: StickyNote,  bg: "bg-slate-100 dark:bg-slate-800",      text: "text-slate-600 dark:text-slate-300",     badge: "border-slate-300 text-slate-700 dark:text-slate-300" };
+}
+
+function docStyle(fileName: string, fileType?: string | null) {
+  const ext = (fileName.split(".").pop() || "").toLowerCase();
+  const t = (fileType || "").toLowerCase();
+  if (ext === "pdf" || t.includes("pdf"))
+    return { icon: FileText, bg: "bg-rose-100 dark:bg-rose-900/30", text: "text-rose-600 dark:text-rose-300" };
+  if (["xls", "xlsx", "csv"].includes(ext) || t.includes("sheet") || t.includes("excel"))
+    return { icon: FileSpreadsheet, bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-300" };
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext) || t.startsWith("image"))
+    return { icon: FileImage, bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-600 dark:text-blue-300" };
+  return { icon: FileIcon, bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-600 dark:text-slate-300" };
+}
+
