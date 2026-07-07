@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import CameraCapture from "@/components/CameraCapture";
@@ -46,6 +47,7 @@ interface ProfileData {
 }
 
 export default function Profile() {
+  const queryClient = useQueryClient();
   const { profile, roleName, isAdmin, initials, loading: profileLoading } = useUserProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -192,6 +194,7 @@ export default function Profile() {
           .eq("user_id", user.id);
       }
 
+      queryClient.invalidateQueries({ queryKey: ["user-profile-core", user.id] });
       toast.success("Profile updated successfully");
       setIsEditing(false);
     } catch (err: any) {
