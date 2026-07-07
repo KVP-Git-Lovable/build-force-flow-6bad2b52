@@ -937,32 +937,133 @@ export type Database = {
         }
         Relationships: []
       }
-      expense_master_config: {
+      expense_group_members: {
         Row: {
           created_at: string
-          da_type: string
-          fixed_da_amount: number | null
-          fixed_ta_amount: number | null
+          group_id: string
           id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "expense_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_groups: {
+        Row: {
+          created_at: string
+          da_amount: number
+          description: string | null
+          fixed_ta_amount: number
+          id: string
+          name: string
+          ta_per_km_rate: number
           ta_type: string
           updated_at: string
         }
         Insert: {
           created_at?: string
-          da_type?: string
-          fixed_da_amount?: number | null
-          fixed_ta_amount?: number | null
+          da_amount?: number
+          description?: string | null
+          fixed_ta_amount?: number
           id?: string
+          name: string
+          ta_per_km_rate?: number
           ta_type?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          da_amount?: number
+          description?: string | null
+          fixed_ta_amount?: number
+          id?: string
+          name?: string
+          ta_per_km_rate?: number
+          ta_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expense_master_config: {
+        Row: {
+          created_at: string
+          da_calculation_basis: string
+          da_type: string
+          fixed_da_amount: number | null
+          fixed_ta_amount: number | null
+          id: string
+          ta_per_km_rate: number
+          ta_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          da_calculation_basis?: string
           da_type?: string
           fixed_da_amount?: number | null
           fixed_ta_amount?: number | null
           id?: string
+          ta_per_km_rate?: number
           ta_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          da_calculation_basis?: string
+          da_type?: string
+          fixed_da_amount?: number | null
+          fixed_ta_amount?: number | null
+          id?: string
+          ta_per_km_rate?: number
+          ta_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expense_overrides: {
+        Row: {
+          amount: number
+          created_at: string
+          field: string
+          id: string
+          ref_id: string
+          ref_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          field: string
+          id?: string
+          ref_id: string
+          ref_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          field?: string
+          id?: string
+          ref_id?: string
+          ref_type?: string
           updated_at?: string
         }
         Relationships: []
@@ -972,10 +1073,13 @@ export type Database = {
           allow_backdate: boolean
           created_at: string
           id: string
+          max_additional_expense_per_day: number
+          max_additional_expense_per_month: number
           max_back_days: number
           month_lock_enabled: boolean
           multi_level_approval: boolean
           policy_notes: string | null
+          require_bill_above_amount: number
           submission_deadline: number
           updated_at: string
         }
@@ -983,10 +1087,13 @@ export type Database = {
           allow_backdate?: boolean
           created_at?: string
           id?: string
+          max_additional_expense_per_day?: number
+          max_additional_expense_per_month?: number
           max_back_days?: number
           month_lock_enabled?: boolean
           multi_level_approval?: boolean
           policy_notes?: string | null
+          require_bill_above_amount?: number
           submission_deadline?: number
           updated_at?: string
         }
@@ -994,10 +1101,13 @@ export type Database = {
           allow_backdate?: boolean
           created_at?: string
           id?: string
+          max_additional_expense_per_day?: number
+          max_additional_expense_per_month?: number
           max_back_days?: number
           month_lock_enabled?: boolean
           multi_level_approval?: boolean
           policy_notes?: string | null
+          require_bill_above_amount?: number
           submission_deadline?: number
           updated_at?: string
         }
@@ -4603,6 +4713,10 @@ export type Database = {
         }[]
       }
       get_dashboard_summary: { Args: never; Returns: Json }
+      get_monthly_expense_summary: {
+        Args: { _user_id: string; _year_month: string }
+        Returns: Json
+      }
       get_subordinate_users: {
         Args: { _manager_id: string }
         Returns: {

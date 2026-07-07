@@ -1,99 +1,85 @@
-# Customers & Opportunities Module
+## Goal
 
-A full CRM-style module: Customers (list + detail with 5 tabs), a reusable Opportunity page, and a standalone Opportunities module — all sharing the same data.
+Replace the current thin Expense Configuration and Expenses pages with Quickapp's full TA/DA policy engine, categories/workflows/rules, and monthly My Expenses view. Skip Petty Cash. Replace "From Beat" TA with GPS.
 
-## 1. Database (Lovable Cloud)
+## 1. Database
 
-New tables (all under `public`, RLS on, GRANTs to `authenticated` + `service_role`):
+**Migration — extend/add tables** (types.ts regenerated after):
 
-- **customers** — `name`, `industry`, `status`, `owner_id` (→ users), `primary_contact_id` (nullable → customer_contacts).
-- **customer_opportunities** — `customer_id`, `name`, `type`, `stage`, `probability` (0–100), `close_date`, `amount`, `owner_id`.
-- **opportunity_milestones** — `opportunity_id`, `name`, `invoice_number`, `invoice_date`, `invoice_value`, `status` (Pending/Invoiced/Paid).
-- **customer_contacts** — `customer_id`, `name`, `title`, `email`, `phone`, `reports_to_id` (self-FK, builds org chart), `last_contact_at`.
-- **customer_activities** — `customer_id`, `opportunity_id` (nullable), `type`, `subject`, `notes`, `activity_date`, `created_by`.
-- **customer_documents** — `customer_id`, `opportunity_id` (nullable), `file_name`, `file_url`, `file_size`, `file_type`, `uploaded_by`.
-- **Master Data** — extend Master Data with `opportunity_types` and `opportunity_stages` (name + color + sort_order) so admins can edit dropdowns later.
-- Storage bucket: `customer-documents` (private, signed URLs).
+- `expense_master_config`: add `ta_per_km_rate numeric default 0`, `da_calculation_basis text default 'per_day' check in ('per_day','per_half_day')`. Enforce `ta_type` in (`'fixed'`,`'from_gps'`); backfill legacy `from_beat` → `from_gps`.
+- `expense_policy`: add `max_additional_expense_per_day numeric default 0`, `max_additional_expense_per_month numeric default 0`, `require_bill_above_amount numeric default 500` (stop overloading unrelated columns as the current Admin page does).
+- New `expense_overrides` (user/team TA & DA overrides):
+  columns: `id`, `field text check in ('ta','da')`, `ref_type text check in ('user','team')`, `ref_id uuid`, `amount numeric not null default 0`, `created_at`, `updated_at`. Unique on `(field, ref_type, ref_id)`.
+- New `expense_groups`: `id`, `name text not null`, `description text`, `ta_type text default 'fixed'`, `fixed_ta_amount numeric default 0`, `ta_per_km_rate numeric default 0`, `da_amount numeric default 0`, `created_at`, `updated_at`.
+- New `expense_group_members`: `id`, `group_id uuid fk expense_groups on delete cascade`, `user_id uuid`, unique `(group_id,user_id)`.
+- All new tables: GRANT to `authenticated` and `service_role`; enable RLS; admin write via `has_role(auth.uid(),'admin')`, authenticated read.
+- New RPC `get_monthly_expense_summary(_user_id uuid, _year_month text)` returning JSON: `{ ta, da, additional_approved, additional_pending, total, present_days, total_km, order_value, weekly:[{week_start,ta,da,additional}], daily:[{date,ta,da,additional,km}] }`. TA computed via effective rate: user override → group → team (manager) override → global; if `ta_type='from_gps'` uses `sum(gps_tracking.total_km_today)` × per-km rate, else fixed × present days. DA similarly per present day (half-day counts as 0.5 when basis='per_half_day' and attendance is half day).
 
-RLS: any authenticated user can read/write (matches existing modules like Vendors/Procurement). Owner recorded via `auth.uid()`.
+## 2. Admin — `src/pages/AdminExpenseManagement.tsx`
 
-## 2. Master Data extension
+Replace current single-page layout with Quickapp's 2-tab shell (Petty Cash omitted):
 
-Add two new sections in `/master-data`:
-- **Opportunity Types** — CRUD list (default seeds: Upsell, Renewal, New).
-- **Opportunity Stages** — CRUD list with color + sort order (default seeds: Discovery=gray, Proposal=blue, Negotiation=amber, Closed Won=green).
+```
+Tabs: [Overview] [Configuration]
+```
 
-The Opportunity forms read from these tables so the dropdowns stay editable.
+- Header: gradient card, `Receipt` icon, title "Expense Master", subtitle "Manage expense policies, approvals & team productivity".
+- **Overview tab**: reuse existing `TeamExpenseSummary` component wrapped in a productivity-style panel (KPIs: month spend, pending approvals, approved, top spenders).
+- **Configuration tab** — new component `src/components/expenses/ExpensePolicyConfig.tsx` (adapted from Quickapp, GPS/Fixed only):
+  1. **Travel Allowance (TA) Policy** card
+     - `TA Calculation Method` select: `Fixed Amount`, `From GPS Tracking` (default).
+     - Fixed → `Fixed TA Amount (₹)`; GPS → `Per KM Rate (₹)` with example line "If rate is ₹8/km and user travels 45 km, TA = ₹360".
+     - Distribution: `Same for all` / `Custom per user/team` radio.
+     - When Custom: `OverrideTable` (users + teams add via popover multi-select) + `InlineGroupSection` for TA groups (create/edit/manage members/delete). Priority note: User → Group → Team → Global.
+  2. **Daily Allowance (DA) Policy** card
+     - `DA Amount (₹)` + `Calculation Basis` (`Per Day` / `Per Half Day`).
+     - Same distribution / overrides / groups pattern as TA.
+  3. **Additional Expenses Policy** card
+     - `Max per Day (₹)` (0 = no limit), `Max per Month (₹)` (0 = no limit), `Bill Required Above (₹)` — bound to real `expense_policy` columns added in the migration.
+  4. **Expense Categories** — keep existing table (Add/Edit/Toggle/Delete).
+  5. **Approval Workflows** — keep existing collapsible list.
+  6. **Approval Rules** — keep existing priority-ordered list.
+- Reusable subcomponents (memoized, module-scope to avoid remount): `MultiProfileSelector`, `OverrideTable`, `InlineGroupSection`, `GroupDialog`, `GroupMembersDialog` — colocated in `src/components/expenses/`.
 
-## 3. Navigation & Routes
+## 3. My Expenses — `src/pages/Expenses.tsx`
 
-Add two top-level nav items (respect `hasModuleAccess` gating like the rest):
-- `module_customers` → `/customers`
-- `module_opportunities` → `/opportunities`
+Rewrite around the new monthly summary, keeping current add/edit dialog for additional expenses.
 
-Register two new permission definitions in `permission_definitions` so Role Permissions picks them up automatically.
+- Header: "Expenses" title only.
+- Tabs (shown when applicable): `My Expenses` (always), `Team Summary` (managers/admins only). No Petty Cash tab.
+- **My Expenses** content:
+  - `MonthNavigator` (‹ July 2026 ›) — new small component in `src/components/expenses/`.
+  - `ExpenseSummaryCards` (new): 5 cards — Travel (TA) ₹, Daily (DA) · Nd ₹, Additional ₹, Total Expenses ₹, Order Value ₹ (order value = 0 for now / sourced from `orders` sum if present). Total card is clickable → opens Breakdown dialog.
+  - Breakdown dialog with `Weekly` / `Daily` toggle (`WeeklyBreakdown`, `DailyBreakdown` components). Data from `get_monthly_expense_summary`.
+  - Expense Details section (per-day list with TA/DA/Additional sub-tabs) — new lightweight component derived from the daily breakdown, with per-row `Add Expense` opening the existing dialog. Reuse current add/edit/delete flow and `expense-bills` storage upload.
+- **Team Summary** tab: existing `TeamExpenseSummary` unchanged.
+- Manager detection via `useCurrentUser` role + `get_user_hierarchy` (same pattern as today).
 
-Routes:
-- `/customers` — list
-- `/customers/:id` — detail with tabs
-- `/opportunities` — standalone list/kanban
-- `/opportunities/:id` — full opportunity page (shared)
+## 4. Files
 
-## 4. Customers list page (`/customers`)
+**New**
+- `src/components/expenses/ExpensePolicyConfig.tsx`
+- `src/components/expenses/MultiProfileSelector.tsx`
+- `src/components/expenses/OverrideTable.tsx`
+- `src/components/expenses/ExpenseGroupsInline.tsx` (group section + dialogs)
+- `src/components/expenses/MonthNavigator.tsx`
+- `src/components/expenses/ExpenseSummaryCards.tsx`
+- `src/components/expenses/WeeklyBreakdown.tsx`
+- `src/components/expenses/DailyBreakdown.tsx`
+- `src/hooks/useMonthlyExpenseSummary.ts` (wraps the new RPC)
+- `src/hooks/useExpenseConfig.ts` (config + overrides + groups CRUD)
 
-- Card grid: name, industry, colored status badge, owner avatar, open-opps count, total pipeline value (sum of open opps).
-- Search box + status filter + owner filter.
-- "New Customer" button → modal form (Name, Industry, Status, Owner).
-- Row click → `/customers/:id`.
+**Modified**
+- `src/pages/AdminExpenseManagement.tsx` — replace with tabbed shell described above.
+- `src/pages/Expenses.tsx` — replace body with monthly summary UI; keep add/edit dialog + camera capture.
+- `src/components/expenses/TeamExpenseSummary.tsx` — no behavior change; ensure it still works from Admin Overview & user Team tab.
 
-## 5. Customer detail page (`/customers/:id`)
+**Untouched**
+- Existing hooks/components unrelated to expenses; beats/petty-cash left alone.
 
-**Header:** name, industry, editable status dropdown, and 4 stat tiles — Total Opportunities, Open Pipeline Value, Won Value, Primary Contact.
+## 5. Notes / Non-goals
 
-**Tabs:**
-
-- **Overview** — 4 summary cards (Total Opps, Open Pipeline, Won Value, Last Activity Date) + Recent Activities (5, merged customer+opps) + Recent Documents (5) + Top Contacts preview.
-- **Opportunities** — table (Name, Type, Stage badge, Probability, Close Date, Amount) + "New Opportunity" modal (Name, Type, Stage, Probability, Close Date, Amount). Row click → `/opportunities/:id`.
-- **Contacts** — toggle List / Org Chart.
-  - Add Contact modal (Name, Title, Email, Phone, Reports To — searchable dropdown of this customer's contacts).
-  - List View: table.
-  - Org Chart View: recursive tree built from `reports_to_id`, horizontally scrollable, rounded avatar-initial cards with name + title, light-gray SVG connectors. (Reference the uploaded screenshot for card style — but with no rating/badge chips since we skip influence scoring.)
-  - Below chart: "Contact Relationship Matrix" — Contact, Title, Last Contact only.
-- **Activities** — merged customer + all-opportunity timeline, each entry tagged with opportunity name or "General". "+ New Activity" modal (Type, Subject, Notes, Date, optional Opportunity link).
-- **Documents** — merged list tagged by source. Upload button, file-type icon, size, uploader, date.
-
-## 6. Opportunity full page (`/opportunities/:id`) — shared
-
-- **a) Overview:** two-column layout — name, customer (linked back to `/customers/:customer_id`), type, stage, probability, close date, amount, owner.
-- **b) Payment Milestones:** rolled-up total at top; list of milestones (Name, Invoice #, Invoice Date, Invoice Value, Status badge). "+ Add" modal (Milestone Name, Invoice Value, Invoice Number, Invoice Date; status defaults to Pending, editable inline).
-- **c) Activities:** scoped list + "+ New Activity" (Type, Subject, Notes, Date) — automatically shows under parent customer's Activities tab because they share `customer_activities` with `opportunity_id` set.
-- **d) Documents:** scoped upload/list — automatically shows under parent customer's Documents tab via `opportunity_id`.
-
-## 7. Standalone Opportunities module (`/opportunities`)
-
-- Summary header: Total Pipeline Value, Weighted Pipeline (Σ amount × probability/100), Won This Quarter.
-- View toggle: **Table** (Customer linked, Name, Type, Stage, Probability, Close Date, Amount, Owner) with filters (Stage, Type, Owner, Close Date range).
-- **Kanban** view: columns = stages from Master Data, cards = opportunities, drag between columns updates `stage`.
-- Row/card click → same `/opportunities/:id` page.
-
-## 8. UI/UX
-
-- Semantic tokens only (matches existing Navy & Gold system) — no hardcoded colors.
-- Rounded cards, subtle shadows, colored stage/status badges pulled from Master Data color field.
-- Org chart nodes: rounded cards, circular initials avatar, bold name, muted title, gray SVG connectors, horizontal overflow scroll.
-- Fully responsive: cards stack on mobile, tabs scroll horizontally, tables become stacked cards on small screens.
-
-## Technical notes
-
-- Hooks: `useCustomers`, `useCustomer(id)`, `useOpportunities(filters?)`, `useOpportunity(id)`, `useOpportunityMilestones`, `useCustomerContacts`, `useCustomerActivities`, `useCustomerDocuments`, `useOpportunityMasterData`.
-- Kanban uses existing dnd pattern from `pm/KanbanBoard.tsx`.
-- Documents reuse the same signed-URL resolution pattern as `pm-attachments` (per memory note on storage RLS).
-- Org chart is a pure React recursive component + SVG connectors — no extra library.
-- Permission gating via `useProfilePermissions().hasModuleAccess('module_customers' | 'module_opportunities')` on nav + routes.
-- Master Data types/stages seeded on first migration; dropdowns everywhere read from these tables.
-
-## Out of scope
-
-- No influence/relationship-strength scoring on contacts.
-- No engagement heatmap or strategy tabs (screenshot is style reference only for the org chart look).
-- No changes to existing modules beyond adding two Master Data sections and two nav items.
+- Petty Cash: not included.
+- Beat-based TA path removed; existing `expense_master_config.ta_type='from_beat'` rows will be migrated to `'from_gps'` with `ta_per_km_rate=0` (admin can set).
+- No changes to `additional_expenses` schema; auto-approval by category limit continues to work.
+- Design tokens only (no hardcoded colors); mobile-first, matching existing app theme (Navy & Gold, gradient-subtle backgrounds).
