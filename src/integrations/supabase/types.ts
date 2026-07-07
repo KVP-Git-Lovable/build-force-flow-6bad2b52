@@ -4292,6 +4292,7 @@ export type Database = {
         }
         Returns: string
       }
+      sweep_offline_device_alerts: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user" | "data_viewer" | "sales_manager"
