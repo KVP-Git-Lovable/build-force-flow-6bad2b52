@@ -182,7 +182,7 @@ export default function Opportunities() {
         </div>
       )}
 
-      {newOpp && <OpportunityForm onClose={() => setNewOpp(false)} />}
+      {newOpp && <OpportunityForm open={newOpp} onOpenChange={setNewOpp} />}
     </div>
   );
 }
