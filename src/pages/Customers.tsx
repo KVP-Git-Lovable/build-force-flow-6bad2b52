@@ -520,11 +520,97 @@ export default function Customers() {
   );
 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
+// ---------- Overview helpers ----------
+
+const ACCENTS: Record<string, { border: string; bg: string; text: string; ring: string }> = {
+  indigo:  { border: "border-l-indigo-500",  bg: "bg-indigo-100 dark:bg-indigo-900/30",   text: "text-indigo-600 dark:text-indigo-300",   ring: "ring-indigo-500/20" },
+  blue:    { border: "border-l-blue-500",    bg: "bg-blue-100 dark:bg-blue-900/30",       text: "text-blue-600 dark:text-blue-300",       ring: "ring-blue-500/20" },
+  emerald: { border: "border-l-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-300", ring: "ring-emerald-500/20" },
+  violet:  { border: "border-l-violet-500",  bg: "bg-violet-100 dark:bg-violet-900/30",   text: "text-violet-600 dark:text-violet-300",   ring: "ring-violet-500/20" },
+  amber:   { border: "border-l-amber-500",   bg: "bg-amber-100 dark:bg-amber-900/30",     text: "text-amber-600 dark:text-amber-300",     ring: "ring-amber-500/20" },
+};
+
+function KpiCard({
+  label, value, icon: Icon, accent,
+}: { label: string; value: string; icon: React.ComponentType<{ className?: string }>; accent: keyof typeof ACCENTS }) {
+  const a = ACCENTS[accent];
   return (
-    <Card><CardContent className="p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-lg font-bold mt-1 truncate">{value}</div>
-    </CardContent></Card>
+    <Card className={`border-l-4 ${a.border} shadow-card hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200`}>
+      <CardContent className="p-3 flex items-start gap-3">
+        <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${a.bg}`}>
+          <Icon className={`h-5 w-5 ${a.text}`} />
+        </div>
+        <div className="min-w-0">
+          <div className="text-[11px] text-muted-foreground leading-tight">{label}</div>
+          <div className="text-base md:text-lg font-bold mt-0.5 truncate">{value}</div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
+
+function EmptyChart({ label }: { label: string }) {
+  return (
+    <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+      {label}
+    </div>
+  );
+}
+
+function WinRateGauge({ percent }: { percent: number }) {
+  const size = 140;
+  const stroke = 12;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (percent / 100) * c;
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size/2} cy={size/2} r={r} strokeWidth={stroke} className="stroke-muted" fill="none" />
+        <circle
+          cx={size/2} cy={size/2} r={r} strokeWidth={stroke}
+          className="stroke-emerald-500 transition-all duration-700"
+          strokeLinecap="round" fill="none"
+          strokeDasharray={c} strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-extrabold text-emerald-600">{percent}%</span>
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Win Rate</span>
+      </div>
+    </div>
+  );
+}
+
+function stageHex(color?: string) {
+  switch (color) {
+    case "blue":   return "hsl(217 91% 60%)";
+    case "amber":  return "hsl(38 92% 50%)";
+    case "green":  return "hsl(160 84% 39%)";
+    case "red":    return "hsl(0 84% 60%)";
+    case "purple": return "hsl(280 65% 60%)";
+    default:       return "hsl(215 16% 55%)";
+  }
+}
+
+function activityStyle(type?: string) {
+  const t = (type || "").toLowerCase();
+  if (t.includes("call"))    return { icon: Phone,        bg: "bg-blue-100 dark:bg-blue-900/30",     text: "text-blue-600 dark:text-blue-300",       badge: "border-blue-300 text-blue-700 dark:text-blue-300" };
+  if (t.includes("meeting")) return { icon: CalendarDays, bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-600 dark:text-violet-300",   badge: "border-violet-300 text-violet-700 dark:text-violet-300" };
+  if (t.includes("email"))   return { icon: Mail,         bg: "bg-amber-100 dark:bg-amber-900/30",   text: "text-amber-600 dark:text-amber-300",     badge: "border-amber-300 text-amber-700 dark:text-amber-300" };
+  if (t.includes("task"))    return { icon: CheckSquare,  bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-300", badge: "border-emerald-300 text-emerald-700 dark:text-emerald-300" };
+  return                            { icon: StickyNote,  bg: "bg-slate-100 dark:bg-slate-800",      text: "text-slate-600 dark:text-slate-300",     badge: "border-slate-300 text-slate-700 dark:text-slate-300" };
+}
+
+function docStyle(fileName: string, fileType?: string | null) {
+  const ext = (fileName.split(".").pop() || "").toLowerCase();
+  const t = (fileType || "").toLowerCase();
+  if (ext === "pdf" || t.includes("pdf"))
+    return { icon: FileText, bg: "bg-rose-100 dark:bg-rose-900/30", text: "text-rose-600 dark:text-rose-300" };
+  if (["xls", "xlsx", "csv"].includes(ext) || t.includes("sheet") || t.includes("excel"))
+    return { icon: FileSpreadsheet, bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-300" };
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext) || t.startsWith("image"))
+    return { icon: FileImage, bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-600 dark:text-blue-300" };
+  return { icon: FileIcon, bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-600 dark:text-slate-300" };
+}
+
