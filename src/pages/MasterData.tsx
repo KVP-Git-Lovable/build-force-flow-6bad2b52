@@ -46,6 +46,22 @@ const allMasterModules = [
     path: "/master-data/addresses",
     module: null as string | null,
   },
+  {
+    title: "Opportunity Stages",
+    description: "Manage sales pipeline stages and colors",
+    icon: Target,
+    color: "bg-fuchsia-100 text-fuchsia-600",
+    path: "/master-data/opportunity-stages",
+    module: "module_opportunities" as string | null,
+  },
+  {
+    title: "Opportunity Types",
+    description: "Manage opportunity types (Upsell, Renewal, New…)",
+    icon: Tags,
+    color: "bg-sky-100 text-sky-600",
+    path: "/master-data/opportunity-types",
+    module: "module_opportunities" as string | null,
+  },
 ];
 
 const container = {
