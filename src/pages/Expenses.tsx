@@ -259,8 +259,13 @@ export default function Expenses() {
               <Textarea rows={2} value={formDescription} onChange={(e) => setFormDescription(e.target.value)} /></div>
             <div className="space-y-1"><Label>Receipt</Label>
               <div className="flex items-center gap-2">
-                <Input type="file" accept="image/*,.pdf" onChange={(e) => setFormFile(e.target.files?.[0] || null)} className="flex-1" />
-                <Button type="button" variant="outline" size="icon" onClick={() => setShowCamera(true)}><Camera className="h-4 w-4" /></Button>
+                <Input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => setFormFile(e.target.files?.[0] || null)}
+                  className="flex-1 h-10 file:mr-3 file:h-full file:border-0 file:border-r file:border-input file:bg-muted file:px-3 file:text-sm file:font-medium file:text-foreground hover:file:bg-muted/80 cursor-pointer py-0"
+                />
+                <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setShowCamera(true)}><Camera className="h-4 w-4" /></Button>
               </div>
               {formFile && <p className="text-[11px] text-muted-foreground">Selected: {formFile.name}</p>}
             </div>
