@@ -469,7 +469,7 @@ export type Database = {
           activity_date: string
           created_at: string
           created_by: string | null
-          customer_id: string
+          customer_id: string | null
           id: string
           notes: string | null
           opportunity_id: string | null
@@ -481,7 +481,7 @@ export type Database = {
           activity_date?: string
           created_at?: string
           created_by?: string | null
-          customer_id: string
+          customer_id?: string | null
           id?: string
           notes?: string | null
           opportunity_id?: string | null
@@ -493,7 +493,7 @@ export type Database = {
           activity_date?: string
           created_at?: string
           created_by?: string | null
-          customer_id?: string
+          customer_id?: string | null
           id?: string
           notes?: string | null
           opportunity_id?: string | null
@@ -522,7 +522,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          customer_id: string
+          customer_id: string | null
           email: string | null
           id: string
           last_contact_at: string | null
@@ -535,7 +535,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
-          customer_id: string
+          customer_id?: string | null
           email?: string | null
           id?: string
           last_contact_at?: string | null
@@ -548,7 +548,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
-          customer_id?: string
+          customer_id?: string | null
           email?: string | null
           id?: string
           last_contact_at?: string | null
@@ -578,7 +578,7 @@ export type Database = {
       customer_documents: {
         Row: {
           created_at: string
-          customer_id: string
+          customer_id: string | null
           file_name: string
           file_size: number | null
           file_type: string | null
@@ -590,7 +590,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          customer_id: string
+          customer_id?: string | null
           file_name: string
           file_size?: number | null
           file_type?: string | null
@@ -602,7 +602,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          customer_id?: string
+          customer_id?: string | null
           file_name?: string
           file_size?: number | null
           file_type?: string | null
@@ -635,7 +635,7 @@ export type Database = {
           close_date: string | null
           created_at: string
           created_by: string | null
-          customer_id: string
+          customer_id: string | null
           id: string
           name: string
           owner_id: string | null
@@ -649,7 +649,7 @@ export type Database = {
           close_date?: string | null
           created_at?: string
           created_by?: string | null
-          customer_id: string
+          customer_id?: string | null
           id?: string
           name: string
           owner_id?: string | null
@@ -663,7 +663,7 @@ export type Database = {
           close_date?: string | null
           created_at?: string
           created_by?: string | null
-          customer_id?: string
+          customer_id?: string | null
           id?: string
           name?: string
           owner_id?: string | null
