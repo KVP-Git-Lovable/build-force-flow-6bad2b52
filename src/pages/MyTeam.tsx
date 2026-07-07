@@ -220,13 +220,15 @@ export default function MyTeam() {
                     <span className="text-xs text-muted-foreground">No role/site assigned</span>
                   )}
                 </div>
-                <DeviceStatusBadges
-                  batteryLevel={member.battery_level}
-                  batteryCharging={member.battery_charging}
-                  networkType={member.network_type}
-                  statusAt={member.device_status_at}
-                />
               </div>
+
+              <DeviceStatusBadges
+                batteryLevel={member.battery_level}
+                batteryCharging={member.battery_charging}
+                networkType={member.network_type}
+                statusAt={member.device_status_at}
+                className="shrink-0"
+              />
 
               {/* Call Button */}
               {member.phone ? (

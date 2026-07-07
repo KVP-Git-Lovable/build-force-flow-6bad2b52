@@ -6,6 +6,7 @@ interface Props {
   batteryCharging: boolean | null;
   networkType: string | null;
   statusAt: string | null;
+  className?: string;
 }
 
 function batteryColor(level: number): string {
@@ -49,7 +50,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export function DeviceStatusBadges({ batteryLevel, batteryCharging, networkType, statusAt }: Props) {
+export function DeviceStatusBadges({ batteryLevel, batteryCharging, networkType, statusAt, className }: Props) {
   const stale = !statusAt || (Date.now() - new Date(statusAt).getTime()) > 3 * 60 * 1000;
   const staleClass = stale ? "opacity-50" : "";
 
@@ -62,7 +63,7 @@ export function DeviceStatusBadges({ batteryLevel, batteryCharging, networkType,
         : Battery;
 
   return (
-    <div className={cn("flex items-center gap-2 mt-1 text-[11px]", staleClass)}>
+    <div className={cn("flex flex-col items-end gap-0.5 text-[11px]", staleClass, className)}>
       <span
         className="inline-flex items-center gap-1"
         title={batteryLevel == null ? "Battery not reported (e.g. iOS Safari)" : `Battery ${batteryLevel}%${batteryCharging ? " (charging)" : ""}`}
@@ -80,7 +81,7 @@ export function DeviceStatusBadges({ batteryLevel, batteryCharging, networkType,
         <span className="text-muted-foreground">{networkLabel(networkType)}</span>
       </span>
       {statusAt && (
-        <span className="text-muted-foreground/70">· {timeAgo(statusAt)}</span>
+        <span className="text-muted-foreground/70">{timeAgo(statusAt)}</span>
       )}
     </div>
   );
