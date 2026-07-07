@@ -75,6 +75,9 @@ export default function Expenses() {
     })();
     supabase.from("expense_categories").select("id, name, auto_approval_limit").eq("is_active", true).order("name")
       .then(({ data }) => setCategories((data || []) as Category[]));
+    supabase.from("expense_master_config").select("ta_type, ta_per_km_rate, fixed_ta_amount, fixed_da_amount, da_calculation_basis")
+      .order("updated_at", { ascending: false }).limit(1).maybeSingle()
+      .then(({ data }) => data && setPolicy(data as any));
   }, [userId]);
 
   useEffect(() => { if (userId) fetchExpenses(); }, [userId, yearMonth]);
