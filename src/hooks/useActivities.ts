@@ -40,6 +40,8 @@ export interface Activity {
   site_id: string | null;
   milestone_id: string | null;
   grn_po_id: string | null;
+  customer_id: string | null;
+  opportunity_id: string | null;
   location_lat: number | null;
   location_lng: number | null;
   location_address: string | null;
