@@ -34,17 +34,20 @@ import { format } from "date-fns";
 
 function inr(n: number) { return `₹ ${(n ?? 0).toLocaleString()}`; }
 
-export default function Customers() {
+export default function CustomerDetail() {
   const nav = useNavigate();
+  const { id: customerId = "" } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") ?? "overview";
-  const { data: opps = [] } = useOpportunities();
-  const { data: contacts = [] } = useContacts();
-  const { data: activities = [] } = useCustomerActivities();
-  const { data: docs = [] } = useCustomerDocuments();
+  const { data: customer } = useCustomer(customerId);
+  const { data: opps = [] } = useOpportunities(customerId);
+  const { data: contacts = [] } = useContacts(customerId);
+  const { data: activities = [] } = useCustomerActivities({ customerId });
+  const { data: docs = [] } = useCustomerDocuments({ customerId });
   const { data: stages = [] } = useOppStages();
   const { data: types = [] } = useOppTypes();
   const { data: users = [] } = useUserLookup();
+
   const updateOpp = useUpdateOpportunity();
   const deleteContact = useDeleteContact();
   const deleteDoc = useDeleteCustomerDocument();
