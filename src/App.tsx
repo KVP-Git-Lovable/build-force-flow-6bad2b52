@@ -118,7 +118,7 @@ const App = () => (
             <Route path="/grn" element={<Suspense fallback={<PageFallback />}><GRN /></Suspense>} />
             <Route path="/customers" element={<Suspense fallback={<PageFallback />}><Customers /></Suspense>} />
             <Route path="/crm" element={<Navigate to="/customers" replace />} />
-            <Route path="/customers/:id" element={<Navigate to="/customers" replace />} />
+            <Route path="/customers/:id" element={<Suspense fallback={<PageFallback />}><CustomerDetail /></Suspense>} />
             <Route path="/opportunities" element={<Suspense fallback={<PageFallback />}><Opportunities /></Suspense>} />
             <Route path="/opportunities/:id" element={<Suspense fallback={<PageFallback />}><OpportunityDetail /></Suspense>} />
             <Route path="/master-data/opportunity-stages" element={<Suspense fallback={<PageFallback />}><OpportunityStagesMaster /></Suspense>} />
