@@ -34,7 +34,10 @@ export default function OpportunityDetail() {
   const { data: docs = [] } = useCustomerDocuments(id);
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
+  const { data: customers = [] } = useCustomers();
   const usersMap = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u.full_name || u.username || u.email])), [users]);
+  const customersMap = useMemo(() => Object.fromEntries(customers.map((c) => [c.id, c.name])), [customers]);
+
   const stageMap = useMemo(() => Object.fromEntries(stages.map((s) => [s.name, s])), [stages]);
   const updateMs = useUpdateMilestone();
   const deleteMs = useDeleteMilestone();
