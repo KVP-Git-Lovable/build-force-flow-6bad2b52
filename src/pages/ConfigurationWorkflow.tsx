@@ -29,10 +29,12 @@ const MODULES = [
 export default function ConfigurationWorkflow() {
   const navigate = useNavigate();
   const { isAdmin, loading } = useUserProfile();
-  const [activeModule, setActiveModule] = useState("activities");
+  const { hasModuleAccess, isLoading: permsLoading } = useAdminAccess();
+  const visibleModules = MODULES.filter((m) => hasModuleAccess(m.permission));
+  const [activeModule, setActiveModule] = useState<string>("activities");
   const [tab, setTab] = useState<"config" | "approval">("config");
 
-  if (loading) {
+  if (loading || permsLoading) {
     return (
       <div className="p-4 space-y-4 max-w-6xl mx-auto">
         <Skeleton className="h-8 w-64" />
@@ -43,7 +45,14 @@ export default function ConfigurationWorkflow() {
 
   if (!isAdmin) return <Navigate to="/admin-controls" replace />;
 
-  const current = MODULES.find((m) => m.id === activeModule)!;
+  const current = visibleModules.find((m) => m.id === activeModule) ?? visibleModules[0];
+  if (!current) {
+    return (
+      <div className="p-6 max-w-6xl mx-auto text-sm text-muted-foreground">
+        No modules are currently enabled. Enable modules in Security to configure them here.
+      </div>
+    );
+  }
 
   return (
     <motion.div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
