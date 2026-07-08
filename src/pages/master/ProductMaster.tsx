@@ -173,6 +173,7 @@ export default function ProductMaster() {
                         <TableCell>{c?.category_name || "—"}</TableCell>
                         <TableCell>{c?.sub_category_name || "—"}</TableCell>
                         <TableCell>{r.default_uom || "—"}</TableCell>
+                        <TableCell className="text-right">₹ {Number(r.default_unit_price || 0).toLocaleString()}</TableCell>
                         <TableCell className="text-center">
                           <Badge
                             className={r.is_active ? "bg-[hsl(var(--success))]/20 text-[hsl(var(--success))] cursor-pointer" : "bg-destructive/20 text-destructive cursor-pointer"}
