@@ -344,7 +344,7 @@ export default function Activities() {
     (async () => {
       const [{ data: custs }, { data: opps }] = await Promise.all([
         supabase.from("customers").select("id, name").order("name"),
-        supabase.from("customer_opportunities").select("id, title, customer_id").order("created_at", { ascending: false }),
+        supabase.from("customer_opportunities").select("id, name, customer_id").order("created_at", { ascending: false }),
       ]);
       setCustomersList((custs || []) as any);
       setOpportunitiesList((opps || []) as any);
