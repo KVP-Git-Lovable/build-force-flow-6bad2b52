@@ -135,16 +135,19 @@ export interface OppStage {
 }
 
 // ---------- Opportunities ----------
-export function useOpportunities() {
+export function useOpportunities(customerId?: string) {
   return useQuery({
-    queryKey: ["opportunities"],
+    queryKey: ["opportunities", customerId ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customer_opportunities").select("*").order("updated_at", { ascending: false });
+      let q = supabase.from("customer_opportunities").select("*").order("updated_at", { ascending: false });
+      if (customerId) q = q.eq("customer_id", customerId);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Opportunity[];
     },
   });
 }
+
 
 export function useOpportunity(id?: string) {
   return useQuery({
