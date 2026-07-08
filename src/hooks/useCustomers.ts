@@ -342,18 +342,21 @@ export function useCreateCustomerActivity() {
 }
 
 // ---------- Documents ----------
-export function useCustomerDocuments(opportunityId?: string) {
+export function useCustomerDocuments(scope?: { opportunityId?: string; customerId?: string } | string) {
+  const s = typeof scope === "string" ? { opportunityId: scope } : (scope || {});
   return useQuery({
-    queryKey: ["customer-documents", opportunityId ?? "all"],
+    queryKey: ["customer-documents", s.opportunityId ?? "all", s.customerId ?? "all"],
     queryFn: async () => {
       let q = supabase.from("customer_documents").select("*").order("created_at", { ascending: false });
-      if (opportunityId) q = q.eq("opportunity_id", opportunityId);
+      if (s.opportunityId) q = q.eq("opportunity_id", s.opportunityId);
+      if (s.customerId) q = q.eq("customer_id", s.customerId);
       const { data, error } = await q;
       if (error) throw error;
       return data as CustomerDocument[];
     },
   });
 }
+
 
 export function useCreateCustomerDocument() {
   const qc = useQueryClient();
