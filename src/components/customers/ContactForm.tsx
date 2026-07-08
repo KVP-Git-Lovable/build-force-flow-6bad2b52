@@ -7,12 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Contact, useContacts, useCreateContact, useUpdateContact } from "@/hooks/useCustomers";
 
 export function ContactForm({
-  open, onOpenChange, contact,
+  open, onOpenChange, contact, customerId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   contact?: Contact;
+  customerId?: string;
 }) {
+
   const create = useCreateContact();
   const update = useUpdateContact();
   const { data: contacts = [] } = useContacts();
