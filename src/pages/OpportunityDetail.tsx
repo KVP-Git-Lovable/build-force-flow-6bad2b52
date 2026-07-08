@@ -88,10 +88,12 @@ export default function OpportunityDetail() {
       <Tabs defaultValue="overview">
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="quotes">Quotes</TabsTrigger>
           <TabsTrigger value="milestones">Payment Milestones</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="overview" className="mt-4">
           <Card><CardContent className="p-4 md:p-6">
