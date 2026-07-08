@@ -161,9 +161,15 @@ Deno.serve(async (req) => {
 
     recipient_ids = Array.from(new Set(recipient_ids.filter(Boolean)));
     if (recipient_ids.length === 0) {
+      console.warn("[dispatch] No recipients resolved — returning 200 no-op", {
+        notify_actor_chain: !!body.notify_actor_chain,
+        actor_user_id: body.actor_user_id,
+        broadcast: !!body.broadcast_all_active,
+        title,
+      });
       return new Response(
-        JSON.stringify({ error: "No notification recipients resolved" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ notifications_inserted: 0, recipients: 0, reason: "no_recipients_resolved" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
