@@ -7,20 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, Trash2, X, ChevronsUpDown } from "lucide-react";
+import { Plus, Trash2, X, ChevronsUpDown, Pencil } from "lucide-react";
 import { useMasterProducts, useQuoteItems, useSaveQuote, type Quote, type QuoteItem } from "@/hooks/useCustomers";
-import { differenceInMonths, parseISO } from "date-fns";
 
 function inr(n: number) { return `₹ ${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`; }
 
-function calcTerm(start: string | null, end: string | null): number | null {
-  if (!start || !end) return null;
-  try {
-    const m = differenceInMonths(parseISO(end), parseISO(start));
-    return m >= 0 ? m : null;
-  } catch { return null; }
-}
-function calcTotal(qty: number, unit: number, disc: number) {
+function calcLine(qty: number, unit: number, disc: number) {
   return Math.max(0, Number(qty) || 0) * Math.max(0, Number(unit) || 0) * (1 - Math.min(100, Math.max(0, Number(disc) || 0)) / 100);
 }
 
@@ -37,29 +29,25 @@ export function QuoteForm({
   const save = useSaveQuote();
   const [name, setName] = useState(quote?.name || "");
   const [notes, setNotes] = useState(quote?.notes || "");
+  const [overallDisc, setOverallDisc] = useState<number>(Number(quote?.overall_discount_pct) || 0);
   const [rows, setRows] = useState<QuoteItem[]>([emptyRow(0)]);
 
   useEffect(() => {
     if (quote && existingItems && existingItems.length) setRows(existingItems);
   }, [quote?.id, existingItems]);
 
-  const grandTotal = useMemo(() => rows.reduce((s, r) => s + calcTotal(r.qty, r.unit_price, r.discount_pct), 0), [rows]);
+  const subtotal = useMemo(() => rows.reduce((s, r) => s + calcLine(r.qty, r.unit_price, r.discount_pct), 0), [rows]);
+  const overallAmt = subtotal * (Math.min(100, Math.max(0, overallDisc)) / 100);
+  const grandTotal = subtotal - overallAmt;
 
   const update = (i: number, patch: Partial<QuoteItem>) => {
     setRows((prev) => {
       const next = [...prev];
       const merged = { ...next[i], ...patch };
-      merged.term_months = calcTerm(merged.start_date, merged.end_date);
-      merged.total = calcTotal(merged.qty, merged.unit_price, merged.discount_pct);
+      merged.total = calcLine(merged.qty, merged.unit_price, merged.discount_pct);
       next[i] = merged;
       return next;
     });
-  };
-
-  const pickProduct = (i: number, productId: string) => {
-    const p = products.find((x) => x.id === productId);
-    if (!p) return;
-    update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0 });
   };
 
   const submit = async () => {
@@ -71,7 +59,15 @@ export function QuoteForm({
       name: name.trim(),
       notes: notes.trim() || null,
       total: grandTotal,
-      items: items.map((r, i) => ({ ...r, sort_order: i, total: calcTotal(r.qty, r.unit_price, r.discount_pct) })),
+      overall_discount_pct: Number(overallDisc) || 0,
+      items: items.map((r, i) => ({
+        ...r,
+        sort_order: i,
+        start_date: null,
+        end_date: null,
+        term_months: null,
+        total: calcLine(r.qty, r.unit_price, r.discount_pct),
+      })),
     });
     onClose();
   };
@@ -91,13 +87,10 @@ export function QuoteForm({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[180px]">Product</TableHead>
+                <TableHead className="min-w-[220px]">Product</TableHead>
                 <TableHead className="w-20">Qty</TableHead>
                 <TableHead className="w-28">Unit Price</TableHead>
-                <TableHead className="w-36">Start Date</TableHead>
-                <TableHead className="w-36">End Date</TableHead>
-                <TableHead className="w-20">Term</TableHead>
-                <TableHead className="w-20">Disc %</TableHead>
+                <TableHead className="w-24">Disc %</TableHead>
                 <TableHead className="w-28 text-right">Total</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
@@ -108,18 +101,16 @@ export function QuoteForm({
                   <TableCell>
                     <ProductPicker
                       products={products}
-                      value={r.product_id}
-                      label={r.product_name}
-                      onChange={(id) => pickProduct(i, id)}
+                      productId={r.product_id}
+                      productName={r.product_name}
+                      onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0 })}
+                      onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
                     />
                   </TableCell>
                   <TableCell><Input type="number" min={0} value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} /></TableCell>
                   <TableCell><Input type="number" min={0} step="0.01" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} /></TableCell>
-                  <TableCell><Input type="date" value={r.start_date || ""} onChange={(e) => update(i, { start_date: e.target.value || null })} /></TableCell>
-                  <TableCell><Input type="date" value={r.end_date || ""} onChange={(e) => update(i, { end_date: e.target.value || null })} /></TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{r.term_months != null ? `${r.term_months}mo` : "—"}</TableCell>
                   <TableCell><Input type="number" min={0} max={100} value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} /></TableCell>
-                  <TableCell className="text-right font-medium">{inr(r.total)}</TableCell>
+                  <TableCell className="text-right font-medium">{inr(calcLine(r.qty, r.unit_price, r.discount_pct))}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}>
                       <Trash2 className="h-4 w-4 text-destructive" />
@@ -131,13 +122,33 @@ export function QuoteForm({
           </Table>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <Button variant="outline" size="sm" onClick={() => setRows((prev) => [...prev, emptyRow(prev.length)])}>
             <Plus className="h-4 w-4 mr-1" />Add Line
           </Button>
-          <div className="text-sm">
-            <span className="text-muted-foreground">Quote Total:</span>{" "}
-            <span className="font-semibold text-base">{inr(grandTotal)}</span>
+          <div className="flex flex-col items-end gap-1 text-sm min-w-[240px]">
+            <div className="flex justify-between w-full">
+              <span className="text-muted-foreground">Subtotal:</span>
+              <span>{inr(subtotal)}</span>
+            </div>
+            <div className="flex items-center justify-between w-full gap-2">
+              <span className="text-muted-foreground">Overall Discount %:</span>
+              <Input
+                type="number" min={0} max={100} className="h-8 w-20 text-right"
+                value={overallDisc}
+                onChange={(e) => setOverallDisc(Number(e.target.value))}
+              />
+            </div>
+            {overallDisc > 0 && (
+              <div className="flex justify-between w-full text-muted-foreground">
+                <span>Discount:</span>
+                <span>- {inr(overallAmt)}</span>
+              </div>
+            )}
+            <div className="flex justify-between w-full pt-1 border-t">
+              <span className="font-medium">Quote Total:</span>
+              <span className="font-semibold text-base">{inr(grandTotal)}</span>
+            </div>
           </div>
         </div>
 
@@ -156,40 +167,75 @@ export function QuoteForm({
 }
 
 function ProductPicker({
-  products, value, label, onChange,
+  products, productId, productName, onPickProduct, onFreeText,
 }: {
   products: { id: string; product_name: string; default_unit_price: number }[];
-  value: string | null; label: string | null;
-  onChange: (id: string) => void;
+  productId: string | null;
+  productName: string | null;
+  onPickProduct: (p: { id: string; product_name: string; default_unit_price: number }) => void;
+  onFreeText: (txt: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const display = label || products.find((p) => p.id === value)?.product_name || "Select product";
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
-          <span className="truncate">{display}</span>
-          <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
+  const [freeMode, setFreeMode] = useState<boolean>(!!productName && !productId);
+  const [search, setSearch] = useState("");
+  const display = productName || "Select product";
+
+  if (freeMode) {
+    return (
+      <div className="flex gap-1">
+        <Input
+          value={productName || ""}
+          placeholder="Enter product name"
+          onChange={(e) => onFreeText(e.target.value)}
+          autoFocus
+        />
+        <Button type="button" variant="ghost" size="sm" onClick={() => { setFreeMode(false); onFreeText(""); }} title="Pick from list">
+          <ChevronsUpDown className="h-4 w-4" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="p-0 w-[280px]" align="start">
-        <Command>
-          <CommandInput placeholder="Search product..." />
-          <CommandList>
-            <CommandEmpty>No products.</CommandEmpty>
-            <CommandGroup>
-              {products.map((p) => (
-                <CommandItem key={p.id} value={p.product_name} onSelect={() => { onChange(p.id); setOpen(false); }}>
-                  <div className="flex justify-between w-full">
-                    <span>{p.product_name}</span>
-                    <span className="text-xs text-muted-foreground">₹{Number(p.default_unit_price || 0).toLocaleString()}</span>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-1">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" role="combobox" className="flex-1 justify-between font-normal">
+            <span className="truncate">{display}</span>
+            <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-[300px]" align="start">
+          <Command>
+            <CommandInput placeholder="Search product..." value={search} onValueChange={setSearch} />
+            <CommandList>
+              <CommandEmpty>
+                <div className="p-2 text-sm">
+                  <div className="text-muted-foreground mb-2">No products found.</div>
+                  <Button size="sm" variant="outline" className="w-full" onClick={() => { setFreeMode(true); onFreeText(search); setOpen(false); }}>
+                    <Pencil className="h-3 w-3 mr-1" />Use "{search}" as custom
+                  </Button>
+                </div>
+              </CommandEmpty>
+              <CommandGroup>
+                {products.map((p) => (
+                  <CommandItem key={p.id} value={p.product_name} onSelect={() => { onPickProduct(p); setOpen(false); }}>
+                    <div className="flex justify-between w-full">
+                      <span>{p.product_name}</span>
+                      <span className="text-xs text-muted-foreground">₹{Number(p.default_unit_price || 0).toLocaleString()}</span>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              <div className="border-t p-2">
+                <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { setFreeMode(true); onFreeText(""); setOpen(false); }}>
+                  <Pencil className="h-3 w-3 mr-1" />Enter custom product
+                </Button>
+              </div>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
