@@ -1654,6 +1654,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           created_by: string | null
+          default_unit_price: number
           default_uom: string | null
           id: string
           is_active: boolean
@@ -1664,6 +1665,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           created_by?: string | null
+          default_unit_price?: number
           default_uom?: string | null
           id?: string
           is_active?: boolean
@@ -1674,6 +1676,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           created_by?: string | null
+          default_unit_price?: number
           default_uom?: string | null
           id?: string
           is_active?: boolean
@@ -1813,6 +1816,110 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "opportunity_milestones_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "customer_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_quote_items: {
+        Row: {
+          created_at: string
+          discount_pct: number
+          end_date: string | null
+          id: string
+          product_id: string | null
+          product_name: string | null
+          qty: number
+          quote_id: string
+          sort_order: number
+          start_date: string | null
+          term_months: number | null
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          discount_pct?: number
+          end_date?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          qty?: number
+          quote_id: string
+          sort_order?: number
+          start_date?: string | null
+          term_months?: number | null
+          total?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          discount_pct?: number
+          end_date?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          qty?: number
+          quote_id?: string
+          sort_order?: number
+          start_date?: string | null
+          term_months?: number | null
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "master_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunity_quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "opportunity_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_quotes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          opportunity_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          opportunity_id: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          opportunity_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_quotes_opportunity_id_fkey"
             columns: ["opportunity_id"]
             isOneToOne: false
             referencedRelation: "customer_opportunities"

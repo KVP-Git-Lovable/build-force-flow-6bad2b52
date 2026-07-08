@@ -12,7 +12,9 @@ import {
   useOpportunity, useMilestones, useUpdateMilestone, useDeleteMilestone,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
   useOppStages, useUserLookup, useCustomers, stageColorClasses,
+  useQuotes, useDeleteQuote,
 } from "@/hooks/useCustomers";
+import { QuoteForm } from "@/components/customers/QuoteForm";
 
 import { MilestoneForm } from "@/components/customers/MilestoneForm";
 import { ActivityForm } from "@/components/customers/ActivityForm";
@@ -32,6 +34,8 @@ export default function OpportunityDetail() {
   const { data: milestones = [] } = useMilestones(id);
   const { data: activities = [] } = useCustomerActivities(id);
   const { data: docs = [] } = useCustomerDocuments(id);
+  const { data: quotes = [] } = useQuotes(id);
+  const deleteQuote = useDeleteQuote();
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
   const { data: customers = [] } = useCustomers();
@@ -46,6 +50,8 @@ export default function OpportunityDetail() {
   const [addMs, setAddMs] = useState(false);
   const [newAct, setNewAct] = useState(false);
   const [editOpp, setEditOpp] = useState(false);
+  const [quoteEditor, setQuoteEditor] = useState<{ mode: "new" | "edit"; quoteId?: string } | null>(null);
+  const editingQuote = quoteEditor?.mode === "edit" ? quotes.find((q) => q.id === quoteEditor.quoteId) : null;
 
   const total = milestones.reduce((s, m) => s + Number(m.invoice_value || 0), 0);
 
@@ -82,10 +88,12 @@ export default function OpportunityDetail() {
       <Tabs defaultValue="overview">
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="quotes">Quotes</TabsTrigger>
           <TabsTrigger value="milestones">Payment Milestones</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="overview" className="mt-4">
           <Card><CardContent className="p-4 md:p-6">
@@ -111,6 +119,54 @@ export default function OpportunityDetail() {
 
           </CardContent></Card>
         </TabsContent>
+
+        <TabsContent value="quotes" className="mt-4 space-y-3">
+          {quoteEditor ? (
+            <QuoteForm
+              opportunityId={id!}
+              quote={editingQuote}
+              onClose={() => setQuoteEditor(null)}
+            />
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">{quotes.length} quote{quotes.length === 1 ? "" : "s"}</div>
+                <Button size="sm" onClick={() => setQuoteEditor({ mode: "new" })}>
+                  <Plus className="h-4 w-4 mr-1" />New Quote
+                </Button>
+              </div>
+              <Card><CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead>Quote Name</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {quotes.map((q) => (
+                      <TableRow key={q.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setQuoteEditor({ mode: "edit", quoteId: q.id })}>
+                        <TableCell className="font-medium">{q.name}</TableCell>
+                        <TableCell className="text-right">{inr(Number(q.total))}</TableCell>
+                        <TableCell>{format(new Date(q.created_at), "dd MMM yyyy")}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); deleteQuote.mutate({ id: q.id, oppId: id! }); }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {quotes.length === 0 && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No quotes yet.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent></Card>
+            </>
+          )}
+        </TabsContent>
+
+
 
         <TabsContent value="milestones" className="mt-4 space-y-3">
           <div className="flex items-center justify-between">
