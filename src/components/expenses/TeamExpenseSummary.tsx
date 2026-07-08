@@ -3,10 +3,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Check, X, Clock, Loader2, IndianRupee, CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Check, X, Clock, Loader2, IndianRupee, CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Users, Car, Utensils, Receipt } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { format, subMonths, addMonths, parse } from 'date-fns';
+import { format, subMonths, addMonths, parse, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
 import RejectionReasonDialog from '@/components/RejectionReasonDialog';
 import ExpenseReportGenerator from '@/components/expenses/ExpenseReportGenerator';
@@ -29,6 +28,8 @@ export default function TeamExpenseSummary() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [expenses, setExpenses] = useState<TeamExpense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [summariesLoading, setSummariesLoading] = useState(false);
+  const [memberSummaries, setMemberSummaries] = useState<Array<{ user_id: string; name: string; ta: number; da: number; additional: number; total: number; present_days: number; total_km: number }>>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [rejectionTargetId, setRejectionTargetId] = useState<string | null>(null);
@@ -68,33 +69,41 @@ export default function TeamExpenseSummary() {
       let nameMap = new Map<string, string>();
 
       if (userIsAdmin) {
-        // Admin sees all users except themselves
         const { data: allUsers } = await supabase
           .from('users')
           .select('id, full_name');
         subIds = allUsers?.filter(u => u.id !== user.id).map(u => u.id) || [];
         nameMap = new Map(allUsers?.map(u => [u.id, u.full_name || 'Unknown']) || []);
       } else {
-        const { data: subordinates } = await supabase
-          .from('users')
-          .select('id, full_name')
-          .eq('reporting_manager_id', user.id);
-        subIds = subordinates?.map(s => s.id) || [];
-        nameMap = new Map(subordinates?.map(s => [s.id, s.full_name || 'Unknown']) || []);
+        // Use hierarchy RPC so nested reportees are included (matches RLS)
+        const { data: hier } = await supabase.rpc('get_user_hierarchy', { _manager_id: user.id });
+        subIds = (hier || []).map((r: any) => r.user_id).filter((id: string) => id !== user.id);
+        if (subIds.length > 0) {
+          const { data: subUsers } = await supabase
+            .from('users')
+            .select('id, full_name')
+            .in('id', subIds);
+          nameMap = new Map(subUsers?.map(s => [s.id, s.full_name || 'Unknown']) || []);
+        }
       }
 
       if (subIds.length === 0) {
         setExpenses([]);
+        setMemberSummaries([]);
         setLoading(false);
         return;
       }
+
+      // Full month end (handles Feb 28/29)
+      const startDate = `${selectedMonth}-01`;
+      const endDate = format(endOfMonth(parse(startDate, 'yyyy-MM-dd', new Date())), 'yyyy-MM-dd');
 
       const { data } = await supabase
         .from('additional_expenses')
         .select('*')
         .in('user_id', subIds)
-        .gte('expense_date', `${selectedMonth}-01`)
-        .lte('expense_date', `${selectedMonth}-31`)
+        .gte('expense_date', startDate)
+        .lte('expense_date', endDate)
         .order('expense_date', { ascending: false });
 
       setExpenses(
@@ -103,6 +112,33 @@ export default function TeamExpenseSummary() {
           employee_name: nameMap.get(e.user_id) || 'Unknown',
         })) as TeamExpense[]
       );
+
+      // Per-member TA/DA/Additional summaries via RPC
+      setSummariesLoading(true);
+      const summaries = await Promise.all(
+        subIds.map(async (uid) => {
+          const { data: sum } = await supabase.rpc('get_monthly_expense_summary' as any, {
+            _user_id: uid,
+            _year_month: selectedMonth,
+          });
+          const s = (sum || {}) as any;
+          const ta = Number(s.ta || 0);
+          const da = Number(s.da || 0);
+          const additional = Number(s.additional_approved || 0) + Number(s.additional_pending || 0);
+          return {
+            user_id: uid,
+            name: nameMap.get(uid) || 'Unknown',
+            ta,
+            da,
+            additional,
+            total: Number(s.total || ta + da + additional),
+            present_days: Number(s.present_days || 0),
+            total_km: Number(s.total_km || 0),
+          };
+        })
+      );
+      setMemberSummaries(summaries.sort((a, b) => b.total - a.total));
+      setSummariesLoading(false);
     } catch (error) {
       console.error('Error fetching team expenses:', error);
       toast.error('Failed to load team expenses');
@@ -110,6 +146,7 @@ export default function TeamExpenseSummary() {
       setLoading(false);
     }
   };
+
 
   const handleApprove = async (id: string) => {
     setActionLoading(id);
@@ -304,56 +341,100 @@ export default function TeamExpenseSummary() {
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
           ) : (
             <div className="space-y-4 mt-2">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Team-wide TA/DA/Additional Totals */}
+              {(() => {
+                const teamTA = memberSummaries.reduce((s, m) => s + m.ta, 0);
+                const teamDA = memberSummaries.reduce((s, m) => s + m.da, 0);
+                const teamAdd = memberSummaries.reduce((s, m) => s + m.additional, 0);
+                const teamTotal = teamTA + teamDA + teamAdd;
+                return (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center justify-center gap-1"><Car className="h-3 w-3" />Travel (TA)</p>
+                        <p className="text-lg font-bold text-blue-600 dark:text-blue-400">₹{teamTA.toFixed(0)}</p>
+                        <p className="text-xs text-muted-foreground">Team total</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1"><Utensils className="h-3 w-3" />Daily (DA)</p>
+                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">₹{teamDA.toFixed(0)}</p>
+                        <p className="text-xs text-muted-foreground">Team total</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-xs text-purple-600 dark:text-purple-400 flex items-center justify-center gap-1"><Receipt className="h-3 w-3" />Additional</p>
+                        <p className="text-lg font-bold text-purple-600 dark:text-purple-400">₹{teamAdd.toFixed(0)}</p>
+                        <p className="text-xs text-muted-foreground">{expenses.length} claims</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-xs text-muted-foreground">Grand Total</p>
+                        <p className="text-lg font-bold">₹{teamTotal.toFixed(0)}</p>
+                        <p className="text-xs text-muted-foreground">TA + DA + Add</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })()}
+
+              {/* Approval Status Cards (additional expenses) */}
+              <div className="grid grid-cols-3 gap-3">
                 <Card>
-                  <CardContent className="p-4 text-center">
-                    <p className="text-xs text-muted-foreground">Total Submitted</p>
-                    <p className="text-lg font-bold">₹{totalSubmitted.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">{expenses.length} claims</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
+                  <CardContent className="p-3 text-center">
                     <p className="text-xs text-green-600 dark:text-green-400">Approved</p>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-400">₹{totalApproved.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">{expenses.filter(e => e.status === 'approved').length} claims</p>
+                    <p className="text-base font-bold text-green-600 dark:text-green-400">₹{totalApproved.toFixed(0)}</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-4 text-center">
+                  <CardContent className="p-3 text-center">
                     <p className="text-xs text-yellow-600 dark:text-yellow-400">Pending</p>
-                    <p className="text-lg font-bold text-yellow-600 dark:text-yellow-400">₹{totalPending.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">{pendingExpenses.length} claims</p>
+                    <p className="text-base font-bold text-yellow-600 dark:text-yellow-400">₹{totalPending.toFixed(0)}</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-4 text-center">
+                  <CardContent className="p-3 text-center">
                     <p className="text-xs text-destructive">Rejected</p>
-                    <p className="text-lg font-bold text-destructive">₹{totalRejected.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">{expenses.filter(e => e.status === 'rejected').length} claims</p>
+                    <p className="text-base font-bold text-destructive">₹{totalRejected.toFixed(0)}</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Expenses by User */}
+              {/* Per-member TA/DA/Additional breakdown */}
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-1"><Users className="h-4 w-4" />Expenses by Team Member</h3>
-                {expensesByUser.length === 0 ? (
-                  <Card><CardContent className="py-6 text-center text-muted-foreground text-sm">No expenses this month.</CardContent></Card>
+                {summariesLoading ? (
+                  <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : memberSummaries.length === 0 ? (
+                  <Card><CardContent className="py-6 text-center text-muted-foreground text-sm">No team members found.</CardContent></Card>
                 ) : (
                   <div className="space-y-2">
-                    {expensesByUser.map((u, i) => (
-                      <Card key={i}>
+                    {memberSummaries.map((u) => (
+                      <Card key={u.user_id}>
                         <CardContent className="p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="font-semibold text-sm">{u.name}</p>
+                            <div>
+                              <p className="font-semibold text-sm">{u.name}</p>
+                              <p className="text-[11px] text-muted-foreground">{u.present_days} present · {u.total_km.toFixed(1)} km</p>
+                            </div>
                             <span className="font-bold text-sm">₹{u.total.toFixed(0)}</span>
                           </div>
-                          <div className="flex gap-3 text-xs text-muted-foreground">
-                            <span className="text-green-600 dark:text-green-400">Approved: ₹{u.approved.toFixed(0)}</span>
-                            <span className="text-yellow-600 dark:text-yellow-400">Pending: ₹{u.pending.toFixed(0)}</span>
-                            <span className="text-destructive">Rejected: ₹{u.rejected.toFixed(0)}</span>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div className="rounded bg-blue-50 dark:bg-blue-950/30 p-1.5 text-center">
+                              <p className="text-[10px] text-blue-600 dark:text-blue-400">TA</p>
+                              <p className="font-semibold text-blue-700 dark:text-blue-300">₹{u.ta.toFixed(0)}</p>
+                            </div>
+                            <div className="rounded bg-emerald-50 dark:bg-emerald-950/30 p-1.5 text-center">
+                              <p className="text-[10px] text-emerald-600 dark:text-emerald-400">DA</p>
+                              <p className="font-semibold text-emerald-700 dark:text-emerald-300">₹{u.da.toFixed(0)}</p>
+                            </div>
+                            <div className="rounded bg-purple-50 dark:bg-purple-950/30 p-1.5 text-center">
+                              <p className="text-[10px] text-purple-600 dark:text-purple-400">Add</p>
+                              <p className="font-semibold text-purple-700 dark:text-purple-300">₹{u.additional.toFixed(0)}</p>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -365,6 +446,7 @@ export default function TeamExpenseSummary() {
               {/* Report Generator */}
               <ExpenseReportGenerator isAdmin={isAdmin} />
             </div>
+
           )}
         </TabsContent>
       </Tabs>
