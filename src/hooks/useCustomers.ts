@@ -2,6 +2,71 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export interface Customer {
+  id: string;
+  name: string;
+  industry: string | null;
+  status: string;
+  owner_id: string | null;
+  primary_contact_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---------- Customers ----------
+export function useCustomers() {
+  return useQuery({
+    queryKey: ["customers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("customers").select("*").order("name");
+      if (error) throw error;
+      return data as Customer[];
+    },
+  });
+}
+
+export function useCustomer(id?: string) {
+  return useQuery({
+    queryKey: ["customer", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("customers").select("*").eq("id", id!).single();
+      if (error) throw error;
+      return data as Customer;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateCustomer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: Partial<Customer>) => {
+      const { data, error } = await supabase.from("customers").insert(v as any).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["customers"] }); toast.success("Customer created"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export function useUpdateCustomer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...v }: Partial<Customer> & { id: string }) => {
+      const { data, error } = await supabase.from("customers").update(v).eq("id", id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (d: any) => {
+      qc.invalidateQueries({ queryKey: ["customers"] });
+      qc.invalidateQueries({ queryKey: ["customer", d.id] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+
 export interface Opportunity {
   id: string;
   customer_id: string | null;
@@ -70,16 +135,19 @@ export interface OppStage {
 }
 
 // ---------- Opportunities ----------
-export function useOpportunities() {
+export function useOpportunities(customerId?: string) {
   return useQuery({
-    queryKey: ["opportunities"],
+    queryKey: ["opportunities", customerId ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customer_opportunities").select("*").order("updated_at", { ascending: false });
+      let q = supabase.from("customer_opportunities").select("*").order("updated_at", { ascending: false });
+      if (customerId) q = q.eq("customer_id", customerId);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Opportunity[];
     },
   });
 }
+
 
 export function useOpportunity(id?: string) {
   return useQuery({
@@ -188,16 +256,19 @@ export function useDeleteMilestone() {
 }
 
 // ---------- Contacts ----------
-export function useContacts() {
+export function useContacts(customerId?: string) {
   return useQuery({
-    queryKey: ["contacts"],
+    queryKey: ["contacts", customerId ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customer_contacts").select("*").order("name");
+      let q = supabase.from("customer_contacts").select("*").order("name");
+      if (customerId) q = q.eq("customer_id", customerId);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Contact[];
     },
   });
 }
+
 
 export function useCreateContact() {
   const qc = useQueryClient();
@@ -238,18 +309,21 @@ export function useDeleteContact() {
 }
 
 // ---------- Activities ----------
-export function useCustomerActivities(opportunityId?: string) {
+export function useCustomerActivities(scope?: { opportunityId?: string; customerId?: string } | string) {
+  const s = typeof scope === "string" ? { opportunityId: scope } : (scope || {});
   return useQuery({
-    queryKey: ["customer-activities", opportunityId ?? "all"],
+    queryKey: ["customer-activities", s.opportunityId ?? "all", s.customerId ?? "all"],
     queryFn: async () => {
       let q = supabase.from("customer_activities").select("*").order("activity_date", { ascending: false });
-      if (opportunityId) q = q.eq("opportunity_id", opportunityId);
+      if (s.opportunityId) q = q.eq("opportunity_id", s.opportunityId);
+      if (s.customerId) q = q.eq("customer_id", s.customerId);
       const { data, error } = await q;
       if (error) throw error;
       return data as CustomerActivity[];
     },
   });
 }
+
 
 export function useCreateCustomerActivity() {
   const qc = useQueryClient();
@@ -268,18 +342,21 @@ export function useCreateCustomerActivity() {
 }
 
 // ---------- Documents ----------
-export function useCustomerDocuments(opportunityId?: string) {
+export function useCustomerDocuments(scope?: { opportunityId?: string; customerId?: string } | string) {
+  const s = typeof scope === "string" ? { opportunityId: scope } : (scope || {});
   return useQuery({
-    queryKey: ["customer-documents", opportunityId ?? "all"],
+    queryKey: ["customer-documents", s.opportunityId ?? "all", s.customerId ?? "all"],
     queryFn: async () => {
       let q = supabase.from("customer_documents").select("*").order("created_at", { ascending: false });
-      if (opportunityId) q = q.eq("opportunity_id", opportunityId);
+      if (s.opportunityId) q = q.eq("opportunity_id", s.opportunityId);
+      if (s.customerId) q = q.eq("customer_id", s.customerId);
       const { data, error } = await q;
       if (error) throw error;
       return data as CustomerDocument[];
     },
   });
 }
+
 
 export function useCreateCustomerDocument() {
   const qc = useQueryClient();

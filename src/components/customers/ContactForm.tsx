@@ -7,15 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Contact, useContacts, useCreateContact, useUpdateContact } from "@/hooks/useCustomers";
 
 export function ContactForm({
-  open, onOpenChange, contact,
+  open, onOpenChange, contact, customerId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   contact?: Contact;
+  customerId?: string;
 }) {
+
   const create = useCreateContact();
   const update = useUpdateContact();
-  const { data: contacts = [] } = useContacts();
+  const { data: contacts = [] } = useContacts(customerId);
   const [form, setForm] = useState({
     name: "", title: "", email: "", phone: "", reports_to_id: "",
   });
@@ -36,11 +38,13 @@ export function ContactForm({
       email: form.email || null,
       phone: form.phone || null,
       reports_to_id: form.reports_to_id || null,
+      customer_id: customerId ?? contact?.customer_id ?? null,
     };
     if (contact) await update.mutateAsync({ id: contact.id, ...payload });
     else await create.mutateAsync(payload);
     onOpenChange(false);
   };
+
 
   const parentOptions = contacts.filter((c) => c.id !== contact?.id);
 

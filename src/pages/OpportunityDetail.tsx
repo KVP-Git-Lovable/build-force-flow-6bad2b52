@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +11,9 @@ import { ArrowLeft, Plus, FileText, Trash2, Download } from "lucide-react";
 import {
   useOpportunity, useMilestones, useUpdateMilestone, useDeleteMilestone,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
-  useOppStages, useUserLookup, stageColorClasses,
+  useOppStages, useUserLookup, useCustomers, stageColorClasses,
 } from "@/hooks/useCustomers";
+
 import { MilestoneForm } from "@/components/customers/MilestoneForm";
 import { ActivityForm } from "@/components/customers/ActivityForm";
 import { DocumentUpload } from "@/components/customers/DocumentUpload";
@@ -32,7 +34,10 @@ export default function OpportunityDetail() {
   const { data: docs = [] } = useCustomerDocuments(id);
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
+  const { data: customers = [] } = useCustomers();
   const usersMap = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u.full_name || u.username || u.email])), [users]);
+  const customersMap = useMemo(() => Object.fromEntries(customers.map((c) => [c.id, c.name])), [customers]);
+
   const stageMap = useMemo(() => Object.fromEntries(stages.map((s) => [s.name, s])), [stages]);
   const updateMs = useUpdateMilestone();
   const deleteMs = useDeleteMilestone();
@@ -86,6 +91,16 @@ export default function OpportunityDetail() {
           <Card><CardContent className="p-4 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <Field label="Opportunity Name" value={opp.name} />
+              <Field
+                label="Customer / Account"
+                value={
+                  opp.customer_id ? (
+                    <Link to={`/customers/${opp.customer_id}`} className="text-primary hover:underline">
+                      {customersMap[opp.customer_id] ?? "—"}
+                    </Link>
+                  ) : "—"
+                }
+              />
               <Field label="Type" value={opp.type || "—"} />
               <Field label="Stage" value={<Badge className={stageColorClasses(stageMap[opp.stage ?? ""]?.color)}>{opp.stage || "—"}</Badge>} />
               <Field label="Probability" value={`${opp.probability}%`} />
@@ -93,6 +108,7 @@ export default function OpportunityDetail() {
               <Field label="Amount" value={inr(Number(opp.amount))} />
               <Field label="Owner" value={opp.owner_id ? usersMap[opp.owner_id] ?? "—" : "—"} />
             </div>
+
           </CardContent></Card>
         </TabsContent>
 
