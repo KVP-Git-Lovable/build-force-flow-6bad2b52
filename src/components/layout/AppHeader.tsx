@@ -30,7 +30,7 @@ import {
   FileBarChart,
   Target,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NavLink } from "@/components/NavLink";
 import { Input } from "@/components/ui/input";
 import {
@@ -225,6 +225,9 @@ export function AppHeader() {
                     className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                   >
                     <Avatar className="h-12 w-12 border-2 border-primary-foreground/30">
+                      {profile?.profile_picture_url ? (
+                        <AvatarImage src={profile.profile_picture_url} alt={displayName} />
+                      ) : null}
                       <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
                         {initials}
                       </AvatarFallback>
