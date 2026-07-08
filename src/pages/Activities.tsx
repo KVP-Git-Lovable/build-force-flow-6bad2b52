@@ -762,9 +762,11 @@ export default function Activities() {
           ? Math.max(1, Math.ceil((new Date(form.to_date).getTime() - new Date(form.from_date).getTime()) / 86400000) + 1)
           : null,
         description: form.description || null,
-        site_id: form.site_id || null,
-        milestone_id: form.milestone_id || null,
+        site_id: form.link_type === "site" ? (form.site_id || null) : null,
+        milestone_id: form.link_type === "site" ? (form.milestone_id || null) : null,
         grn_po_id: isGrnType ? (form.grn_po_id || null) : null,
+        customer_id: form.customer_id || null,
+        opportunity_id: form.link_type === "opportunity" ? (form.opportunity_id || null) : null,
         location_address: form.location_address || null,
         total_hours: form.total_hours || 0,
         photo_urls: form.photos || [],
