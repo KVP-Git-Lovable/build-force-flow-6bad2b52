@@ -460,6 +460,7 @@ export interface Quote {
   name: string;
   notes: string | null;
   total: number;
+  overall_discount_pct: number;
   created_at: string;
   updated_at: string;
 }
@@ -499,12 +500,13 @@ export function useSaveQuote() {
       name: string;
       notes: string | null;
       total: number;
+      overall_discount_pct: number;
       items: QuoteItem[];
     }) => {
       let quoteId = payload.id;
       if (quoteId) {
         const { error } = await supabase.from("opportunity_quotes" as any)
-          .update({ name: payload.name, notes: payload.notes, total: payload.total })
+          .update({ name: payload.name, notes: payload.notes, total: payload.total, overall_discount_pct: payload.overall_discount_pct } as any)
           .eq("id", quoteId);
         if (error) throw error;
         await supabase.from("opportunity_quote_items" as any).delete().eq("quote_id", quoteId);
@@ -512,6 +514,7 @@ export function useSaveQuote() {
         const { data, error } = await supabase.from("opportunity_quotes" as any).insert({
           opportunity_id: payload.opportunity_id,
           name: payload.name, notes: payload.notes, total: payload.total,
+          overall_discount_pct: payload.overall_discount_pct,
         } as any).select().single();
         if (error) throw error;
         quoteId = (data as any).id;
@@ -574,6 +577,9 @@ export function useMasterProducts() {
       if (error) throw error;
       return data as MasterProduct[];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 

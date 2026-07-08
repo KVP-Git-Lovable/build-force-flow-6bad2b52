@@ -1894,6 +1894,7 @@ export type Database = {
           name: string
           notes: string | null
           opportunity_id: string
+          overall_discount_pct: number
           total: number
           updated_at: string
         }
@@ -1904,6 +1905,7 @@ export type Database = {
           name: string
           notes?: string | null
           opportunity_id: string
+          overall_discount_pct?: number
           total?: number
           updated_at?: string
         }
@@ -1914,6 +1916,7 @@ export type Database = {
           name?: string
           notes?: string | null
           opportunity_id?: string
+          overall_discount_pct?: number
           total?: number
           updated_at?: string
         }
