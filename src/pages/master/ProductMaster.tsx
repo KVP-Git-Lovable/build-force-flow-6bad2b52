@@ -26,8 +26,10 @@ interface ProductRow {
   product_name: string;
   category_id: string | null;
   default_uom: string | null;
+  default_unit_price: number;
   is_active: boolean;
 }
+
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
