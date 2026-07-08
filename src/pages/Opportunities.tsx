@@ -169,7 +169,9 @@ export default function Opportunities() {
           </div>
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Name</TableHead><TableHead>Stage</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Customer / Account</TableHead>
+              <TableHead>Stage</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Close Date</TableHead><TableHead>Owner</TableHead>
             </TableRow></TableHeader>
@@ -177,6 +179,16 @@ export default function Opportunities() {
               {opps.map((o) => (
                 <TableRow key={o.id} className="cursor-pointer" onClick={() => nav(`/opportunities/${o.id}`)}>
                   <TableCell className="font-medium">{o.name}</TableCell>
+                  <TableCell>
+                    {o.customer_id ? (
+                      <button
+                        className="text-primary hover:underline"
+                        onClick={(e) => { e.stopPropagation(); nav(`/customers/${o.customer_id}`); }}
+                      >
+                        {customersMap[o.customer_id] ?? "—"}
+                      </button>
+                    ) : "—"}
+                  </TableCell>
                   <TableCell>
                     <Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge>
                   </TableCell>
@@ -186,10 +198,11 @@ export default function Opportunities() {
                 </TableRow>
               ))}
               {opps.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No opportunities.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No opportunities.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
+
         </CardContent>
       </Card>
     </div>
