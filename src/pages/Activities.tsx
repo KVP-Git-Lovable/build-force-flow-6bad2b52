@@ -339,6 +339,19 @@ export default function Activities() {
     setActivityTypes((data || []).map((d: any) => d.name));
   }, []);
 
+  // Fetch customers & opportunities for activity linking
+  useEffect(() => {
+    (async () => {
+      const [{ data: custs }, { data: opps }] = await Promise.all([
+        supabase.from("customers").select("id, name").order("name"),
+        supabase.from("customer_opportunities").select("id, title, customer_id").order("created_at", { ascending: false }),
+      ]);
+      setCustomersList((custs || []) as any);
+      setOpportunitiesList((opps || []) as any);
+    })();
+  }, []);
+
+
   // Fetch milestones and flag when site_id changes in form
   useEffect(() => {
     if (!form.site_id || form.site_id === "__add_new_site__") {
