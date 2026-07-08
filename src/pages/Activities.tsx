@@ -1221,7 +1221,7 @@ export default function Activities() {
                 })()}
               </div>
             )}
-            {form.site_id && form.site_id !== "__add_new_site__" && (
+            {form.link_type === "site" && form.site_id && form.site_id !== "__add_new_site__" && (
               <div>
                 <Label className="text-xs flex items-center gap-1.5 mb-2">Site Flag</Label>
                 <div className="flex items-center gap-3">
