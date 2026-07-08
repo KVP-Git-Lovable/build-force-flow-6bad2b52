@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Shield,
   Clock,
@@ -91,6 +91,9 @@ export default function More() {
           onClick={() => navigate("/profile")}
         >
           <Avatar className="h-12 w-12 border-2 border-white/30">
+            {profile?.profile_picture_url ? (
+              <AvatarImage src={profile.profile_picture_url} alt={displayName} />
+            ) : null}
             <AvatarFallback className="bg-white/20 text-primary-foreground font-bold">
               {initials}
             </AvatarFallback>
