@@ -11,8 +11,9 @@ import { ArrowLeft, Plus, FileText, Trash2, Download } from "lucide-react";
 import {
   useOpportunity, useMilestones, useUpdateMilestone, useDeleteMilestone,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
-  useOppStages, useUserLookup, stageColorClasses,
+  useOppStages, useUserLookup, useCustomers, stageColorClasses,
 } from "@/hooks/useCustomers";
+
 import { MilestoneForm } from "@/components/customers/MilestoneForm";
 import { ActivityForm } from "@/components/customers/ActivityForm";
 import { DocumentUpload } from "@/components/customers/DocumentUpload";
