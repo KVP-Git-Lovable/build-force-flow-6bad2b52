@@ -79,7 +79,7 @@ export default function ConfigurationWorkflow() {
           <Card className="border-border/60 h-fit">
             <CardContent className="p-2">
               <nav className="flex md:flex-col gap-1 overflow-x-auto">
-                {MODULES.map((m) => {
+                {visibleModules.map((m) => {
                   const Icon = m.icon;
                   const active = m.id === activeModule;
                   return (
