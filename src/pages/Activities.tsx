@@ -1152,7 +1152,7 @@ export default function Activities() {
                     {opportunitiesList
                       .filter((o) => !form.customer_id || o.customer_id === form.customer_id)
                       .map((o) => (
-                        <SelectItem key={o.id} value={o.id}>{o.title}</SelectItem>
+                        <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                       ))}
                   </SelectContent>
                 </Select>
