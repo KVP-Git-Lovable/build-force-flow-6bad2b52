@@ -50,6 +50,8 @@ export default function OpportunityDetail() {
   const [addMs, setAddMs] = useState(false);
   const [newAct, setNewAct] = useState(false);
   const [editOpp, setEditOpp] = useState(false);
+  const [quoteEditor, setQuoteEditor] = useState<{ mode: "new" | "edit"; quoteId?: string } | null>(null);
+  const editingQuote = quoteEditor?.mode === "edit" ? quotes.find((q) => q.id === quoteEditor.quoteId) : null;
 
   const total = milestones.reduce((s, m) => s + Number(m.invoice_value || 0), 0);
 
