@@ -537,9 +537,10 @@ export default function CustomerDetail() {
         </TabsContent>
       </Tabs>
 
-      <OpportunityForm open={newOpp} onOpenChange={setNewOpp} />
-      <ContactForm open={newContact} onOpenChange={setNewContact} contact={editContact ?? undefined} />
-      <ActivityForm open={newAct} onOpenChange={setNewAct} />
+      <OpportunityForm open={newOpp} onOpenChange={setNewOpp} lockCustomerId={customerId} />
+      <ContactForm open={newContact} onOpenChange={setNewContact} contact={editContact ?? undefined} customerId={customerId} />
+      <ActivityForm open={newAct} onOpenChange={setNewAct} customerId={customerId} />
+
     </div>
   );
 }
