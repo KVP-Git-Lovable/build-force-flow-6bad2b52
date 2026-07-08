@@ -6,27 +6,30 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Opportunity, useCreateOpportunity, useUpdateOpportunity,
-  useOppTypes, useOppStages, useUserLookup,
+  useOppTypes, useOppStages, useUserLookup, useCustomers,
 } from "@/hooks/useCustomers";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export function OpportunityForm({
-  open, onOpenChange, opportunity,
+  open, onOpenChange, opportunity, lockCustomerId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   opportunity?: Opportunity;
+  lockCustomerId?: string;
 }) {
   const create = useCreateOpportunity();
   const update = useUpdateOpportunity();
   const { data: types = [] } = useOppTypes();
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
+  const { data: customers = [] } = useCustomers();
   const { userId } = useCurrentUser();
   const isEdit = !!opportunity;
 
   const [form, setForm] = useState({
     name: "", type: "", stage: "", probability: 0, close_date: "", amount: 0, owner_id: "",
+    customer_id: "",
   });
 
   useEffect(() => {
@@ -39,14 +42,21 @@ export function OpportunityForm({
         close_date: opportunity.close_date ?? "",
         amount: Number(opportunity.amount),
         owner_id: opportunity.owner_id ?? "",
+        customer_id: opportunity.customer_id ?? lockCustomerId ?? "",
       });
     } else {
-      setForm({ name: "", type: types[0]?.name ?? "", stage: stages[0]?.name ?? "", probability: 20, close_date: "", amount: 0, owner_id: "" });
+      setForm({
+        name: "", type: types[0]?.name ?? "", stage: stages[0]?.name ?? "",
+        probability: 20, close_date: "", amount: 0, owner_id: "",
+        customer_id: lockCustomerId ?? "",
+      });
     }
-  }, [opportunity, open, types, stages]);
+  }, [opportunity, open, types, stages, lockCustomerId]);
+
+  const canSubmit = form.name.trim() && (form.customer_id || lockCustomerId);
 
   const submit = async () => {
-    if (!form.name.trim()) return;
+    if (!canSubmit) return;
     const payload: any = {
       name: form.name.trim(),
       type: form.type || null,
@@ -54,6 +64,7 @@ export function OpportunityForm({
       probability: Number(form.probability) || 0,
       close_date: form.close_date || null,
       amount: Number(form.amount) || 0,
+      customer_id: lockCustomerId ?? form.customer_id ?? null,
     };
     if (opportunity) {
       payload.owner_id = form.owner_id || null;
@@ -65,11 +76,26 @@ export function OpportunityForm({
     onOpenChange(false);
   };
 
+  const lockedCustomer = lockCustomerId ? customers.find((c) => c.id === lockCustomerId) : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>{opportunity ? "Edit Opportunity" : "New Opportunity"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
+          <div>
+            <Label>Customer / Account *</Label>
+            {lockCustomerId ? (
+              <Input value={lockedCustomer?.name ?? "—"} disabled />
+            ) : (
+              <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
+                <SelectContent>
+                  {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
           <div><Label>Opportunity Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -118,7 +144,7 @@ export function OpportunityForm({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={!form.name.trim()}>{opportunity ? "Save" : "Create"}</Button>
+          <Button onClick={submit} disabled={!canSubmit}>{opportunity ? "Save" : "Create"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
