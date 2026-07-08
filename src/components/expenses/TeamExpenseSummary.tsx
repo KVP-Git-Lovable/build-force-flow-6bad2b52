@@ -341,56 +341,100 @@ export default function TeamExpenseSummary() {
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
           ) : (
             <div className="space-y-4 mt-2">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Team-wide TA/DA/Additional Totals */}
+              {(() => {
+                const teamTA = memberSummaries.reduce((s, m) => s + m.ta, 0);
+                const teamDA = memberSummaries.reduce((s, m) => s + m.da, 0);
+                const teamAdd = memberSummaries.reduce((s, m) => s + m.additional, 0);
+                const teamTotal = teamTA + teamDA + teamAdd;
+                return (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center justify-center gap-1"><Car className="h-3 w-3" />Travel (TA)</p>
+                        <p className="text-lg font-bold text-blue-600 dark:text-blue-400">₹{teamTA.toFixed(0)}</p>
+                        <p className="text-xs text-muted-foreground">Team total</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1"><Utensils className="h-3 w-3" />Daily (DA)</p>
+                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">₹{teamDA.toFixed(0)}</p>
+                        <p className="text-xs text-muted-foreground">Team total</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-xs text-purple-600 dark:text-purple-400 flex items-center justify-center gap-1"><Receipt className="h-3 w-3" />Additional</p>
+                        <p className="text-lg font-bold text-purple-600 dark:text-purple-400">₹{teamAdd.toFixed(0)}</p>
+                        <p className="text-xs text-muted-foreground">{expenses.length} claims</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <p className="text-xs text-muted-foreground">Grand Total</p>
+                        <p className="text-lg font-bold">₹{teamTotal.toFixed(0)}</p>
+                        <p className="text-xs text-muted-foreground">TA + DA + Add</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })()}
+
+              {/* Approval Status Cards (additional expenses) */}
+              <div className="grid grid-cols-3 gap-3">
                 <Card>
-                  <CardContent className="p-4 text-center">
-                    <p className="text-xs text-muted-foreground">Total Submitted</p>
-                    <p className="text-lg font-bold">₹{totalSubmitted.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">{expenses.length} claims</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
+                  <CardContent className="p-3 text-center">
                     <p className="text-xs text-green-600 dark:text-green-400">Approved</p>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-400">₹{totalApproved.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">{expenses.filter(e => e.status === 'approved').length} claims</p>
+                    <p className="text-base font-bold text-green-600 dark:text-green-400">₹{totalApproved.toFixed(0)}</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-4 text-center">
+                  <CardContent className="p-3 text-center">
                     <p className="text-xs text-yellow-600 dark:text-yellow-400">Pending</p>
-                    <p className="text-lg font-bold text-yellow-600 dark:text-yellow-400">₹{totalPending.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">{pendingExpenses.length} claims</p>
+                    <p className="text-base font-bold text-yellow-600 dark:text-yellow-400">₹{totalPending.toFixed(0)}</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-4 text-center">
+                  <CardContent className="p-3 text-center">
                     <p className="text-xs text-destructive">Rejected</p>
-                    <p className="text-lg font-bold text-destructive">₹{totalRejected.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">{expenses.filter(e => e.status === 'rejected').length} claims</p>
+                    <p className="text-base font-bold text-destructive">₹{totalRejected.toFixed(0)}</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Expenses by User */}
+              {/* Per-member TA/DA/Additional breakdown */}
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-1"><Users className="h-4 w-4" />Expenses by Team Member</h3>
-                {expensesByUser.length === 0 ? (
-                  <Card><CardContent className="py-6 text-center text-muted-foreground text-sm">No expenses this month.</CardContent></Card>
+                {summariesLoading ? (
+                  <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                ) : memberSummaries.length === 0 ? (
+                  <Card><CardContent className="py-6 text-center text-muted-foreground text-sm">No team members found.</CardContent></Card>
                 ) : (
                   <div className="space-y-2">
-                    {expensesByUser.map((u, i) => (
-                      <Card key={i}>
+                    {memberSummaries.map((u) => (
+                      <Card key={u.user_id}>
                         <CardContent className="p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="font-semibold text-sm">{u.name}</p>
+                            <div>
+                              <p className="font-semibold text-sm">{u.name}</p>
+                              <p className="text-[11px] text-muted-foreground">{u.present_days} present · {u.total_km.toFixed(1)} km</p>
+                            </div>
                             <span className="font-bold text-sm">₹{u.total.toFixed(0)}</span>
                           </div>
-                          <div className="flex gap-3 text-xs text-muted-foreground">
-                            <span className="text-green-600 dark:text-green-400">Approved: ₹{u.approved.toFixed(0)}</span>
-                            <span className="text-yellow-600 dark:text-yellow-400">Pending: ₹{u.pending.toFixed(0)}</span>
-                            <span className="text-destructive">Rejected: ₹{u.rejected.toFixed(0)}</span>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div className="rounded bg-blue-50 dark:bg-blue-950/30 p-1.5 text-center">
+                              <p className="text-[10px] text-blue-600 dark:text-blue-400">TA</p>
+                              <p className="font-semibold text-blue-700 dark:text-blue-300">₹{u.ta.toFixed(0)}</p>
+                            </div>
+                            <div className="rounded bg-emerald-50 dark:bg-emerald-950/30 p-1.5 text-center">
+                              <p className="text-[10px] text-emerald-600 dark:text-emerald-400">DA</p>
+                              <p className="font-semibold text-emerald-700 dark:text-emerald-300">₹{u.da.toFixed(0)}</p>
+                            </div>
+                            <div className="rounded bg-purple-50 dark:bg-purple-950/30 p-1.5 text-center">
+                              <p className="text-[10px] text-purple-600 dark:text-purple-400">Add</p>
+                              <p className="font-semibold text-purple-700 dark:text-purple-300">₹{u.additional.toFixed(0)}</p>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -402,6 +446,7 @@ export default function TeamExpenseSummary() {
               {/* Report Generator */}
               <ExpenseReportGenerator isAdmin={isAdmin} />
             </div>
+
           )}
         </TabsContent>
       </Tabs>
