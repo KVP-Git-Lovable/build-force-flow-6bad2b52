@@ -34,6 +34,8 @@ export default function OpportunityDetail() {
   const { data: milestones = [] } = useMilestones(id);
   const { data: activities = [] } = useCustomerActivities(id);
   const { data: docs = [] } = useCustomerDocuments(id);
+  const { data: quotes = [] } = useQuotes(id);
+  const deleteQuote = useDeleteQuote();
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
   const { data: customers = [] } = useCustomers();
