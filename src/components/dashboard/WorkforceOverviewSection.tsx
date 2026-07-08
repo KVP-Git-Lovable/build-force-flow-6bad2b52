@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Users, Clock, CalendarCheck, Activity, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import {
   useWorkforceUsers,
   useWorkforceOverview,
@@ -75,7 +76,8 @@ function StatCard({ icon: Icon, label, value, accent }: StatCardProps) {
 
 export default function WorkforceOverviewSection() {
   const { hasWidgetPermission, isLoading: permsLoading } = useProfilePermissions();
-  const canView = hasWidgetPermission("widget_admin_attendance_overview");
+  const { isAdmin } = useUserProfile();
+  const canView = isAdmin || hasWidgetPermission("widget_admin_attendance_overview");
 
   const [preset, setPreset] = useState<DatePreset>("this_week");
   const [customStart, setCustomStart] = useState("");
