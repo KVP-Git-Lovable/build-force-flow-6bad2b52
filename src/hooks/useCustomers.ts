@@ -460,6 +460,7 @@ export interface Quote {
   name: string;
   notes: string | null;
   total: number;
+  overall_discount_pct: number;
   created_at: string;
   updated_at: string;
 }
