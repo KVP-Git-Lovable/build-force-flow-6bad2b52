@@ -309,18 +309,21 @@ export function useDeleteContact() {
 }
 
 // ---------- Activities ----------
-export function useCustomerActivities(opportunityId?: string) {
+export function useCustomerActivities(scope?: { opportunityId?: string; customerId?: string } | string) {
+  const s = typeof scope === "string" ? { opportunityId: scope } : (scope || {});
   return useQuery({
-    queryKey: ["customer-activities", opportunityId ?? "all"],
+    queryKey: ["customer-activities", s.opportunityId ?? "all", s.customerId ?? "all"],
     queryFn: async () => {
       let q = supabase.from("customer_activities").select("*").order("activity_date", { ascending: false });
-      if (opportunityId) q = q.eq("opportunity_id", opportunityId);
+      if (s.opportunityId) q = q.eq("opportunity_id", s.opportunityId);
+      if (s.customerId) q = q.eq("customer_id", s.customerId);
       const { data, error } = await q;
       if (error) throw error;
       return data as CustomerActivity[];
     },
   });
 }
+
 
 export function useCreateCustomerActivity() {
   const qc = useQueryClient();
