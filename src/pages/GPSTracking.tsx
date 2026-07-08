@@ -470,12 +470,17 @@ export default function GPSTracking() {
                 {trackingLoading ? (
                   <MapFallback />
                 ) : gpsPoints.length > 0 || activityMarkers.length > 0 ? (
-                  <Suspense fallback={<MapFallback />}>
-                    <LeafletMap
-                      gpsPoints={gpsPoints}
-                      activityMarkers={allMapMarkers}
-                    />
-                  </Suspense>
+                  <>
+                    <Suspense fallback={<MapFallback />}>
+                      <LeafletMap
+                        gpsPoints={gpsPoints}
+                        activityMarkers={allMapMarkers}
+                      />
+                    </Suspense>
+                    <div className="absolute top-2 right-2 z-[400] bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
+                      Traveled: {totalDistance.toFixed(1)} km
+                    </div>
+                  </>
                 ) : (
                   <div className="h-full w-full flex flex-col items-center justify-center bg-muted/50">
                     <MapPin className="h-12 w-12 mb-3 text-muted-foreground/50" />
