@@ -228,6 +228,8 @@ export default function Activities() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
+  const [customersList, setCustomersList] = useState<Array<{ id: string; name: string }>>([]);
+  const [opportunitiesList, setOpportunitiesList] = useState<Array<{ id: string; title: string; customer_id: string }>>([]);
   const [detailsActivity, setDetailsActivity] = useState<ActivityType | null>(null);
   const [formAttendance, setFormAttendance] = useState<{ check_in_time: string | null; check_out_time: string | null } | null>(null);
   const [checkingIn, setCheckingIn] = useState(false);
