@@ -69,33 +69,41 @@ export default function TeamExpenseSummary() {
       let nameMap = new Map<string, string>();
 
       if (userIsAdmin) {
-        // Admin sees all users except themselves
         const { data: allUsers } = await supabase
           .from('users')
           .select('id, full_name');
         subIds = allUsers?.filter(u => u.id !== user.id).map(u => u.id) || [];
         nameMap = new Map(allUsers?.map(u => [u.id, u.full_name || 'Unknown']) || []);
       } else {
-        const { data: subordinates } = await supabase
-          .from('users')
-          .select('id, full_name')
-          .eq('reporting_manager_id', user.id);
-        subIds = subordinates?.map(s => s.id) || [];
-        nameMap = new Map(subordinates?.map(s => [s.id, s.full_name || 'Unknown']) || []);
+        // Use hierarchy RPC so nested reportees are included (matches RLS)
+        const { data: hier } = await supabase.rpc('get_user_hierarchy', { _manager_id: user.id });
+        subIds = (hier || []).map((r: any) => r.user_id).filter((id: string) => id !== user.id);
+        if (subIds.length > 0) {
+          const { data: subUsers } = await supabase
+            .from('users')
+            .select('id, full_name')
+            .in('id', subIds);
+          nameMap = new Map(subUsers?.map(s => [s.id, s.full_name || 'Unknown']) || []);
+        }
       }
 
       if (subIds.length === 0) {
         setExpenses([]);
+        setMemberSummaries([]);
         setLoading(false);
         return;
       }
+
+      // Full month end (handles Feb 28/29)
+      const startDate = `${selectedMonth}-01`;
+      const endDate = format(endOfMonth(parse(startDate, 'yyyy-MM-dd', new Date())), 'yyyy-MM-dd');
 
       const { data } = await supabase
         .from('additional_expenses')
         .select('*')
         .in('user_id', subIds)
-        .gte('expense_date', `${selectedMonth}-01`)
-        .lte('expense_date', `${selectedMonth}-31`)
+        .gte('expense_date', startDate)
+        .lte('expense_date', endDate)
         .order('expense_date', { ascending: false });
 
       setExpenses(
@@ -104,6 +112,33 @@ export default function TeamExpenseSummary() {
           employee_name: nameMap.get(e.user_id) || 'Unknown',
         })) as TeamExpense[]
       );
+
+      // Per-member TA/DA/Additional summaries via RPC
+      setSummariesLoading(true);
+      const summaries = await Promise.all(
+        subIds.map(async (uid) => {
+          const { data: sum } = await supabase.rpc('get_monthly_expense_summary' as any, {
+            _user_id: uid,
+            _year_month: selectedMonth,
+          });
+          const s = (sum || {}) as any;
+          const ta = Number(s.ta || 0);
+          const da = Number(s.da || 0);
+          const additional = Number(s.additional_approved || 0) + Number(s.additional_pending || 0);
+          return {
+            user_id: uid,
+            name: nameMap.get(uid) || 'Unknown',
+            ta,
+            da,
+            additional,
+            total: Number(s.total || ta + da + additional),
+            present_days: Number(s.present_days || 0),
+            total_km: Number(s.total_km || 0),
+          };
+        })
+      );
+      setMemberSummaries(summaries.sort((a, b) => b.total - a.total));
+      setSummariesLoading(false);
     } catch (error) {
       console.error('Error fetching team expenses:', error);
       toast.error('Failed to load team expenses');
@@ -111,6 +146,7 @@ export default function TeamExpenseSummary() {
       setLoading(false);
     }
   };
+
 
   const handleApprove = async (id: string) => {
     setActionLoading(id);
