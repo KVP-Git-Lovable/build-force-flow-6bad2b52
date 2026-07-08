@@ -14,17 +14,17 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { ModulePanel } from "@/components/config/panels";
 
 const MODULES = [
-  { id: "activities", label: "Activities", icon: Activity },
-  { id: "projects", label: "Projects / Sites", icon: Building2 },
-  { id: "procurement", label: "Procurement", icon: ShoppingCart },
-  { id: "goods_receipt", label: "Goods Receipt", icon: PackageCheck },
-  { id: "expenses", label: "Expenses", icon: Wallet },
-  { id: "leave", label: "Leave", icon: CalendarDays },
-  { id: "attendance", label: "Attendance", icon: Clock },
-  { id: "customers", label: "Customers / CRM", icon: Users },
-  { id: "vendors", label: "Vendors", icon: Store },
-  { id: "reports", label: "Reports", icon: FileBarChart },
-];
+  { id: "activities", label: "Activities", icon: Activity, permission: "module_activities" },
+  { id: "projects", label: "Projects / Sites", icon: Building2, permission: "module_projects" },
+  { id: "procurement", label: "Procurement", icon: ShoppingCart, permission: "module_procurement" },
+  { id: "goods_receipt", label: "Goods Receipt", icon: PackageCheck, permission: "module_procurement" },
+  { id: "expenses", label: "Expenses", icon: Wallet, permission: "module_expenses" },
+  { id: "leave", label: "Leave", icon: CalendarDays, permission: "module_attendance" },
+  { id: "attendance", label: "Attendance", icon: Clock, permission: "module_attendance" },
+  { id: "customers", label: "Customers / CRM", icon: Users, permission: "module_customers" },
+  { id: "vendors", label: "Vendors", icon: Store, permission: "module_vendors" },
+  { id: "reports", label: "Reports", icon: FileBarChart, permission: "module_reports" },
+] as const;
 
 export default function ConfigurationWorkflow() {
   const navigate = useNavigate();
