@@ -12,7 +12,9 @@ import {
   useOpportunity, useMilestones, useUpdateMilestone, useDeleteMilestone,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
   useOppStages, useUserLookup, useCustomers, stageColorClasses,
+  useQuotes, useDeleteQuote,
 } from "@/hooks/useCustomers";
+import { QuoteForm } from "@/components/customers/QuoteForm";
 
 import { MilestoneForm } from "@/components/customers/MilestoneForm";
 import { ActivityForm } from "@/components/customers/ActivityForm";
