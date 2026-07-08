@@ -10,15 +10,16 @@ import { useCreateCustomerActivity, useOpportunities } from "@/hooks/useCustomer
 const TYPES = ["Note", "Call", "Meeting", "Email", "Task"];
 
 export function ActivityForm({
-  open, onOpenChange, opportunityId, lockOpportunity,
+  open, onOpenChange, opportunityId, lockOpportunity, customerId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   opportunityId?: string;
   lockOpportunity?: boolean;
+  customerId?: string;
 }) {
   const create = useCreateCustomerActivity();
-  const { data: opps = [] } = useOpportunities();
+  const { data: opps = [] } = useOpportunities(customerId);
 
   const [form, setForm] = useState({
     type: "Note", subject: "", notes: "", activity_date: new Date().toISOString().slice(0, 10),
@@ -33,6 +34,7 @@ export function ActivityForm({
     if (!form.subject.trim()) return;
     await create.mutateAsync({
       opportunity_id: form.opportunity_id || null,
+      customer_id: customerId ?? null,
       type: form.type,
       subject: form.subject.trim(),
       notes: form.notes || null,
@@ -41,6 +43,7 @@ export function ActivityForm({
     onOpenChange(false);
     setForm({ type: "Note", subject: "", notes: "", activity_date: new Date().toISOString().slice(0, 10), opportunity_id: opportunityId ?? "" });
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
