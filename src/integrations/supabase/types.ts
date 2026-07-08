@@ -23,6 +23,7 @@ export type Database = {
           assigned_user_ids: Json
           attachment_urls: Json | null
           created_at: string
+          customer_id: string | null
           description: string | null
           duration_type: string | null
           end_time: string | null
@@ -34,6 +35,7 @@ export type Database = {
           location_lat: number | null
           location_lng: number | null
           milestone_id: string | null
+          opportunity_id: string | null
           photo_urls: Json
           project_id: string | null
           remarks: string | null
@@ -59,6 +61,7 @@ export type Database = {
           assigned_user_ids?: Json
           attachment_urls?: Json | null
           created_at?: string
+          customer_id?: string | null
           description?: string | null
           duration_type?: string | null
           end_time?: string | null
@@ -70,6 +73,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           milestone_id?: string | null
+          opportunity_id?: string | null
           photo_urls?: Json
           project_id?: string | null
           remarks?: string | null
@@ -95,6 +99,7 @@ export type Database = {
           assigned_user_ids?: Json
           attachment_urls?: Json | null
           created_at?: string
+          customer_id?: string | null
           description?: string | null
           duration_type?: string | null
           end_time?: string | null
@@ -106,6 +111,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           milestone_id?: string | null
+          opportunity_id?: string | null
           photo_urls?: Json
           project_id?: string | null
           remarks?: string | null
@@ -125,6 +131,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "activity_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "activity_events_grn_po_id_fkey"
             columns: ["grn_po_id"]
             isOneToOne: false
@@ -136,6 +149,13 @@ export type Database = {
             columns: ["milestone_id"]
             isOneToOne: false
             referencedRelation: "site_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "customer_opportunities"
             referencedColumns: ["id"]
           },
           {
