@@ -8,9 +8,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line,
 } from "recharts";
 import {
-  useOpportunities, useOppStages, useOppTypes, useUserLookup,
+  useOpportunities, useOppStages, useOppTypes, useUserLookup, useCustomers,
   stageColorClasses,
 } from "@/hooks/useCustomers";
+
 import { format, parseISO, startOfMonth } from "date-fns";
 
 function inr(n: number) {
