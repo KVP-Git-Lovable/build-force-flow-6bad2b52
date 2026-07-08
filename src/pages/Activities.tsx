@@ -1075,31 +1075,90 @@ export default function Activities() {
                 </Select>
               </div>
             )}
+            {/* Customer */}
             <div>
-              <Label className="text-xs">Project / Site</Label>
-              <Select value={form.site_id} onValueChange={(v) => {
-                if (v === "__add_new_site__") {
-                  setShowAddSiteDialog(true);
-                  return;
-                }
-                setForm({ ...form, site_id: v, milestone_id: "" });
-              }}>
-                <SelectTrigger><SelectValue placeholder="Select site (optional)" /></SelectTrigger>
+              <Label className="text-xs">Customer</Label>
+              <Select
+                value={form.customer_id || "__none__"}
+                onValueChange={(v) => {
+                  const id = v === "__none__" ? "" : v;
+                  // Reset opportunity if customer changes
+                  setForm({ ...form, customer_id: id, opportunity_id: "" });
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select customer (optional)" /></SelectTrigger>
                 <SelectContent>
-                  {sites.filter(s => s.is_active).map((s) => <SelectItem key={s.id} value={s.id}>{s.site_name}</SelectItem>)}
-                  <Separator className="my-1" />
-                  <SelectItem value="__add_new_site__" className="text-primary font-medium">
-                    <span className="flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" />Add new site...</span>
-                  </SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {customersList.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              {form.site_status && form.site_id !== "__add_new_site__" && (
-                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
-                  Site Status:
-                  <Badge variant="outline" className="text-[10px] capitalize">{form.site_status}</Badge>
-                </p>
+            </div>
+
+            {/* Link to Project/Site OR Opportunity */}
+            <div>
+              <Label className="text-xs mb-2 block">Link to</Label>
+              <div className="flex items-center gap-2 mb-2">
+                {(["site", "opportunity"] as const).map((lt) => (
+                  <button
+                    key={lt}
+                    type="button"
+                    onClick={() => setForm({ ...form, link_type: form.link_type === lt ? "" : lt, site_id: lt === "site" ? form.site_id : "", milestone_id: lt === "site" ? form.milestone_id : "", opportunity_id: lt === "opportunity" ? form.opportunity_id : "" })}
+                    className={`flex-1 px-2.5 py-1.5 rounded-lg border text-xs transition-colors capitalize ${
+                      form.link_type === lt ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    {lt === "site" ? "Project / Site" : "Opportunity"}
+                  </button>
+                ))}
+              </div>
+
+              {form.link_type === "site" && (
+                <>
+                  <Select value={form.site_id} onValueChange={(v) => {
+                    if (v === "__add_new_site__") {
+                      setShowAddSiteDialog(true);
+                      return;
+                    }
+                    setForm({ ...form, site_id: v, milestone_id: "" });
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select site" /></SelectTrigger>
+                    <SelectContent>
+                      {sites.filter(s => s.is_active).map((s) => <SelectItem key={s.id} value={s.id}>{s.site_name}</SelectItem>)}
+                      <Separator className="my-1" />
+                      <SelectItem value="__add_new_site__" className="text-primary font-medium">
+                        <span className="flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" />Add new site...</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.site_status && form.site_id !== "__add_new_site__" && (
+                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                      Site Status:
+                      <Badge variant="outline" className="text-[10px] capitalize">{form.site_status}</Badge>
+                    </p>
+                  )}
+                </>
+              )}
+
+              {form.link_type === "opportunity" && (
+                <Select
+                  value={form.opportunity_id || "__none__"}
+                  onValueChange={(v) => setForm({ ...form, opportunity_id: v === "__none__" ? "" : v })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select opportunity" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {opportunitiesList
+                      .filter((o) => !form.customer_id || o.customer_id === form.customer_id)
+                      .map((o) => (
+                        <SelectItem key={o.id} value={o.id}>{o.title}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
+
             {/* Milestone selection (read-only, sourced from Site master) */}
             {form.site_id && form.site_id !== "__add_new_site__" && (
               <div>
