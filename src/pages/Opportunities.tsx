@@ -33,6 +33,9 @@ export default function Opportunities() {
   const { data: stages = [] } = useOppStages();
   const { data: types = [] } = useOppTypes();
   const { data: users = [] } = useUserLookup();
+  const { data: customers = [] } = useCustomers();
+  const customersMap = useMemo(() => Object.fromEntries(customers.map((c) => [c.id, c.name])), [customers]);
+
 
   const usersMap = useMemo(
     () => Object.fromEntries(users.map((u) => [u.id, u.full_name || u.username || u.email])),
