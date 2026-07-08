@@ -47,6 +47,7 @@ const OpportunityDetail = lazy(() => import("./pages/OpportunityDetail"));
 const Opportunities = lazy(() => import("./pages/Opportunities"));
 const OpportunityStagesMaster = lazy(() => import("./pages/master/OpportunityStagesMaster"));
 const OpportunityTypesMaster = lazy(() => import("./pages/master/OpportunityTypesMaster"));
+const ConfigurationWorkflow = lazy(() => import("./pages/ConfigurationWorkflow"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,6 +91,7 @@ const App = () => (
             <Route path="/admin/expenses" element={<Suspense fallback={<PageFallback />}><AdminExpenseManagement /></Suspense>} />
             <Route path="/admin/security" element={<Suspense fallback={<PageFallback />}><SecurityManagement /></Suspense>} />
             <Route path="/admin/company" element={<Suspense fallback={<PageFallback />}><CompanyProfile /></Suspense>} />
+            <Route path="/admin/configuration" element={<Suspense fallback={<PageFallback />}><ConfigurationWorkflow /></Suspense>} />
             <Route path="/admin/sites" element={<Navigate to="/sites" replace />} />
             <Route path="/sites" element={<Suspense fallback={<PageFallback />}><SiteMasterPage /></Suspense>} />
             <Route path="/activity-types" element={<Suspense fallback={<PageFallback />}><ActivityTypeMasterPage /></Suspense>} />
