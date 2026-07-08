@@ -257,6 +257,36 @@ export type Database = {
           },
         ]
       }
+      app_configuration: {
+        Row: {
+          config_key: string
+          config_value: Json | null
+          created_at: string
+          id: string
+          module: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value?: Json | null
+          created_at?: string
+          id?: string
+          module: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json | null
+          created_at?: string
+          id?: string
+          module?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           check_in_address: string | null
