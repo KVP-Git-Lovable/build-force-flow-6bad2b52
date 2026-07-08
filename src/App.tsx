@@ -43,6 +43,8 @@ const Procurement = lazy(() => import("./pages/Procurement"));
 const GRN = lazy(() => import("./pages/GRN"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Customers = lazy(() => import("./pages/Customers"));
+const CustomerDetail = lazy(() => import("./pages/CustomerDetail"));
+
 const OpportunityDetail = lazy(() => import("./pages/OpportunityDetail"));
 const Opportunities = lazy(() => import("./pages/Opportunities"));
 const OpportunityStagesMaster = lazy(() => import("./pages/master/OpportunityStagesMaster"));
