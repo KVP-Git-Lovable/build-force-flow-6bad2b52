@@ -91,6 +91,16 @@ export default function OpportunityDetail() {
           <Card><CardContent className="p-4 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <Field label="Opportunity Name" value={opp.name} />
+              <Field
+                label="Customer / Account"
+                value={
+                  opp.customer_id ? (
+                    <Link to={`/customers/${opp.customer_id}`} className="text-primary hover:underline">
+                      {customersMap[opp.customer_id] ?? "—"}
+                    </Link>
+                  ) : "—"
+                }
+              />
               <Field label="Type" value={opp.type || "—"} />
               <Field label="Stage" value={<Badge className={stageColorClasses(stageMap[opp.stage ?? ""]?.color)}>{opp.stage || "—"}</Badge>} />
               <Field label="Probability" value={`${opp.probability}%`} />
@@ -98,6 +108,7 @@ export default function OpportunityDetail() {
               <Field label="Amount" value={inr(Number(opp.amount))} />
               <Field label="Owner" value={opp.owner_id ? usersMap[opp.owner_id] ?? "—" : "—"} />
             </div>
+
           </CardContent></Card>
         </TabsContent>
 
