@@ -229,7 +229,7 @@ export default function Activities() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [customersList, setCustomersList] = useState<Array<{ id: string; name: string }>>([]);
-  const [opportunitiesList, setOpportunitiesList] = useState<Array<{ id: string; title: string; customer_id: string }>>([]);
+  const [opportunitiesList, setOpportunitiesList] = useState<Array<{ id: string; name: string; customer_id: string }>>([]);
   const [detailsActivity, setDetailsActivity] = useState<ActivityType | null>(null);
   const [formAttendance, setFormAttendance] = useState<{ check_in_time: string | null; check_out_time: string | null } | null>(null);
   const [checkingIn, setCheckingIn] = useState(false);
@@ -344,7 +344,7 @@ export default function Activities() {
     (async () => {
       const [{ data: custs }, { data: opps }] = await Promise.all([
         supabase.from("customers").select("id, name").order("name"),
-        supabase.from("customer_opportunities").select("id, title, customer_id").order("created_at", { ascending: false }),
+        supabase.from("customer_opportunities").select("id, name, customer_id").order("created_at", { ascending: false }),
       ]);
       setCustomersList((custs || []) as any);
       setOpportunitiesList((opps || []) as any);
@@ -1152,7 +1152,7 @@ export default function Activities() {
                     {opportunitiesList
                       .filter((o) => !form.customer_id || o.customer_id === form.customer_id)
                       .map((o) => (
-                        <SelectItem key={o.id} value={o.id}>{o.title}</SelectItem>
+                        <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                       ))}
                   </SelectContent>
                 </Select>
