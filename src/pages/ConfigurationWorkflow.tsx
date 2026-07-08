@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { ModulePanel } from "@/components/config/panels";
 
 const MODULES = [
