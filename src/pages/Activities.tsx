@@ -1160,7 +1160,7 @@ export default function Activities() {
             </div>
 
             {/* Milestone selection (read-only, sourced from Site master) */}
-            {form.site_id && form.site_id !== "__add_new_site__" && (
+            {form.link_type === "site" && form.site_id && form.site_id !== "__add_new_site__" && (
               <div>
                 <Label className="text-xs">Milestone</Label>
                 {siteMilestones.length === 0 ? (
