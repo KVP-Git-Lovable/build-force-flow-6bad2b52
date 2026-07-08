@@ -438,3 +438,142 @@ export function stageColorClasses(color?: string) {
     default:      return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
   }
 }
+
+// ---------- Quotes ----------
+export interface QuoteItem {
+  id?: string;
+  quote_id?: string;
+  product_id: string | null;
+  product_name: string | null;
+  qty: number;
+  unit_price: number;
+  start_date: string | null;
+  end_date: string | null;
+  term_months: number | null;
+  discount_pct: number;
+  total: number;
+  sort_order: number;
+}
+export interface Quote {
+  id: string;
+  opportunity_id: string;
+  name: string;
+  notes: string | null;
+  total: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useQuotes(oppId?: string) {
+  return useQuery({
+    queryKey: ["quotes", oppId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("opportunity_quotes" as any).select("*")
+        .eq("opportunity_id", oppId!).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as Quote[];
+    },
+    enabled: !!oppId,
+  });
+}
+
+export function useQuoteItems(quoteId?: string) {
+  return useQuery({
+    queryKey: ["quote-items", quoteId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("opportunity_quote_items" as any).select("*")
+        .eq("quote_id", quoteId!).order("sort_order");
+      if (error) throw error;
+      return data as unknown as QuoteItem[];
+    },
+    enabled: !!quoteId,
+  });
+}
+
+export function useSaveQuote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      id?: string;
+      opportunity_id: string;
+      name: string;
+      notes: string | null;
+      total: number;
+      items: QuoteItem[];
+    }) => {
+      let quoteId = payload.id;
+      if (quoteId) {
+        const { error } = await supabase.from("opportunity_quotes" as any)
+          .update({ name: payload.name, notes: payload.notes, total: payload.total })
+          .eq("id", quoteId);
+        if (error) throw error;
+        await supabase.from("opportunity_quote_items" as any).delete().eq("quote_id", quoteId);
+      } else {
+        const { data, error } = await supabase.from("opportunity_quotes" as any).insert({
+          opportunity_id: payload.opportunity_id,
+          name: payload.name, notes: payload.notes, total: payload.total,
+        } as any).select().single();
+        if (error) throw error;
+        quoteId = (data as any).id;
+      }
+      if (payload.items.length) {
+        const rows = payload.items.map((it, i) => ({
+          quote_id: quoteId,
+          product_id: it.product_id,
+          product_name: it.product_name,
+          qty: it.qty,
+          unit_price: it.unit_price,
+          start_date: it.start_date,
+          end_date: it.end_date,
+          term_months: it.term_months,
+          discount_pct: it.discount_pct,
+          total: it.total,
+          sort_order: i,
+        }));
+        const { error } = await supabase.from("opportunity_quote_items" as any).insert(rows as any);
+        if (error) throw error;
+      }
+      return { id: quoteId, opportunity_id: payload.opportunity_id };
+    },
+    onSuccess: (d) => {
+      qc.invalidateQueries({ queryKey: ["quotes", d.opportunity_id] });
+      qc.invalidateQueries({ queryKey: ["quote-items", d.id] });
+      toast.success("Quote saved");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export function useDeleteQuote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, oppId }: { id: string; oppId: string }) => {
+      const { error } = await supabase.from("opportunity_quotes" as any).delete().eq("id", id);
+      if (error) throw error;
+      return oppId;
+    },
+    onSuccess: (oppId) => { qc.invalidateQueries({ queryKey: ["quotes", oppId] }); toast.success("Quote deleted"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export interface MasterProduct {
+  id: string;
+  product_name: string;
+  default_uom: string | null;
+  default_unit_price: number;
+  is_active: boolean;
+}
+export function useMasterProducts() {
+  return useQuery({
+    queryKey: ["master-products-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("master_products")
+        .select("id, product_name, default_uom, default_unit_price, is_active")
+        .eq("is_active", true).order("product_name");
+      if (error) throw error;
+      return data as MasterProduct[];
+    },
+  });
+}
+
