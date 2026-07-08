@@ -123,10 +123,28 @@ export default function CustomerDetail() {
 
   return (
     <div className="p-4 md:p-6 space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Customers</h1>
-        <p className="text-sm text-muted-foreground">Opportunities, contacts, activities & documents</p>
-      </div>
+      <Button variant="ghost" size="sm" onClick={() => nav("/customers")} className="-ml-2">
+        <ArrowLeft className="h-4 w-4 mr-1" />All Customers
+      </Button>
+      <Card>
+        <CardContent className="p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold">{customer?.name ?? "Customer"}</h1>
+              <p className="text-sm text-muted-foreground">{customer?.industry || "—"}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline">{customer?.status || "active"}</Badge>
+              <div className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{stats.total}</span> opps ·{" "}
+                <span className="font-medium text-foreground">{inr(stats.openPipeline)}</span> pipeline ·{" "}
+                <span className="font-medium text-foreground">{stats.contacts}</span> contacts
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
 
       <Tabs value={activeTab} onValueChange={(v) => setSearchParams(v === "overview" ? {} : { tab: v })}>
         <TabsList className="w-full justify-start overflow-x-auto">
