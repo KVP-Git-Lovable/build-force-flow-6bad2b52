@@ -28,6 +28,8 @@ export default function TeamExpenseSummary() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [expenses, setExpenses] = useState<TeamExpense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [summariesLoading, setSummariesLoading] = useState(false);
+  const [memberSummaries, setMemberSummaries] = useState<Array<{ user_id: string; name: string; ta: number; da: number; additional: number; total: number; present_days: number; total_km: number }>>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [rejectionTargetId, setRejectionTargetId] = useState<string | null>(null);
