@@ -236,6 +236,11 @@ export default function ProductMaster() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Default Unit Price (₹)</Label>
+              <Input type="number" min={0} step="0.01" value={formData.default_unit_price}
+                onChange={(e) => setFormData({ ...formData, default_unit_price: Number(e.target.value) })} />
+            </div>
             <div className="flex items-center justify-between">
               <div><Label>Active</Label><p className="text-xs text-muted-foreground">Inactive items are hidden from selection</p></div>
               <Switch checked={formData.is_active} onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })} />
