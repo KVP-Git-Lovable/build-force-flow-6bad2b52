@@ -11,28 +11,31 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { ModulePanel } from "@/components/config/panels";
 
 const MODULES = [
-  { id: "activities", label: "Activities", icon: Activity },
-  { id: "projects", label: "Projects / Sites", icon: Building2 },
-  { id: "procurement", label: "Procurement", icon: ShoppingCart },
-  { id: "goods_receipt", label: "Goods Receipt", icon: PackageCheck },
-  { id: "expenses", label: "Expenses", icon: Wallet },
-  { id: "leave", label: "Leave", icon: CalendarDays },
-  { id: "attendance", label: "Attendance", icon: Clock },
-  { id: "customers", label: "Customers / CRM", icon: Users },
-  { id: "vendors", label: "Vendors", icon: Store },
-  { id: "reports", label: "Reports", icon: FileBarChart },
-];
+  { id: "activities", label: "Activities", icon: Activity, permission: "module_activities" },
+  { id: "projects", label: "Projects / Sites", icon: Building2, permission: "module_projects" },
+  { id: "procurement", label: "Procurement", icon: ShoppingCart, permission: "module_procurement" },
+  { id: "goods_receipt", label: "Goods Receipt", icon: PackageCheck, permission: "module_procurement" },
+  { id: "expenses", label: "Expenses", icon: Wallet, permission: "module_expenses" },
+  { id: "leave", label: "Leave", icon: CalendarDays, permission: "module_attendance" },
+  { id: "attendance", label: "Attendance", icon: Clock, permission: "module_attendance" },
+  { id: "customers", label: "Customers / CRM", icon: Users, permission: "module_customers" },
+  { id: "vendors", label: "Vendors", icon: Store, permission: "module_vendors" },
+  { id: "reports", label: "Reports", icon: FileBarChart, permission: "module_reports" },
+] as const;
 
 export default function ConfigurationWorkflow() {
   const navigate = useNavigate();
   const { isAdmin, loading } = useUserProfile();
-  const [activeModule, setActiveModule] = useState("activities");
+  const { hasModuleAccess, isLoading: permsLoading } = useAdminAccess();
+  const visibleModules = MODULES.filter((m) => hasModuleAccess(m.permission));
+  const [activeModule, setActiveModule] = useState<string>("activities");
   const [tab, setTab] = useState<"config" | "approval">("config");
 
-  if (loading) {
+  if (loading || permsLoading) {
     return (
       <div className="p-4 space-y-4 max-w-6xl mx-auto">
         <Skeleton className="h-8 w-64" />
@@ -43,7 +46,14 @@ export default function ConfigurationWorkflow() {
 
   if (!isAdmin) return <Navigate to="/admin-controls" replace />;
 
-  const current = MODULES.find((m) => m.id === activeModule)!;
+  const current = visibleModules.find((m) => m.id === activeModule) ?? visibleModules[0];
+  if (!current) {
+    return (
+      <div className="p-6 max-w-6xl mx-auto text-sm text-muted-foreground">
+        No modules are currently enabled. Enable modules in Security to configure them here.
+      </div>
+    );
+  }
 
   return (
     <motion.div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -69,7 +79,7 @@ export default function ConfigurationWorkflow() {
           <Card className="border-border/60 h-fit">
             <CardContent className="p-2">
               <nav className="flex md:flex-col gap-1 overflow-x-auto">
-                {MODULES.map((m) => {
+                {visibleModules.map((m) => {
                   const Icon = m.icon;
                   const active = m.id === activeModule;
                   return (
