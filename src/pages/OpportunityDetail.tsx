@@ -120,6 +120,54 @@ export default function OpportunityDetail() {
           </CardContent></Card>
         </TabsContent>
 
+        <TabsContent value="quotes" className="mt-4 space-y-3">
+          {quoteEditor ? (
+            <QuoteForm
+              opportunityId={id!}
+              quote={editingQuote}
+              onClose={() => setQuoteEditor(null)}
+            />
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">{quotes.length} quote{quotes.length === 1 ? "" : "s"}</div>
+                <Button size="sm" onClick={() => setQuoteEditor({ mode: "new" })}>
+                  <Plus className="h-4 w-4 mr-1" />New Quote
+                </Button>
+              </div>
+              <Card><CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead>Quote Name</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {quotes.map((q) => (
+                      <TableRow key={q.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setQuoteEditor({ mode: "edit", quoteId: q.id })}>
+                        <TableCell className="font-medium">{q.name}</TableCell>
+                        <TableCell className="text-right">{inr(Number(q.total))}</TableCell>
+                        <TableCell>{format(new Date(q.created_at), "dd MMM yyyy")}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); deleteQuote.mutate({ id: q.id, oppId: id! }); }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {quotes.length === 0 && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No quotes yet.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent></Card>
+            </>
+          )}
+        </TabsContent>
+
+
+
         <TabsContent value="milestones" className="mt-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-sm">
