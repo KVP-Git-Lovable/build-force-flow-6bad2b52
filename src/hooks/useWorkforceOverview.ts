@@ -119,5 +119,8 @@ export function useWorkforceOverview(filters: WorkforceFilters) {
 
       return { attendanceRows, activityRows };
     },
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
