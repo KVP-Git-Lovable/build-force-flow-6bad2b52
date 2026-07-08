@@ -41,15 +41,35 @@ if (!reloading) {
       window.addEventListener("load", () => {
         navigator.serviceWorker
           .register("/sw.js", { scope: "/" })
+          .then((registration) => {
+            const notifyWaiting = (worker: ServiceWorker | null) => {
+              if (!worker) return;
+              window.dispatchEvent(new CustomEvent("sw-waiting", { detail: worker }));
+            };
+            if (registration.waiting && navigator.serviceWorker.controller) {
+              notifyWaiting(registration.waiting);
+            }
+            registration.addEventListener("updatefound", () => {
+              const installing = registration.installing;
+              if (!installing) return;
+              installing.addEventListener("statechange", () => {
+                if (installing.state === "installed" && navigator.serviceWorker.controller) {
+                  notifyWaiting(registration.waiting || installing);
+                }
+              });
+            });
+            // Periodic update check (every 30 min)
+            setInterval(() => registration.update().catch(() => {}), 30 * 60 * 1000);
+          })
           .catch((e) => console.warn("[SW] register failed:", e));
       });
     } else {
-      // Clean up any SW that may have been registered in a preview session
       navigator.serviceWorker.getRegistrations().then((regs) =>
         regs.forEach((r) => r.unregister().catch(() => {}))
       );
     }
   }
+
 
   createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

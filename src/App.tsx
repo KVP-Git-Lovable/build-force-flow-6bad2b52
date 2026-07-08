@@ -5,7 +5,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
+import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import Auth from "./pages/Auth";
+
 
 // Lazy-load all route pages for faster initial load
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -75,7 +77,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <PWAUpdatePrompt />
       <BrowserRouter>
+
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
