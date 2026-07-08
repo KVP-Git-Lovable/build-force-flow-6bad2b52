@@ -9,9 +9,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Plus, Trash2, FileText, Download, LayoutGrid, List,
+  Plus, Trash2, FileText, Download, LayoutGrid, List, ArrowLeft,
   Target, Wallet, Trophy, Users, Clock, Phone, Mail, CalendarDays, StickyNote, CheckSquare, FileImage, FileSpreadsheet, File as FileIcon,
 } from "lucide-react";
+
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
