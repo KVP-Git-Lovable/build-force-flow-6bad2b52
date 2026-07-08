@@ -256,16 +256,19 @@ export function useDeleteMilestone() {
 }
 
 // ---------- Contacts ----------
-export function useContacts() {
+export function useContacts(customerId?: string) {
   return useQuery({
-    queryKey: ["contacts"],
+    queryKey: ["contacts", customerId ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customer_contacts").select("*").order("name");
+      let q = supabase.from("customer_contacts").select("*").order("name");
+      if (customerId) q = q.eq("customer_id", customerId);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Contact[];
     },
   });
 }
+
 
 export function useCreateContact() {
   const qc = useQueryClient();
