@@ -577,6 +577,9 @@ export function useMasterProducts() {
       if (error) throw error;
       return data as MasterProduct[];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
