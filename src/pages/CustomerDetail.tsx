@@ -21,8 +21,9 @@ import {
   useOpportunities, useContacts, useDeleteContact,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
   useOppStages, useOppTypes, useUserLookup, useUpdateOpportunity,
-  stageColorClasses,
+  useCustomer, stageColorClasses,
 } from "@/hooks/useCustomers";
+
 import { OpportunityForm } from "@/components/customers/OpportunityForm";
 import { ContactForm } from "@/components/customers/ContactForm";
 import { ContactOrgChart } from "@/components/customers/ContactOrgChart";
