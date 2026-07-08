@@ -46,14 +46,14 @@ export default function ProductMaster() {
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ product_name: "", category_id: "", default_uom: "", is_active: true });
+  const [formData, setFormData] = useState({ product_name: "", category_id: "", default_uom: "", default_unit_price: 0, is_active: true });
 
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     setIsLoading(true);
     const [{ data: prods }, { data: cats }] = await Promise.all([
-      supabase.from("master_products").select("id, product_name, category_id, default_uom, is_active").order("product_name"),
+      supabase.from("master_products").select("id, product_name, category_id, default_uom, default_unit_price, is_active").order("product_name"),
       supabase.from("master_categories").select("id, category_name, sub_category_name, is_active").order("category_name"),
     ]);
     setRows((prods || []) as ProductRow[]);
@@ -65,13 +65,13 @@ export default function ProductMaster() {
 
   const openAdd = () => {
     setEditing(null);
-    setFormData({ product_name: "", category_id: "", default_uom: "", is_active: true });
+    setFormData({ product_name: "", category_id: "", default_uom: "", default_unit_price: 0, is_active: true });
     setIsDialogOpen(true);
   };
 
   const openEdit = (r: ProductRow) => {
     setEditing(r);
-    setFormData({ product_name: r.product_name, category_id: r.category_id || "", default_uom: r.default_uom || "", is_active: r.is_active });
+    setFormData({ product_name: r.product_name, category_id: r.category_id || "", default_uom: r.default_uom || "", default_unit_price: Number(r.default_unit_price || 0), is_active: r.is_active });
     setIsDialogOpen(true);
   };
 
@@ -80,7 +80,8 @@ export default function ProductMaster() {
     if (!name) { toast.error("Product name is required"); return; }
     setIsSaving(true);
     try {
-      const payload = { product_name: name, category_id: formData.category_id || null, default_uom: formData.default_uom || null, is_active: formData.is_active };
+      const payload = { product_name: name, category_id: formData.category_id || null, default_uom: formData.default_uom || null, default_unit_price: Number(formData.default_unit_price) || 0, is_active: formData.is_active };
+
       if (editing) {
         const { error } = await supabase.from("master_products").update(payload).eq("id", editing.id);
         if (error) throw error;
