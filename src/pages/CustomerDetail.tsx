@@ -500,7 +500,7 @@ export default function CustomerDetail() {
         {/* DOCUMENTS */}
         <TabsContent value="documents" className="mt-4 space-y-3">
           <div className="flex justify-end">
-            <DocumentUpload />
+            <DocumentUpload customerId={customerId} />
           </div>
           <Card><CardContent className="p-0 overflow-x-auto">
             <Table>
