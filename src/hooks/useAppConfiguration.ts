@@ -167,7 +167,7 @@ export function useAppConfiguration() {
         .from("app_configuration" as any)
         .select("module, config_key, config_value");
       if (error) throw error;
-      return (data ?? []) as ConfigRow[];
+      return ((data ?? []) as unknown) as ConfigRow[];
     },
     staleTime: 60 * 1000,
   });
