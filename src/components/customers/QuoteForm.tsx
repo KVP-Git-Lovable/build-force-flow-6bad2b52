@@ -149,9 +149,9 @@ export function QuoteForm({
                       onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
                     />
                   </TableCell>
-                  <TableCell><Input type="number" inputMode="decimal" min={0} className="w-full min-w-[70px]" value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} /></TableCell>
-                  <TableCell><Input type="number" inputMode="decimal" min={0} step="0.01" className="w-full min-w-[110px]" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} /></TableCell>
-                  <TableCell><Input type="number" inputMode="decimal" min={0} max={100} className="w-full min-w-[80px]" value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} /></TableCell>
+                  <TableCell><NumberInput min={0} className="w-full min-w-[70px]" value={r.qty} onValueChange={(v) => update(i, { qty: v })} /></TableCell>
+                  <TableCell><NumberInput min={0} step="0.01" className="w-full min-w-[110px]" value={r.unit_price} onValueChange={(v) => update(i, { unit_price: v })} /></TableCell>
+                  <TableCell><NumberInput min={0} max={100} className="w-full min-w-[80px]" value={r.discount_pct} onValueChange={(v) => update(i, { discount_pct: v })} /></TableCell>
                   <TableCell className="text-right font-medium">{inr(calcLine(r.qty, r.unit_price, r.discount_pct))}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}>
