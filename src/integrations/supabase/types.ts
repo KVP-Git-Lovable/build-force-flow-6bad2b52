@@ -22,6 +22,7 @@ export type Database = {
           activity_type: string
           assigned_user_ids: Json
           attachment_urls: Json | null
+          client_uuid: string | null
           created_at: string
           customer_id: string | null
           description: string | null
@@ -60,6 +61,7 @@ export type Database = {
           activity_type: string
           assigned_user_ids?: Json
           attachment_urls?: Json | null
+          client_uuid?: string | null
           created_at?: string
           customer_id?: string | null
           description?: string | null
@@ -98,6 +100,7 @@ export type Database = {
           activity_type?: string
           assigned_user_ids?: Json
           attachment_urls?: Json | null
+          client_uuid?: string | null
           created_at?: string
           customer_id?: string | null
           description?: string | null
