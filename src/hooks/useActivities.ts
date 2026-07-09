@@ -387,6 +387,69 @@ export function useActivities() {
     fetchDropdowns();
   }, [fetchActivities, fetchDropdowns]);
 
+  // Subscribe to offline queue changes to show pending activities in the list.
+  useEffect(() => {
+    let alive = true;
+    const refresh = async () => {
+      const items = await listQueue();
+      if (alive) setPendingItems(items);
+    };
+    refresh();
+    const unsub = subscribeQueue(refresh);
+    const onSynced = () => { fetchActivities(); };
+    window.addEventListener("activities:synced", onSynced);
+    return () => {
+      alive = false;
+      unsub();
+      window.removeEventListener("activities:synced", onSynced);
+    };
+  }, [fetchActivities]);
+
+  // Merge pending offline items on top of server activities.
+  const activities: Activity[] = [
+    ...pendingItems.map((q) => {
+      const p = q.payload || {};
+      return {
+        id: `pending:${q.client_uuid}`,
+        user_id: q.target_user_id || q.optimistic_user_id,
+        activity_name: p.activity_name || "",
+        activity_type: p.activity_type || "",
+        activity_date: p.activity_date || new Date().toISOString().slice(0, 10),
+        start_time: p.start_time || null,
+        end_time: p.end_time || null,
+        duration_type: p.duration_type || null,
+        from_date: p.from_date || null,
+        to_date: p.to_date || null,
+        total_days: p.total_days || null,
+        total_hours: p.total_hours || 0,
+        description: p.description || null,
+        remarks: p.remarks || null,
+        status: p.status || "planned",
+        activity_code: null,
+        project_id: p.project_id || null,
+        site_id: p.site_id || null,
+        milestone_id: p.milestone_id || null,
+        grn_po_id: p.grn_po_id || null,
+        customer_id: p.customer_id || null,
+        opportunity_id: p.opportunity_id || null,
+        location_lat: p.location_lat || null,
+        location_lng: p.location_lng || null,
+        location_address: p.location_address || null,
+        status_changed_at: null,
+        status_change_lat: null,
+        status_change_lng: null,
+        attachment_urls: p.attachment_urls || [],
+        status_history: p.status_history || [],
+        photo_urls: p.photo_urls || [],
+        created_at: new Date(q.created_at).toISOString(),
+        _pending: true,
+        _sync_error: q.error || null,
+        _client_uuid: q.client_uuid,
+      } as Activity;
+    }),
+    ...serverActivities,
+  ];
+
   return {
     activities,
     loading,
