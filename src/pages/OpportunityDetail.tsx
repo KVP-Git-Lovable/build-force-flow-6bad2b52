@@ -12,7 +12,7 @@ import {
   useOpportunity, useMilestones, useUpdateMilestone, useDeleteMilestone,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
   useOppStages, useUserLookup, useCustomers, stageColorClasses,
-  useQuotes, useDeleteQuote,
+  useQuotes, useDeleteQuote, useToggleQuoteSync,
 } from "@/hooks/useCustomers";
 import { QuoteForm } from "@/components/customers/QuoteForm";
 import { MobileCardList, MobileCard, Field as MField } from "@/components/ui/mobile-card";
