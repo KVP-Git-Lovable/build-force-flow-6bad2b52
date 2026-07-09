@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -148,9 +149,9 @@ export function QuoteForm({
                       onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
                     />
                   </TableCell>
-                  <TableCell><Input type="number" inputMode="decimal" min={0} className="w-full min-w-[70px]" value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} /></TableCell>
-                  <TableCell><Input type="number" inputMode="decimal" min={0} step="0.01" className="w-full min-w-[110px]" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} /></TableCell>
-                  <TableCell><Input type="number" inputMode="decimal" min={0} max={100} className="w-full min-w-[80px]" value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} /></TableCell>
+                  <TableCell><NumberInput min={0} className="w-full min-w-[70px]" value={r.qty} onValueChange={(v) => update(i, { qty: v })} /></TableCell>
+                  <TableCell><NumberInput min={0} step="0.01" className="w-full min-w-[110px]" value={r.unit_price} onValueChange={(v) => update(i, { unit_price: v })} /></TableCell>
+                  <TableCell><NumberInput min={0} max={100} className="w-full min-w-[80px]" value={r.discount_pct} onValueChange={(v) => update(i, { discount_pct: v })} /></TableCell>
                   <TableCell className="text-right font-medium">{inr(calcLine(r.qty, r.unit_price, r.discount_pct))}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}>
@@ -212,15 +213,15 @@ export function QuoteForm({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs">Qty</Label>
-                  <Input type="number" inputMode="decimal" min={0} value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} />
+                  <NumberInput min={0} value={r.qty} onValueChange={(v) => update(i, { qty: v })} />
                 </div>
                 <div>
                   <Label className="text-xs">Unit Price</Label>
-                  <Input type="number" inputMode="decimal" min={0} step="0.01" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} />
+                  <NumberInput min={0} step="0.01" value={r.unit_price} onValueChange={(v) => update(i, { unit_price: v })} />
                 </div>
                 <div>
                   <Label className="text-xs">Disc %</Label>
-                  <Input type="number" inputMode="decimal" min={0} max={100} value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} />
+                  <NumberInput min={0} max={100} value={r.discount_pct} onValueChange={(v) => update(i, { discount_pct: v })} />
                 </div>
                 <div>
                   <Label className="text-xs">Total</Label>
@@ -244,10 +245,10 @@ export function QuoteForm({
             </div>
             <div className="flex items-center justify-between w-full gap-2">
               <span className="text-muted-foreground">Overall Discount %:</span>
-              <Input
-                type="number" min={0} max={100} className="h-8 w-20 text-right"
+              <NumberInput
+                min={0} max={100} className="h-8 w-20 text-right"
                 value={overallDisc}
-                onChange={(e) => setOverallDisc(Number(e.target.value))}
+                onValueChange={(v) => setOverallDisc(v)}
               />
             </div>
             {overallDisc > 0 && (

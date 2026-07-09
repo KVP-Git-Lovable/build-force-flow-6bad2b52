@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateMilestone } from "@/hooks/useCustomers";
@@ -37,8 +38,8 @@ export function MilestoneForm({
         <div className="space-y-3">
           <div><Label>Milestone Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div><Label>Invoice Value</Label>
-            <Input type="number" min={0} value={form.invoice_value}
-              onChange={(e) => setForm({ ...form, invoice_value: Number(e.target.value) })} />
+            <NumberInput min={0} value={form.invoice_value}
+              onValueChange={(v) => setForm({ ...form, invoice_value: v })} />
           </div>
           <div><Label>Invoice Number</Label><Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} /></div>
           <div>

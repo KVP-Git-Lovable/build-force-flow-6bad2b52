@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -116,13 +117,13 @@ export function OpportunityForm({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Probability (%)</Label>
-              <Input type="number" min={0} max={100} value={form.probability}
-                onChange={(e) => setForm({ ...form, probability: Number(e.target.value) })} />
+              <NumberInput min={0} max={100} value={form.probability}
+                onValueChange={(v) => setForm({ ...form, probability: v })} />
             </div>
             <div>
               <Label>Amount</Label>
-              <Input type="number" min={0} value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
+              <NumberInput min={0} value={form.amount}
+                onValueChange={(v) => setForm({ ...form, amount: v })} />
             </div>
           </div>
           <div>
