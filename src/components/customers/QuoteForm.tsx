@@ -78,12 +78,23 @@ export function QuoteForm({
   return (
     <Card>
       <CardContent className="p-4 md:p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 mr-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
             <Label>Quote Name *</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Initial Quote" />
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
+        </div>
+
+        <div className="flex items-center justify-between rounded-md border p-3 bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Link2 className="h-4 w-4 text-primary" />
+            <div>
+              <div className="text-sm font-medium">Sync to Opportunity</div>
+              <div className="text-xs text-muted-foreground">Use this quote's total as the Opportunity Amount</div>
+            </div>
+          </div>
+          <Switch checked={isSynced} onCheckedChange={setIsSynced} />
         </div>
 
         <div className="overflow-x-auto">
