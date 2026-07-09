@@ -166,7 +166,7 @@ export function useActivities() {
         };
       });
 
-      setActivities(mapped);
+      setServerActivities(mapped);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -180,9 +180,11 @@ export function useActivities() {
       supabase.from("pm_projects").select("id, name").eq("is_template", false).order("name"),
       supabase.from("project_sites").select("id, site_name, is_active").order("site_name"),
     ]);
-    setUsers((usersRes.data || []).map((u: any) => ({ id: u.id, full_name: u.full_name || "" })));
-    setProjects((projRes.data || []).map((p: any) => ({ id: p.id, name: p.name })));
-    setSites((sitesRes.data || []).map((s: any) => ({ id: s.id, site_name: s.site_name, is_active: s.is_active })));
+    const u = (usersRes.data || []).map((u: any) => ({ id: u.id, full_name: u.full_name || "" }));
+    const p = (projRes.data || []).map((p: any) => ({ id: p.id, name: p.name }));
+    const s = (sitesRes.data || []).map((s: any) => ({ id: s.id, site_name: s.site_name, is_active: s.is_active }));
+    setUsers(u); setProjects(p); setSites(s);
+    cacheReference("users", u); cacheReference("projects", p); cacheReference("sites", s);
   }, []);
 
   const fetchAttendanceForDate = useCallback(async (userId: string, date: string) => {
