@@ -15,6 +15,8 @@ import {
   useCustomers, useCreateCustomer,
   useOpportunities, useOppStages, useUserLookup,
 } from "@/hooks/useCustomers";
+import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
+
 
 function inr(n: number) {
   if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)}Cr`;
