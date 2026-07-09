@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Save, Search, Package } from "lucide-react";
-import { UOM_OPTIONS } from "@/lib/procurement";
+import { useUomOptions } from "@/hooks/useUomOptions";
 
 interface CategoryRow {
   id: string;
@@ -47,6 +47,7 @@ export default function ProductMaster() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ product_name: "", category_id: "", default_uom: "", default_unit_price: 0, is_active: true });
+  const { data: uoms = [] } = useUomOptions(true);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -232,7 +233,10 @@ export default function ProductMaster() {
               <Select value={formData.default_uom} onValueChange={(val) => setFormData({ ...formData, default_uom: val })}>
                 <SelectTrigger><SelectValue placeholder="Select UOM" /></SelectTrigger>
                 <SelectContent>
-                  {UOM_OPTIONS.map((u) => (<SelectItem key={u} value={u}>{u}</SelectItem>))}
+                  {uoms.map((u) => (<SelectItem key={u.id} value={u.short_code}>{u.short_code} — {u.uom_name}</SelectItem>))}
+                  {formData.default_uom && !uoms.some((u) => u.short_code === formData.default_uom) && (
+                    <SelectItem value={formData.default_uom}>{formData.default_uom} (inactive)</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

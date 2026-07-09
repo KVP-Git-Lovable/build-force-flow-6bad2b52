@@ -18,9 +18,10 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 import { Plus, Search, Trash2, X, ShoppingCart, Save, CalendarDays, ChevronDown } from "lucide-react";
 import {
-  PROC_STATUSES, USER_FORM_STATUSES, UOM_OPTIONS,
+  PROC_STATUSES, USER_FORM_STATUSES,
   statusColor, fmtAmt, type ProcStatus,
 } from "@/lib/procurement";
+import { useUomOptions } from "@/hooks/useUomOptions";
 import ProcurementDetail, { type DetailOrder } from "@/components/procurement/ProcurementDetail";
 
 interface Vendor { id: string; name: string }
@@ -40,6 +41,7 @@ const emptyForm = {
 export default function Procurement() {
   const { profile, isAdmin } = useUserProfile();
   const { hasPermission } = useProfilePermissions();
+  const { data: uoms = [] } = useUomOptions(true);
   const canApprove = isAdmin || hasPermission("module_procurement", "edit");
 
   const [orders, setOrders] = useState<DetailOrder[]>([]);
@@ -371,7 +373,12 @@ export default function Procurement() {
                         <Label className="text-[10px] text-muted-foreground">UOM</Label>
                         <Select value={l.uom} onValueChange={(v) => updateLine(i, { uom: v })}>
                           <SelectTrigger className="h-8"><SelectValue placeholder="UOM" /></SelectTrigger>
-                          <SelectContent>{UOM_OPTIONS.map((u) => (<SelectItem key={u} value={u}>{u}</SelectItem>))}</SelectContent>
+                          <SelectContent>
+                            {uoms.map((u) => (<SelectItem key={u.id} value={u.short_code}>{u.short_code}</SelectItem>))}
+                            {l.uom && !uoms.some((u) => u.short_code === l.uom) && (
+                              <SelectItem value={l.uom}>{l.uom}</SelectItem>
+                            )}
+                          </SelectContent>
                         </Select>
                       </div>
                       <div>
