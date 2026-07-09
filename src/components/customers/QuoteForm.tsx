@@ -126,15 +126,18 @@ export function QuoteForm({
             <TableHeader>
               <TableRow>
                 <TableHead className="min-w-[220px]">Product</TableHead>
-                <TableHead className="w-20">Qty</TableHead>
-                <TableHead className="w-28">Unit Price</TableHead>
-                <TableHead className="w-24">Disc %</TableHead>
-                <TableHead className="w-28 text-right">Total</TableHead>
+                <TableHead className="w-24">Qty</TableHead>
+                <TableHead className="w-36">Unit Price</TableHead>
+                <TableHead className="w-28">Disc %</TableHead>
+                <TableHead className="w-32 text-right">Total</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r, i) => (
+              {rows.map((r, i) => {
+                const isCustom = !!(r.product_name && !r.product_id);
+                return (
+                <>
                 <TableRow key={i}>
                   <TableCell>
                     <ProductPicker
@@ -145,9 +148,9 @@ export function QuoteForm({
                       onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
                     />
                   </TableCell>
-                  <TableCell><Input type="number" min={0} value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} /></TableCell>
-                  <TableCell><Input type="number" min={0} step="0.01" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} /></TableCell>
-                  <TableCell><Input type="number" min={0} max={100} value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} /></TableCell>
+                  <TableCell><Input type="number" inputMode="decimal" min={0} className="w-full min-w-[70px]" value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} /></TableCell>
+                  <TableCell><Input type="number" inputMode="decimal" min={0} step="0.01" className="w-full min-w-[110px]" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} /></TableCell>
+                  <TableCell><Input type="number" inputMode="decimal" min={0} max={100} className="w-full min-w-[80px]" value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} /></TableCell>
                   <TableCell className="text-right font-medium">{inr(calcLine(r.qty, r.unit_price, r.discount_pct))}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}>
@@ -155,10 +158,26 @@ export function QuoteForm({
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+                {isCustom && (
+                  <TableRow key={`${i}-master`}>
+                    <TableCell colSpan={6} className="py-1 border-0">
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer pl-1">
+                        <Checkbox
+                          checked={saveToMaster[i] ?? true}
+                          onCheckedChange={(v) => setSaveToMaster((s) => ({ ...s, [i]: !!v }))}
+                        />
+                        Also add <span className="font-medium text-foreground">"{r.product_name}"</span> to Product Master
+                      </label>
+                    </TableCell>
+                  </TableRow>
+                )}
+                </>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
+
 
         {/* Mobile stacked cards */}
         <div className="md:hidden space-y-3">
