@@ -31,6 +31,8 @@ import { ActivityForm } from "@/components/customers/ActivityForm";
 import { DocumentUpload } from "@/components/customers/DocumentUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
+
 
 function inr(n: number) { return `₹ ${(n ?? 0).toLocaleString()}`; }
 
