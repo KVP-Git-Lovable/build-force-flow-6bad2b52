@@ -11,27 +11,30 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 import { ModulePanel } from "@/components/config/panels";
 
+// Only modules that also appear in the main navigation are configurable here.
+// `permission` mirrors the nav item's module gate; `null` means the nav item
+// is always visible (no permission gate), so it should always show.
 const MODULES = [
-  { id: "activities", label: "Activities", icon: Activity, permission: "module_activities" },
-  { id: "projects", label: "Projects / Sites", icon: Building2, permission: "module_projects" },
+  { id: "activities", label: "Activities", icon: Activity, permission: "module_activities" as string | null },
+  { id: "projects", label: "Projects / Sites", icon: Building2, permission: null },
   { id: "procurement", label: "Procurement", icon: ShoppingCart, permission: "module_procurement" },
   { id: "goods_receipt", label: "Goods Receipt", icon: PackageCheck, permission: "module_procurement" },
   { id: "expenses", label: "Expenses", icon: Wallet, permission: "module_expenses" },
   { id: "leave", label: "Leave", icon: CalendarDays, permission: "module_attendance" },
   { id: "attendance", label: "Attendance", icon: Clock, permission: "module_attendance" },
   { id: "customers", label: "Customers / CRM", icon: Users, permission: "module_customers" },
-  { id: "vendors", label: "Vendors", icon: Store, permission: "module_vendors" },
-  { id: "reports", label: "Reports", icon: FileBarChart, permission: "module_reports" },
+  { id: "opportunities", label: "Opportunities", icon: Store, permission: "module_opportunities" },
+  { id: "reports", label: "Reports", icon: FileBarChart, permission: null },
 ] as const;
 
 export default function ConfigurationWorkflow() {
   const navigate = useNavigate();
   const { isAdmin, loading } = useUserProfile();
-  const { hasModuleAccess, isLoading: permsLoading } = useAdminAccess();
-  const visibleModules = MODULES.filter((m) => hasModuleAccess(m.permission));
+  const { hasModuleAccess, isLoading: permsLoading } = useProfilePermissions();
+  const visibleModules = MODULES.filter((m) => !m.permission || hasModuleAccess(m.permission));
   const [activeModule, setActiveModule] = useState<string>("activities");
   const [tab, setTab] = useState<"config" | "approval">("config");
 
