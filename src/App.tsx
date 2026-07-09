@@ -51,6 +51,7 @@ const OpportunityDetail = lazy(() => import("./pages/OpportunityDetail"));
 const Opportunities = lazy(() => import("./pages/Opportunities"));
 const OpportunityStagesMaster = lazy(() => import("./pages/master/OpportunityStagesMaster"));
 const OpportunityTypesMaster = lazy(() => import("./pages/master/OpportunityTypesMaster"));
+const UomMaster = lazy(() => import("./pages/master/UomMaster"));
 const ConfigurationWorkflow = lazy(() => import("./pages/ConfigurationWorkflow"));
 
 const queryClient = new QueryClient({
