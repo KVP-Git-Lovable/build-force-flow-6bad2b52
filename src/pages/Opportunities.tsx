@@ -11,6 +11,8 @@ import {
   useOpportunities, useOppStages, useOppTypes, useUserLookup, useCustomers,
   stageColorClasses,
 } from "@/hooks/useCustomers";
+import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
+
 
 import { format, parseISO, startOfMonth } from "date-fns";
 
