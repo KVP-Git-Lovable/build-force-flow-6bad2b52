@@ -164,50 +164,87 @@ export default function Opportunities() {
       </CardContent></Card>
 
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
           <div className="p-4 border-b">
             <h3 className="font-semibold">All Opportunities</h3>
-            <p className="text-xs text-muted-foreground">Click a row to open details</p>
+            <p className="text-xs text-muted-foreground">Tap a row/card to open details</p>
           </div>
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Customer / Account</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Close Date</TableHead><TableHead>Owner</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {opps.map((o) => (
-                <TableRow key={o.id} className="cursor-pointer" onClick={() => nav(`/opportunities/${o.id}`)}>
-                  <TableCell className="font-medium">{o.name}</TableCell>
-                  <TableCell>
-                    {o.customer_id ? (
+
+          {/* Desktop / tablet table */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Customer / Account</TableHead>
+                <TableHead>Stage</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Close Date</TableHead><TableHead>Owner</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {opps.map((o) => (
+                  <TableRow key={o.id} className="cursor-pointer" onClick={() => nav(`/opportunities/${o.id}`)}>
+                    <TableCell className="font-medium">{o.name}</TableCell>
+                    <TableCell>
+                      {o.customer_id ? (
+                        <button
+                          className="text-primary hover:underline"
+                          onClick={(e) => { e.stopPropagation(); nav(`/customers/${o.customer_id}`); }}
+                        >
+                          {customersMap[o.customer_id] ?? "—"}
+                        </button>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
+                    <TableCell>{o.close_date ? format(parseISO(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
+                    <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
+                  </TableRow>
+                ))}
+                {opps.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No opportunities.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile card list */}
+          <MobileCardList className="md:hidden p-3">
+            {opps.map((o) => (
+              <MobileCard
+                key={o.id}
+                onClick={() => nav(`/opportunities/${o.id}`)}
+                title={o.name}
+                badge={<Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge>}
+              >
+                <Field
+                  label="Customer"
+                  full
+                  value={
+                    o.customer_id ? (
                       <button
-                        className="text-primary hover:underline"
+                        className="text-primary underline underline-offset-2"
                         onClick={(e) => { e.stopPropagation(); nav(`/customers/${o.customer_id}`); }}
                       >
                         {customersMap[o.customer_id] ?? "—"}
                       </button>
-                    ) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
-                  <TableCell>{o.close_date ? format(parseISO(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
-                  <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
-                </TableRow>
-              ))}
-              {opps.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No opportunities.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-
+                    ) : "—"
+                  }
+                />
+                <Field label="Amount" value={inr(Number(o.amount))} />
+                <Field label="Close Date" value={o.close_date ? format(parseISO(o.close_date), "dd MMM yyyy") : "—"} />
+                <Field label="Owner" full value={o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"} />
+              </MobileCard>
+            ))}
+            {opps.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-6">No opportunities.</p>
+            )}
+          </MobileCardList>
         </CardContent>
       </Card>
     </div>
+
   );
 }
 
