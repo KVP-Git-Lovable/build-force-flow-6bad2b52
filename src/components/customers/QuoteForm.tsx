@@ -62,6 +62,7 @@ export function QuoteForm({
       notes: notes.trim() || null,
       total: grandTotal,
       overall_discount_pct: Number(overallDisc) || 0,
+      is_synced: isSynced,
       items: items.map((r, i) => ({
         ...r,
         sort_order: i,
