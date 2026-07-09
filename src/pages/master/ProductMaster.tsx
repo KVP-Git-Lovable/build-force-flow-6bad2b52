@@ -233,7 +233,10 @@ export default function ProductMaster() {
               <Select value={formData.default_uom} onValueChange={(val) => setFormData({ ...formData, default_uom: val })}>
                 <SelectTrigger><SelectValue placeholder="Select UOM" /></SelectTrigger>
                 <SelectContent>
-                  {UOM_OPTIONS.map((u) => (<SelectItem key={u} value={u}>{u}</SelectItem>))}
+                  {uoms.map((u) => (<SelectItem key={u.id} value={u.short_code}>{u.short_code} — {u.uom_name}</SelectItem>))}
+                  {formData.default_uom && !uoms.some((u) => u.short_code === formData.default_uom) && (
+                    <SelectItem value={formData.default_uom}>{formData.default_uom} (inactive)</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
