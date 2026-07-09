@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ProfileSetupModal from "@/components/ProfileSetupModal";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
+import OfflineActivityBanner from "@/components/OfflineActivityBanner";
 import WebPushPrompt from "@/components/WebPushPrompt";
 import { useNativeStartup } from "@/hooks/useNativeStartup";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -99,6 +100,7 @@ export function AppLayout() {
   return (
     <div className="min-h-screen flex flex-col w-full max-w-full bg-background overflow-x-hidden">
       <AppHeader />
+      <OfflineActivityBanner />
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>

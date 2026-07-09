@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  enqueueActivity,
+  generateClientUUID,
+  listQueue,
+  subscribeQueue,
+  cacheReference,
+  readReference,
+  type QueuedActivity,
+} from "@/lib/offlineActivityQueue";
+import { flushActivityQueue } from "@/hooks/useOfflineActivitySync";
 
 export interface ActivityStatusEntry {
   status: string;
@@ -59,7 +69,12 @@ export interface Activity {
   site_flag?: string;
   milestone_name?: string;
   milestone_status?: string;
+  // Offline queue metadata
+  _pending?: boolean;
+  _sync_error?: string | null;
+  _client_uuid?: string;
 }
+
 
 export interface ActivityFilters {
   employee: string;
@@ -70,11 +85,18 @@ export interface ActivityFilters {
 }
 
 export function useActivities() {
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [serverActivities, setServerActivities] = useState<Activity[]>([]);
+  const [pendingItems, setPendingItems] = useState<QueuedActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<{ id: string; full_name: string }[]>([]);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
-  const [sites, setSites] = useState<{ id: string; site_name: string; is_active: boolean }[]>([]);
+  const [users, setUsers] = useState<{ id: string; full_name: string }[]>(
+    () => readReference<{ id: string; full_name: string }[]>("users") || []
+  );
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>(
+    () => readReference<{ id: string; name: string }[]>("projects") || []
+  );
+  const [sites, setSites] = useState<{ id: string; site_name: string; is_active: boolean }[]>(
+    () => readReference<{ id: string; site_name: string; is_active: boolean }[]>("sites") || []
+  );
   const { toast } = useToast();
 
   const fetchActivities = useCallback(async (filters?: ActivityFilters) => {
@@ -144,7 +166,7 @@ export function useActivities() {
         };
       });
 
-      setActivities(mapped);
+      setServerActivities(mapped);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -158,9 +180,11 @@ export function useActivities() {
       supabase.from("pm_projects").select("id, name").eq("is_template", false).order("name"),
       supabase.from("project_sites").select("id, site_name, is_active").order("site_name"),
     ]);
-    setUsers((usersRes.data || []).map((u: any) => ({ id: u.id, full_name: u.full_name || "" })));
-    setProjects((projRes.data || []).map((p: any) => ({ id: p.id, name: p.name })));
-    setSites((sitesRes.data || []).map((s: any) => ({ id: s.id, site_name: s.site_name, is_active: s.is_active })));
+    const u = (usersRes.data || []).map((u: any) => ({ id: u.id, full_name: u.full_name || "" }));
+    const p = (projRes.data || []).map((p: any) => ({ id: p.id, name: p.name }));
+    const s = (sitesRes.data || []).map((s: any) => ({ id: s.id, site_name: s.site_name, is_active: s.is_active }));
+    setUsers(u); setProjects(p); setSites(s);
+    cacheReference("users", u); cacheReference("projects", p); cacheReference("sites", s);
   }, []);
 
   const fetchAttendanceForDate = useCallback(async (userId: string, date: string) => {
@@ -231,54 +255,101 @@ export function useActivities() {
     };
   }, []);
 
-  const createActivity = useCallback(async (activity: Partial<Activity>, targetUserId?: string, silent?: boolean) => {
+  const createActivity = useCallback(async (
+    activity: Partial<Activity>,
+    targetUserId?: string,
+    silent?: boolean,
+    options?: { clientUuid?: string; audio?: { blob: Blob; mimeType: string; fileExtension: string } | null }
+  ) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    const { data, error } = await supabase
-      .from("activity_events")
-      .insert({
+    const clientUuid = options?.clientUuid || generateClientUUID();
+    const basePayload: any = {
+      activity_name: activity.activity_name!,
+      activity_type: activity.activity_type!,
+      activity_date: activity.activity_date!,
+      start_time: activity.start_time || null,
+      end_time: activity.end_time || null,
+      duration_type: activity.duration_type || null,
+      from_date: activity.from_date || null,
+      to_date: activity.to_date || null,
+      total_days: activity.total_days || null,
+      total_hours: activity.total_hours || 0,
+      description: activity.description || null,
+      remarks: activity.remarks || null,
+      status: activity.status || "planned",
+      project_id: activity.project_id || null,
+      site_id: activity.site_id || null,
+      milestone_id: (activity as any).milestone_id || null,
+      grn_po_id: (activity as any).grn_po_id || null,
+      customer_id: (activity as any).customer_id || null,
+      opportunity_id: (activity as any).opportunity_id || null,
+      location_lat: activity.location_lat || null,
+      location_lng: activity.location_lng || null,
+      location_address: activity.location_address || null,
+      attachment_urls: activity.attachment_urls || [],
+      status_history: (activity.status_history as any) || [],
+      photo_urls: (activity.photo_urls as any) || [],
+    };
+
+    const enqueueOffline = async (reason: string) => {
+      await enqueueActivity({
+        client_uuid: clientUuid,
+        payload: basePayload,
+        target_user_id: targetUserId || user.id,
+        audio: options?.audio || null,
+        created_at: Date.now(),
+        attempts: 0,
+        status: "pending",
+        error: null,
+        optimistic_user_id: user.id,
+      });
+      if (!silent) toast({
+        title: "Saved offline",
+        description: "Activity queued — will sync when you're back online.",
+      });
+      // Kick off flush attempt (no-op if offline)
+      flushActivityQueue().catch(() => {});
+      return {
+        id: `pending:${clientUuid}`,
         user_id: targetUserId || user.id,
-        activity_name: activity.activity_name!,
-        activity_type: activity.activity_type!,
-        activity_date: activity.activity_date!,
-        start_time: activity.start_time || null,
-        end_time: activity.end_time || null,
-        duration_type: activity.duration_type || null,
-        from_date: activity.from_date || null,
-        to_date: activity.to_date || null,
-        total_days: activity.total_days || null,
-        total_hours: activity.total_hours || 0,
-        description: activity.description || null,
-        remarks: activity.remarks || null,
-        status: activity.status || "planned",
-        project_id: activity.project_id || null,
-        site_id: activity.site_id || null,
-        milestone_id: (activity as any).milestone_id || null,
-        grn_po_id: (activity as any).grn_po_id || null,
-        customer_id: (activity as any).customer_id || null,
-        opportunity_id: (activity as any).opportunity_id || null,
-        location_lat: activity.location_lat || null,
-        location_lng: activity.location_lng || null,
-        location_address: activity.location_address || null,
-        attachment_urls: activity.attachment_urls || [],
-        status_history: (activity.status_history as any) || [],
-        photo_urls: (activity.photo_urls as any) || [],
-      })
-      .select("*")
-      .single();
+        ...basePayload,
+        created_at: new Date().toISOString(),
+        _pending: true,
+        _client_uuid: clientUuid,
+      } as unknown as Activity;
+    };
 
-    if (error) throw error;
-    if (!silent) toast({ title: "Activity Created", description: "Activity logged successfully" });
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      return enqueueOffline("offline");
+    }
 
-    return data
-      ? ({
-          ...data,
-          attachment_urls: Array.isArray(data.attachment_urls) ? (data.attachment_urls as string[]) : [],
-          status_history: Array.isArray((data as any).status_history) ? (data as any).status_history : [],
-          photo_urls: Array.isArray((data as any).photo_urls) ? (data as any).photo_urls : [],
-        } as unknown as Activity)
-      : null;
+    try {
+      const { data, error } = await supabase
+        .from("activity_events")
+        .insert({ user_id: targetUserId || user.id, client_uuid: clientUuid, ...basePayload })
+        .select("*")
+        .single();
+
+      if (error) throw error;
+      if (!silent) toast({ title: "Activity Created", description: "Activity logged successfully" });
+
+      return data
+        ? ({
+            ...data,
+            attachment_urls: Array.isArray(data.attachment_urls) ? (data.attachment_urls as string[]) : [],
+            status_history: Array.isArray((data as any).status_history) ? (data as any).status_history : [],
+            photo_urls: Array.isArray((data as any).photo_urls) ? (data as any).photo_urls : [],
+          } as unknown as Activity)
+        : null;
+    } catch (err: any) {
+      // Network/fetch failures → queue for later. Real validation errors re-throw.
+      const msg = `${err?.message || ""}`.toLowerCase();
+      const isNetwork = msg.includes("failed to fetch") || msg.includes("network") || msg.includes("load failed");
+      if (isNetwork) return enqueueOffline("network");
+      throw err;
+    }
   }, [toast]);
 
   const updateActivity = useCallback(async (id: string, updates: Partial<Activity>) => {
@@ -315,6 +386,69 @@ export function useActivities() {
     fetchActivities();
     fetchDropdowns();
   }, [fetchActivities, fetchDropdowns]);
+
+  // Subscribe to offline queue changes to show pending activities in the list.
+  useEffect(() => {
+    let alive = true;
+    const refresh = async () => {
+      const items = await listQueue();
+      if (alive) setPendingItems(items);
+    };
+    refresh();
+    const unsub = subscribeQueue(refresh);
+    const onSynced = () => { fetchActivities(); };
+    window.addEventListener("activities:synced", onSynced);
+    return () => {
+      alive = false;
+      unsub();
+      window.removeEventListener("activities:synced", onSynced);
+    };
+  }, [fetchActivities]);
+
+  // Merge pending offline items on top of server activities.
+  const activities: Activity[] = [
+    ...pendingItems.map((q) => {
+      const p = q.payload || {};
+      return {
+        id: `pending:${q.client_uuid}`,
+        user_id: q.target_user_id || q.optimistic_user_id,
+        activity_name: p.activity_name || "",
+        activity_type: p.activity_type || "",
+        activity_date: p.activity_date || new Date().toISOString().slice(0, 10),
+        start_time: p.start_time || null,
+        end_time: p.end_time || null,
+        duration_type: p.duration_type || null,
+        from_date: p.from_date || null,
+        to_date: p.to_date || null,
+        total_days: p.total_days || null,
+        total_hours: p.total_hours || 0,
+        description: p.description || null,
+        remarks: p.remarks || null,
+        status: p.status || "planned",
+        activity_code: null,
+        project_id: p.project_id || null,
+        site_id: p.site_id || null,
+        milestone_id: p.milestone_id || null,
+        grn_po_id: p.grn_po_id || null,
+        customer_id: p.customer_id || null,
+        opportunity_id: p.opportunity_id || null,
+        location_lat: p.location_lat || null,
+        location_lng: p.location_lng || null,
+        location_address: p.location_address || null,
+        status_changed_at: null,
+        status_change_lat: null,
+        status_change_lng: null,
+        attachment_urls: p.attachment_urls || [],
+        status_history: p.status_history || [],
+        photo_urls: p.photo_urls || [],
+        created_at: new Date(q.created_at).toISOString(),
+        _pending: true,
+        _sync_error: q.error || null,
+        _client_uuid: q.client_uuid,
+      } as Activity;
+    }),
+    ...serverActivities,
+  ];
 
   return {
     activities,

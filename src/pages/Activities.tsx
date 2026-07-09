@@ -1645,11 +1645,16 @@ function TimelineView({
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-sm truncate">{a.activity_name}</span>
                 <Badge variant="outline" className={`text-[10px] py-0 ${statusColors[a.status]}`}>
                   {statusLabels[a.status] || a.status}
                 </Badge>
+                {(a as any)._pending && (
+                  <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 text-amber-700 border-amber-300">
+                    {(a as any)._sync_error ? "Sync failed" : "Pending sync"}
+                  </Badge>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">{a.activity_type}</p>
               {a.location_address && (
@@ -1665,12 +1670,16 @@ function TimelineView({
               )}
             </div>
             <div className="flex gap-1 shrink-0 ml-2">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(a)}>
-                <Edit className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(a.id)}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              {!(a as any)._pending && (
+                <>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(a)}>
+                    <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(a.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </TimelineNode>
@@ -1858,9 +1867,14 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpenDetails(a)}>
 
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="font-semibold text-sm truncate">{a.activity_name}</span>
+              {(a as any)._pending && (
+                <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 text-amber-700 border-amber-300">
+                  {(a as any)._sync_error ? "Sync failed" : "Pending sync"}
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground ml-6">{a.activity_type}</p>
             {a.location_address && (
