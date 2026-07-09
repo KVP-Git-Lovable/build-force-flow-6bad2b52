@@ -59,7 +59,24 @@ export function QuoteForm({
 
   const submit = async () => {
     if (!name.trim()) return;
-    const items = rows.filter((r) => r.product_id || (r.product_name && r.product_name.trim()));
+    const working = [...rows];
+    // Persist free-text products to master when user opted in
+    for (let i = 0; i < working.length; i++) {
+      const r = working[i];
+      if (!r.product_id && r.product_name && r.product_name.trim() && saveToMaster[i]) {
+        try {
+          const created = await addMaster.mutateAsync({
+            product_name: r.product_name.trim(),
+            default_unit_price: Number(r.unit_price) || 0,
+          });
+          working[i] = { ...r, product_id: created.id, product_name: created.product_name };
+        } catch (e) {
+          // If save-to-master fails (e.g. duplicate), keep as free-text and continue
+          console.warn("Add to master failed", e);
+        }
+      }
+    }
+    const items = working.filter((r) => r.product_id || (r.product_name && r.product_name.trim()));
     await save.mutateAsync({
       id: quote?.id,
       opportunity_id: opportunityId,
@@ -79,6 +96,7 @@ export function QuoteForm({
     });
     onClose();
   };
+
 
   return (
     <Card>
