@@ -30,11 +30,14 @@ export function QuoteForm({
   const { data: products = [] } = useMasterProducts();
   const { data: existingItems } = useQuoteItems(quote?.id);
   const save = useSaveQuote();
+  const addMaster = useAddMasterProduct();
   const [name, setName] = useState(quote?.name || "");
   const [notes, setNotes] = useState(quote?.notes || "");
   const [overallDisc, setOverallDisc] = useState<number>(Number(quote?.overall_discount_pct) || 0);
   const [isSynced, setIsSynced] = useState<boolean>(!!quote?.is_synced);
   const [rows, setRows] = useState<QuoteItem[]>([emptyRow(0)]);
+  const [saveToMaster, setSaveToMaster] = useState<Record<number, boolean>>({ 0: true });
+
 
   useEffect(() => {
     if (quote && existingItems && existingItems.length) setRows(existingItems);
