@@ -15,7 +15,7 @@ import {
   useQuotes, useDeleteQuote,
 } from "@/hooks/useCustomers";
 import { QuoteForm } from "@/components/customers/QuoteForm";
-import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
+import { MobileCardList, MobileCard, Field as MField } from "@/components/ui/mobile-card";
 
 
 import { MilestoneForm } from "@/components/customers/MilestoneForm";
