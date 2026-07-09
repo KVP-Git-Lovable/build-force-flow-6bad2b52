@@ -1645,11 +1645,16 @@ function TimelineView({
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-sm truncate">{a.activity_name}</span>
                 <Badge variant="outline" className={`text-[10px] py-0 ${statusColors[a.status]}`}>
                   {statusLabels[a.status] || a.status}
                 </Badge>
+                {(a as any)._pending && (
+                  <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 text-amber-700 border-amber-300">
+                    {(a as any)._sync_error ? "Sync failed" : "Pending sync"}
+                  </Badge>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">{a.activity_type}</p>
               {a.location_address && (
