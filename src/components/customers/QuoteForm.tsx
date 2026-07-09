@@ -137,8 +137,8 @@ export function QuoteForm({
               {rows.map((r, i) => {
                 const isCustom = !!(r.product_name && !r.product_id);
                 return (
-                <>
-                <TableRow key={i}>
+                <Fragment key={i}>
+                <TableRow>
                   <TableCell>
                     <ProductPicker
                       products={products}
@@ -159,7 +159,7 @@ export function QuoteForm({
                   </TableCell>
                 </TableRow>
                 {isCustom && (
-                  <TableRow key={`${i}-master`}>
+                  <TableRow>
                     <TableCell colSpan={6} className="py-1 border-0">
                       <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer pl-1">
                         <Checkbox
@@ -171,7 +171,8 @@ export function QuoteForm({
                     </TableCell>
                   </TableRow>
                 )}
-                </>
+                </Fragment>
+
                 );
               })}
             </TableBody>
