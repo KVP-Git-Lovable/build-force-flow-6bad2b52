@@ -1863,9 +1863,14 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpenDetails(a)}>
 
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="font-semibold text-sm truncate">{a.activity_name}</span>
+              {(a as any)._pending && (
+                <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 text-amber-700 border-amber-300">
+                  {(a as any)._sync_error ? "Sync failed" : "Pending sync"}
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground ml-6">{a.activity_type}</p>
             {a.location_address && (
