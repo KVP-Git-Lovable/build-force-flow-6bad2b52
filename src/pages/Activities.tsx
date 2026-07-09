@@ -1670,12 +1670,16 @@ function TimelineView({
               )}
             </div>
             <div className="flex gap-1 shrink-0 ml-2">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(a)}>
-                <Edit className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(a.id)}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              {!(a as any)._pending && (
+                <>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(a)}>
+                    <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(a.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </TimelineNode>
