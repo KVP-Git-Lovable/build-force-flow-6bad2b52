@@ -47,6 +47,7 @@ export default function ProductMaster() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ product_name: "", category_id: "", default_uom: "", default_unit_price: 0, is_active: true });
+  const { data: uoms = [] } = useUomOptions(true);
 
   useEffect(() => { fetchAll(); }, []);
 
