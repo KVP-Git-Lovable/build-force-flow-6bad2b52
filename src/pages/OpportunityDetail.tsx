@@ -201,38 +201,68 @@ export default function OpportunityDetail() {
             </div>
             <Button size="sm" onClick={() => setAddMs(true)}><Plus className="h-4 w-4 mr-1" />Add</Button>
           </div>
-          <Card><CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Name</TableHead><TableHead>Invoice #</TableHead><TableHead>Invoice Date</TableHead>
-                <TableHead className="text-right">Invoice Value</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {milestones.map((m) => (
-                  <TableRow key={m.id}>
-                    <TableCell className="font-medium">{m.name}</TableCell>
-                    <TableCell>{m.invoice_number || "—"}</TableCell>
-                    <TableCell>{m.invoice_date ? format(new Date(m.invoice_date), "dd MMM yyyy") : "—"}</TableCell>
-                    <TableCell className="text-right">{inr(Number(m.invoice_value))}</TableCell>
-                    <TableCell>
+          <Card><CardContent className="p-0">
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Name</TableHead><TableHead>Invoice #</TableHead><TableHead>Invoice Date</TableHead>
+                  <TableHead className="text-right">Invoice Value</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {milestones.map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell className="font-medium">{m.name}</TableCell>
+                      <TableCell>{m.invoice_number || "—"}</TableCell>
+                      <TableCell>{m.invoice_date ? format(new Date(m.invoice_date), "dd MMM yyyy") : "—"}</TableCell>
+                      <TableCell className="text-right">{inr(Number(m.invoice_value))}</TableCell>
+                      <TableCell>
+                        <Select value={m.status} onValueChange={(v) => updateMs.mutate({ id: m.id, status: v, opportunity_id: m.opportunity_id })}>
+                          <SelectTrigger className="w-32 h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>{MILESTONE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" onClick={() => deleteMs.mutate({ id: m.id, oppId: id! })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {milestones.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No milestones yet.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <MobileCardList className="md:hidden p-3">
+              {milestones.map((m) => (
+                <MobileCard
+                  key={m.id}
+                  title={m.name}
+                  badge={<Badge variant="outline">{m.status}</Badge>}
+                  actions={
+                    <>
                       <Select value={m.status} onValueChange={(v) => updateMs.mutate({ id: m.id, status: v, opportunity_id: m.opportunity_id })}>
                         <SelectTrigger className="w-32 h-8"><SelectValue /></SelectTrigger>
                         <SelectContent>{MILESTONE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                       </Select>
-                    </TableCell>
-                    <TableCell className="text-right">
                       <Button size="sm" variant="ghost" onClick={() => deleteMs.mutate({ id: m.id, oppId: id! })}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {milestones.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No milestones yet.</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
+                    </>
+                  }
+                >
+                  <MField label="Invoice #" value={m.invoice_number || "—"} />
+                  <MField label="Invoice Date" value={m.invoice_date ? format(new Date(m.invoice_date), "dd MMM yy") : "—"} />
+                  <MField label="Value" full value={inr(Number(m.invoice_value))} />
+                </MobileCard>
+              ))}
+              {milestones.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-6">No milestones yet.</p>
+              )}
+            </MobileCardList>
           </CardContent></Card>
+
         </TabsContent>
 
         <TabsContent value="activities" className="mt-4 space-y-3">
