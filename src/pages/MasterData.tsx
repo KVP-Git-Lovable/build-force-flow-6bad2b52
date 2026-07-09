@@ -39,6 +39,14 @@ const allMasterModules = [
     module: null as string | null,
   },
   {
+    title: "UOM Master",
+    description: "Manage units of measurement (Nos, Kg, Ton…)",
+    icon: Ruler,
+    color: "bg-teal-100 text-teal-600",
+    path: "/master-data/uom",
+    module: null as string | null,
+  },
+  {
     title: "Address Book",
     description: "Manage billing & delivery addresses for purchase orders",
     icon: MapPin,
