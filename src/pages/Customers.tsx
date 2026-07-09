@@ -108,44 +108,80 @@ export default function Customers() {
       </Card>
 
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Industry</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead className="text-right">Open Opps</TableHead>
-              <TableHead className="text-right">Pipeline Value</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {filtered.map((c) => {
-                const s = stats.get(c.id) || { open: 0, pipeline: 0 };
-                return (
-                  <TableRow key={c.id} className="cursor-pointer" onClick={() => nav(`/customers/${c.id}`)}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+        <CardContent className="p-0">
+          {/* Desktop / tablet table */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Industry</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Owner</TableHead>
+                <TableHead className="text-right">Open Opps</TableHead>
+                <TableHead className="text-right">Pipeline Value</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {filtered.map((c) => {
+                  const s = stats.get(c.id) || { open: 0, pipeline: 0 };
+                  return (
+                    <TableRow key={c.id} className="cursor-pointer" onClick={() => nav(`/customers/${c.id}`)}>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                          <Building2 className="h-4 w-4" />
+                        </div>
+                        {c.name}
+                      </TableCell>
+                      <TableCell>{c.industry || "—"}</TableCell>
+                      <TableCell><Badge variant="outline">{c.status}</Badge></TableCell>
+                      <TableCell>{c.owner_id ? usersMap[c.owner_id] ?? "—" : "—"}</TableCell>
+                      <TableCell className="text-right">{s.open}</TableCell>
+                      <TableCell className="text-right font-medium">{inr(s.pipeline)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    No customers found. Click "New Customer" to add one.
+                  </TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile cards */}
+          <MobileCardList className="md:hidden p-3">
+            {filtered.map((c) => {
+              const s = stats.get(c.id) || { open: 0, pipeline: 0 };
+              return (
+                <MobileCard
+                  key={c.id}
+                  onClick={() => nav(`/customers/${c.id}`)}
+                  title={
+                    <span className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
                         <Building2 className="h-4 w-4" />
                       </div>
-                      {c.name}
-                    </TableCell>
-                    <TableCell>{c.industry || "—"}</TableCell>
-                    <TableCell><Badge variant="outline">{c.status}</Badge></TableCell>
-                    <TableCell>{c.owner_id ? usersMap[c.owner_id] ?? "—" : "—"}</TableCell>
-                    <TableCell className="text-right">{s.open}</TableCell>
-                    <TableCell className="text-right font-medium">{inr(s.pipeline)}</TableCell>
-                  </TableRow>
-                );
-              })}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  No customers found. Click "New Customer" to add one.
-                </TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+                      <span className="truncate">{c.name}</span>
+                    </span>
+                  }
+                  badge={<Badge variant="outline">{c.status}</Badge>}
+                >
+                  <Field label="Industry" value={c.industry || "—"} />
+                  <Field label="Owner" value={c.owner_id ? usersMap[c.owner_id] ?? "—" : "—"} />
+                  <Field label="Open Opps" value={s.open} />
+                  <Field label="Pipeline" value={inr(s.pipeline)} />
+                </MobileCard>
+              );
+            })}
+            {filtered.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-8">
+                No customers found. Click "New Customer" to add one.
+              </p>
+            )}
+          </MobileCardList>
         </CardContent>
       </Card>
+
 
       <NewCustomerDialog open={newOpen} onOpenChange={setNewOpen} />
     </div>
