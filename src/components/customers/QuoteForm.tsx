@@ -245,10 +245,10 @@ export function QuoteForm({
             </div>
             <div className="flex items-center justify-between w-full gap-2">
               <span className="text-muted-foreground">Overall Discount %:</span>
-              <Input
-                type="number" min={0} max={100} className="h-8 w-20 text-right"
+              <NumberInput
+                min={0} max={100} className="h-8 w-20 text-right"
                 value={overallDisc}
-                onChange={(e) => setOverallDisc(Number(e.target.value))}
+                onValueChange={(v) => setOverallDisc(v)}
               />
             </div>
             {overallDisc > 0 && (
