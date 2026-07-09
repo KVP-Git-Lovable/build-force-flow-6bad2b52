@@ -360,31 +360,53 @@ export default function CustomerDetail() {
           </div>
 
           {oppView === "table" ? (
-            <Card><CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Name</TableHead><TableHead>Type</TableHead><TableHead>Stage</TableHead>
-                  <TableHead>Prob.</TableHead><TableHead>Close Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead><TableHead>Owner</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {filteredOpps.map((o) => (
-                    <TableRow key={o.id} className="cursor-pointer" onClick={() => nav(`/opportunities/${o.id}`)}>
-                      <TableCell className="font-medium">{o.name}</TableCell>
-                      <TableCell>{o.type || "—"}</TableCell>
-                      <TableCell><Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge></TableCell>
-                      <TableCell>{o.probability}%</TableCell>
-                      <TableCell>{o.close_date ? format(new Date(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
-                      <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
-                      <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredOpps.length === 0 && (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No opportunities.</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
+            <Card><CardContent className="p-0">
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead>Name</TableHead><TableHead>Type</TableHead><TableHead>Stage</TableHead>
+                    <TableHead>Prob.</TableHead><TableHead>Close Date</TableHead>
+                    <TableHead className="text-right">Amount</TableHead><TableHead>Owner</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {filteredOpps.map((o) => (
+                      <TableRow key={o.id} className="cursor-pointer" onClick={() => nav(`/opportunities/${o.id}`)}>
+                        <TableCell className="font-medium">{o.name}</TableCell>
+                        <TableCell>{o.type || "—"}</TableCell>
+                        <TableCell><Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge></TableCell>
+                        <TableCell>{o.probability}%</TableCell>
+                        <TableCell>{o.close_date ? format(new Date(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
+                        <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
+                        <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredOpps.length === 0 && (
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No opportunities.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <MobileCardList className="md:hidden p-3">
+                {filteredOpps.map((o) => (
+                  <MobileCard
+                    key={o.id}
+                    onClick={() => nav(`/opportunities/${o.id}`)}
+                    title={o.name}
+                    badge={<Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge>}
+                  >
+                    <Field label="Type" value={o.type || "—"} />
+                    <Field label="Prob." value={`${o.probability}%`} />
+                    <Field label="Amount" value={inr(Number(o.amount))} />
+                    <Field label="Close" value={o.close_date ? format(new Date(o.close_date), "dd MMM yy") : "—"} />
+                    <Field label="Owner" full value={o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"} />
+                  </MobileCard>
+                ))}
+                {filteredOpps.length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground py-6">No opportunities.</p>
+                )}
+              </MobileCardList>
             </CardContent></Card>
+
           ) : (
             <div className="flex gap-3 overflow-x-auto pb-4">
               {stages.map((s) => {
