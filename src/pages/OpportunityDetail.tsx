@@ -138,55 +138,70 @@ export default function OpportunityDetail() {
                   <Plus className="h-4 w-4 mr-1" />New Quote
                 </Button>
               </div>
-              <Card><CardContent className="p-0">
-                <div className="hidden md:block overflow-x-auto">
-                  <Table>
-                    <TableHeader><TableRow>
-                      <TableHead>Quote Name</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow></TableHeader>
-                    <TableBody>
-                      {quotes.map((q) => (
-                        <TableRow key={q.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setQuoteEditor({ mode: "edit", quoteId: q.id })}>
-                          <TableCell className="font-medium">{q.name}</TableCell>
-                          <TableCell className="text-right">{inr(Number(q.total))}</TableCell>
-                          <TableCell>{format(new Date(q.created_at), "dd MMM yyyy")}</TableCell>
-                          <TableCell className="text-right">
-                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); deleteQuote.mutate({ id: q.id, oppId: id! }); }}>
-                              <Trash2 className="h-4 w-4" />
+              {quotes.length === 0 ? (
+                <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No quotes yet.</CardContent></Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {quotes.map((q) => {
+                    const items = (q as any).items || [];
+                    const sorted = [...items].sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+                    const names = sorted.map((it: any) => it.product_name).filter(Boolean);
+                    const preview = names.length === 0 ? "No items"
+                      : names.length <= 2 ? names.join(", ")
+                      : `${names.slice(0, 2).join(", ")}, +${names.length - 2} more`;
+                    const edited = q.updated_at && new Date(q.updated_at).getTime() - new Date(q.created_at).getTime() > 60_000;
+                    return (
+                      <Card
+                        key={q.id}
+                        className={`cursor-pointer hover:shadow-md transition-shadow rounded-xl ${q.is_synced ? "ring-2 ring-primary/60" : ""}`}
+                        onClick={() => setQuoteEditor({ mode: "edit", quoteId: q.id })}
+                      >
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-semibold truncate">{q.name}</h3>
+                                {q.is_synced && (
+                                  <Badge className="bg-primary text-primary-foreground text-xs">Synced</Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{preview}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="font-semibold">{inr(Number(q.total))}</div>
+                              <div className="text-[11px] text-muted-foreground">
+                                {items.length} product{items.length === 1 ? "" : "s"}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                            <span>Created {format(new Date(q.created_at), "dd MMM yyyy")}</span>
+                            {edited && <span>· Updated {format(new Date(q.updated_at), "dd MMM yyyy")}</span>}
+                            {Number(q.overall_discount_pct) > 0 && (
+                              <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                                {Number(q.overall_discount_pct)}% off
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between pt-2 border-t" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              size="sm"
+                              variant={q.is_synced ? "default" : "outline"}
+                              onClick={() => toggleSync.mutate({ id: q.id, oppId: id!, sync: !q.is_synced })}
+                              disabled={toggleSync.isPending}
+                            >
+                              {q.is_synced ? "Synced ✓" : "Sync to Opportunity"}
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {quotes.length === 0 && (
-                        <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No quotes yet.</TableCell></TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                            <Button size="sm" variant="ghost" onClick={() => deleteQuote.mutate({ id: q.id, oppId: id! })}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
-                <MobileCardList className="md:hidden p-3">
-                  {quotes.map((q) => (
-                    <MobileCard
-                      key={q.id}
-                      onClick={() => setQuoteEditor({ mode: "edit", quoteId: q.id })}
-                      title={q.name}
-                      badge={<Badge variant="secondary">{inr(Number(q.total))}</Badge>}
-                      actions={
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); deleteQuote.mutate({ id: q.id, oppId: id! }); }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      }
-                    >
-                      <MField label="Created" full value={format(new Date(q.created_at), "dd MMM yyyy")} />
-                    </MobileCard>
-                  ))}
-                  {quotes.length === 0 && (
-                    <p className="text-center text-sm text-muted-foreground py-6">No quotes yet.</p>
-                  )}
-                </MobileCardList>
-              </CardContent></Card>
+              )}
 
             </>
           )}
