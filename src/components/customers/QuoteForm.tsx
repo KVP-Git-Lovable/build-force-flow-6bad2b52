@@ -9,7 +9,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Plus, Trash2, X, ChevronsUpDown, Pencil, Link2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { useMasterProducts, useQuoteItems, useSaveQuote, type Quote, type QuoteItem } from "@/hooks/useCustomers";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useMasterProducts, useQuoteItems, useSaveQuote, useAddMasterProduct, type Quote, type QuoteItem } from "@/hooks/useCustomers";
+
 
 function inr(n: number) { return `₹ ${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`; }
 
