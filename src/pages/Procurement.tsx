@@ -41,6 +41,7 @@ const emptyForm = {
 export default function Procurement() {
   const { profile, isAdmin } = useUserProfile();
   const { hasPermission } = useProfilePermissions();
+  const { data: uoms = [] } = useUomOptions(true);
   const canApprove = isAdmin || hasPermission("module_procurement", "edit");
 
   const [orders, setOrders] = useState<DetailOrder[]>([]);
