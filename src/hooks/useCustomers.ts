@@ -523,20 +523,24 @@ export function useSaveQuote() {
       notes: string | null;
       total: number;
       overall_discount_pct: number;
+      is_synced?: boolean;
       items: QuoteItem[];
     }) => {
       let quoteId = payload.id;
+      const baseFields: any = {
+        name: payload.name, notes: payload.notes, total: payload.total,
+        overall_discount_pct: payload.overall_discount_pct,
+      };
+      if (payload.is_synced !== undefined) baseFields.is_synced = payload.is_synced;
       if (quoteId) {
         const { error } = await supabase.from("opportunity_quotes" as any)
-          .update({ name: payload.name, notes: payload.notes, total: payload.total, overall_discount_pct: payload.overall_discount_pct } as any)
-          .eq("id", quoteId);
+          .update(baseFields).eq("id", quoteId);
         if (error) throw error;
         await supabase.from("opportunity_quote_items" as any).delete().eq("quote_id", quoteId);
       } else {
         const { data, error } = await supabase.from("opportunity_quotes" as any).insert({
           opportunity_id: payload.opportunity_id,
-          name: payload.name, notes: payload.notes, total: payload.total,
-          overall_discount_pct: payload.overall_discount_pct,
+          ...baseFields,
         } as any).select().single();
         if (error) throw error;
         quoteId = (data as any).id;
