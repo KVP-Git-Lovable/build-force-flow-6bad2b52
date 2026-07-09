@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Save, Search, Package } from "lucide-react";
-import { UOM_OPTIONS } from "@/lib/procurement";
+import { useUomOptions } from "@/hooks/useUomOptions";
 
 interface CategoryRow {
   id: string;
