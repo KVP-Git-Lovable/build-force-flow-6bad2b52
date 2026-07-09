@@ -31,6 +31,8 @@ import { ActivityForm } from "@/components/customers/ActivityForm";
 import { DocumentUpload } from "@/components/customers/DocumentUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
+
 
 function inr(n: number) { return `₹ ${(n ?? 0).toLocaleString()}`; }
 
@@ -358,31 +360,53 @@ export default function CustomerDetail() {
           </div>
 
           {oppView === "table" ? (
-            <Card><CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Name</TableHead><TableHead>Type</TableHead><TableHead>Stage</TableHead>
-                  <TableHead>Prob.</TableHead><TableHead>Close Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead><TableHead>Owner</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {filteredOpps.map((o) => (
-                    <TableRow key={o.id} className="cursor-pointer" onClick={() => nav(`/opportunities/${o.id}`)}>
-                      <TableCell className="font-medium">{o.name}</TableCell>
-                      <TableCell>{o.type || "—"}</TableCell>
-                      <TableCell><Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge></TableCell>
-                      <TableCell>{o.probability}%</TableCell>
-                      <TableCell>{o.close_date ? format(new Date(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
-                      <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
-                      <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredOpps.length === 0 && (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No opportunities.</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
+            <Card><CardContent className="p-0">
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead>Name</TableHead><TableHead>Type</TableHead><TableHead>Stage</TableHead>
+                    <TableHead>Prob.</TableHead><TableHead>Close Date</TableHead>
+                    <TableHead className="text-right">Amount</TableHead><TableHead>Owner</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {filteredOpps.map((o) => (
+                      <TableRow key={o.id} className="cursor-pointer" onClick={() => nav(`/opportunities/${o.id}`)}>
+                        <TableCell className="font-medium">{o.name}</TableCell>
+                        <TableCell>{o.type || "—"}</TableCell>
+                        <TableCell><Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge></TableCell>
+                        <TableCell>{o.probability}%</TableCell>
+                        <TableCell>{o.close_date ? format(new Date(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
+                        <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
+                        <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredOpps.length === 0 && (
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No opportunities.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <MobileCardList className="md:hidden p-3">
+                {filteredOpps.map((o) => (
+                  <MobileCard
+                    key={o.id}
+                    onClick={() => nav(`/opportunities/${o.id}`)}
+                    title={o.name}
+                    badge={<Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge>}
+                  >
+                    <Field label="Type" value={o.type || "—"} />
+                    <Field label="Prob." value={`${o.probability}%`} />
+                    <Field label="Amount" value={inr(Number(o.amount))} />
+                    <Field label="Close" value={o.close_date ? format(new Date(o.close_date), "dd MMM yy") : "—"} />
+                    <Field label="Owner" full value={o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"} />
+                  </MobileCard>
+                ))}
+                {filteredOpps.length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground py-6">No opportunities.</p>
+                )}
+              </MobileCardList>
             </CardContent></Card>
+
           ) : (
             <div className="flex gap-3 overflow-x-auto pb-4">
               {stages.map((s) => {
@@ -440,34 +464,61 @@ export default function CustomerDetail() {
           </div>
 
           {contactView === "list" ? (
-            <Card><CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Name</TableHead><TableHead>Title</TableHead><TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead><TableHead>Reports To</TableHead><TableHead></TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {contacts.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.name}</TableCell>
-                      <TableCell>{c.title || "—"}</TableCell>
-                      <TableCell>{c.email || "—"}</TableCell>
-                      <TableCell>{c.phone || "—"}</TableCell>
-                      <TableCell>{contacts.find((x) => x.id === c.reports_to_id)?.name ?? "—"}</TableCell>
-                      <TableCell className="text-right">
+            <Card><CardContent className="p-0">
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead>Name</TableHead><TableHead>Title</TableHead><TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead><TableHead>Reports To</TableHead><TableHead></TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {contacts.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium">{c.name}</TableCell>
+                        <TableCell>{c.title || "—"}</TableCell>
+                        <TableCell>{c.email || "—"}</TableCell>
+                        <TableCell>{c.phone || "—"}</TableCell>
+                        <TableCell>{contacts.find((x) => x.id === c.reports_to_id)?.name ?? "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" onClick={() => { setEditContact(c); setNewContact(true); }}>Edit</Button>
+                          <Button size="sm" variant="ghost" onClick={() => deleteContact.mutate(c.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {contacts.length === 0 && (
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No contacts yet.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <MobileCardList className="md:hidden p-3">
+                {contacts.map((c) => (
+                  <MobileCard
+                    key={c.id}
+                    title={c.name}
+                    badge={c.title ? <Badge variant="outline" className="text-[10px]">{c.title}</Badge> : undefined}
+                    actions={
+                      <>
                         <Button size="sm" variant="ghost" onClick={() => { setEditContact(c); setNewContact(true); }}>Edit</Button>
                         <Button size="sm" variant="ghost" onClick={() => deleteContact.mutate(c.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {contacts.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No contacts yet.</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                      </>
+                    }
+                  >
+                    <Field label="Email" full value={c.email || "—"} />
+                    <Field label="Phone" value={c.phone || "—"} />
+                    <Field label="Reports To" value={contacts.find((x) => x.id === c.reports_to_id)?.name ?? "—"} />
+                  </MobileCard>
+                ))}
+                {contacts.length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground py-6">No contacts yet.</p>
+                )}
+              </MobileCardList>
             </CardContent></Card>
+
           ) : (
             <Card><CardContent className="p-4">
               <ContactOrgChart contacts={contacts} />
@@ -502,38 +553,72 @@ export default function CustomerDetail() {
           <div className="flex justify-end">
             <DocumentUpload customerId={customerId} />
           </div>
-          <Card><CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>File</TableHead><TableHead>Linked To</TableHead><TableHead>Size</TableHead>
-                <TableHead>Uploaded By</TableHead><TableHead>Uploaded</TableHead><TableHead></TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {docs.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />{d.file_name}
-                    </TableCell>
-                    <TableCell>{d.opportunity_id ? oppMap[d.opportunity_id]?.name ?? "Opportunity" : "General"}</TableCell>
-                    <TableCell>{d.file_size ? `${Math.round(d.file_size / 1024)} KB` : "—"}</TableCell>
-                    <TableCell>{d.uploaded_by ? usersMap[d.uploaded_by] ?? "—" : "—"}</TableCell>
-                    <TableCell>{format(new Date(d.created_at), "dd MMM yyyy")}</TableCell>
-                    <TableCell className="text-right">
+          <Card><CardContent className="p-0">
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>File</TableHead><TableHead>Linked To</TableHead><TableHead>Size</TableHead>
+                  <TableHead>Uploaded By</TableHead><TableHead>Uploaded</TableHead><TableHead></TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {docs.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />{d.file_name}
+                      </TableCell>
+                      <TableCell>{d.opportunity_id ? oppMap[d.opportunity_id]?.name ?? "Opportunity" : "General"}</TableCell>
+                      <TableCell>{d.file_size ? `${Math.round(d.file_size / 1024)} KB` : "—"}</TableCell>
+                      <TableCell>{d.uploaded_by ? usersMap[d.uploaded_by] ?? "—" : "—"}</TableCell>
+                      <TableCell>{format(new Date(d.created_at), "dd MMM yyyy")}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" onClick={() => downloadDoc(d.file_url, d.file_name)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteDoc.mutate({ id: d.id, fileUrl: d.file_url })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {docs.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No documents yet.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <MobileCardList className="md:hidden p-3">
+              {docs.map((d) => (
+                <MobileCard
+                  key={d.id}
+                  title={
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="truncate">{d.file_name}</span>
+                    </span>
+                  }
+                  badge={<Badge variant="secondary" className="text-[10px]">{d.opportunity_id ? oppMap[d.opportunity_id]?.name ?? "Opportunity" : "General"}</Badge>}
+                  actions={
+                    <>
                       <Button size="sm" variant="ghost" onClick={() => downloadDoc(d.file_url, d.file_name)}>
                         <Download className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => deleteDoc.mutate({ id: d.id, fileUrl: d.file_url })}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {docs.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No documents yet.</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
+                    </>
+                  }
+                >
+                  <Field label="Size" value={d.file_size ? `${Math.round(d.file_size / 1024)} KB` : "—"} />
+                  <Field label="Uploaded" value={format(new Date(d.created_at), "dd MMM yy")} />
+                  <Field label="Uploaded By" full value={d.uploaded_by ? usersMap[d.uploaded_by] ?? "—" : "—"} />
+                </MobileCard>
+              ))}
+              {docs.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-6">No documents yet.</p>
+              )}
+            </MobileCardList>
           </CardContent></Card>
+
         </TabsContent>
       </Tabs>
 
