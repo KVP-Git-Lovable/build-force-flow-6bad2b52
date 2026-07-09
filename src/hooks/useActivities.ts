@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  enqueueActivity,
+  generateClientUUID,
+  listQueue,
+  subscribeQueue,
+  cacheReference,
+  readReference,
+  type QueuedActivity,
+} from "@/lib/offlineActivityQueue";
+import { flushActivityQueue } from "@/hooks/useOfflineActivitySync";
 
 export interface ActivityStatusEntry {
   status: string;
