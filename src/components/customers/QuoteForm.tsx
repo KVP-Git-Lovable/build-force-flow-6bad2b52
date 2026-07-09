@@ -97,7 +97,8 @@ export function QuoteForm({
           <Switch checked={isSynced} onCheckedChange={setIsSynced} />
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -135,6 +136,49 @@ export function QuoteForm({
             </TableBody>
           </Table>
         </div>
+
+        {/* Mobile stacked cards */}
+        <div className="md:hidden space-y-3">
+          {rows.map((r, i) => (
+            <div key={i} className="rounded-lg border p-3 space-y-3 bg-card">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Item {i + 1}</span>
+                <Button variant="ghost" size="sm" className="h-7 -mr-2" onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+              <div>
+                <Label className="text-xs">Product</Label>
+                <ProductPicker
+                  products={products}
+                  productId={r.product_id}
+                  productName={r.product_name}
+                  onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0 })}
+                  onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Qty</Label>
+                  <Input type="number" min={0} value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Unit Price</Label>
+                  <Input type="number" min={0} step="0.01" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Disc %</Label>
+                  <Input type="number" min={0} max={100} value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Total</Label>
+                  <div className="h-10 flex items-center justify-end font-semibold">{inr(calcLine(r.qty, r.unit_price, r.discount_pct))}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
 
         <div className="flex items-center justify-between flex-wrap gap-3">
           <Button variant="outline" size="sm" onClick={() => setRows((prev) => [...prev, emptyRow(prev.length)])}>
