@@ -4,6 +4,8 @@ import {
 import { EditableListEditor, LeaveTypeEditor, LeaveTypeItem } from "./EditableListEditor";
 import { ApprovalTransitionEditor } from "./ApprovalTransitionEditor";
 import { useAppConfiguration, ApprovalTransition } from "@/hooks/useAppConfiguration";
+import { FieldManager } from "./FieldManager";
+import { WorkflowBuilder } from "./WorkflowBuilder";
 
 const ADMIN_MANAGER = [
   { value: "admin", label: "Admin only" },
