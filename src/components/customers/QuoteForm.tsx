@@ -36,7 +36,7 @@ export function QuoteForm({
   const [overallDisc, setOverallDisc] = useState<number>(Number(quote?.overall_discount_pct) || 0);
   const [isSynced, setIsSynced] = useState<boolean>(!!quote?.is_synced);
   const [rows, setRows] = useState<QuoteItem[]>([emptyRow(0)]);
-  const [saveToMaster, setSaveToMaster] = useState<Record<number, boolean>>({ 0: true });
+  const [saveToMaster, setSaveToMaster] = useState<Record<number, boolean>>({ 0: false });
 
 
   useEffect(() => {
@@ -163,7 +163,7 @@ export function QuoteForm({
                     <TableCell colSpan={6} className="py-1 border-0">
                       <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer pl-1">
                         <Checkbox
-                          checked={saveToMaster[i] ?? true}
+                          checked={saveToMaster[i] ?? false}
                           onCheckedChange={(v) => setSaveToMaster((s) => ({ ...s, [i]: !!v }))}
                         />
                         Also add <span className="font-medium text-foreground">"{r.product_name}"</span> to Product Master
@@ -203,7 +203,7 @@ export function QuoteForm({
               {r.product_name && !r.product_id && (
                 <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
                   <Checkbox
-                    checked={saveToMaster[i] ?? true}
+                    checked={saveToMaster[i] ?? false}
                     onCheckedChange={(v) => setSaveToMaster((s) => ({ ...s, [i]: !!v }))}
                   />
                   Also add <span className="font-medium text-foreground">"{r.product_name}"</span> to Product Master
@@ -234,7 +234,7 @@ export function QuoteForm({
 
 
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <Button variant="outline" size="sm" onClick={() => setRows((prev) => { setSaveToMaster((s) => ({ ...s, [prev.length]: true })); return [...prev, emptyRow(prev.length)]; })}>
+          <Button variant="outline" size="sm" onClick={() => setRows((prev) => { setSaveToMaster((s) => ({ ...s, [prev.length]: false })); return [...prev, emptyRow(prev.length)]; })}>
             <Plus className="h-4 w-4 mr-1" />Add Line
           </Button>
           <div className="flex flex-col items-end gap-1 text-sm min-w-[240px]">
