@@ -461,20 +461,42 @@ export interface Quote {
   notes: string | null;
   total: number;
   overall_discount_pct: number;
+  is_synced: boolean;
   created_at: string;
   updated_at: string;
+  items?: { product_name: string | null; sort_order: number }[];
 }
 
 export function useQuotes(oppId?: string) {
   return useQuery({
     queryKey: ["quotes", oppId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("opportunity_quotes" as any).select("*")
+      const { data, error } = await supabase.from("opportunity_quotes" as any)
+        .select("*, items:opportunity_quote_items(product_name, sort_order)")
         .eq("opportunity_id", oppId!).order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Quote[];
     },
     enabled: !!oppId,
+  });
+}
+
+export function useToggleQuoteSync() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, oppId, sync }: { id: string; oppId: string; sync: boolean }) => {
+      const { error } = await supabase.from("opportunity_quotes" as any)
+        .update({ is_synced: sync } as any).eq("id", id);
+      if (error) throw error;
+      return { oppId };
+    },
+    onSuccess: ({ oppId }) => {
+      qc.invalidateQueries({ queryKey: ["quotes", oppId] });
+      qc.invalidateQueries({ queryKey: ["opportunity", oppId] });
+      qc.invalidateQueries({ queryKey: ["opportunities"] });
+      toast.success("Sync updated");
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 }
 
@@ -501,20 +523,24 @@ export function useSaveQuote() {
       notes: string | null;
       total: number;
       overall_discount_pct: number;
+      is_synced?: boolean;
       items: QuoteItem[];
     }) => {
       let quoteId = payload.id;
+      const baseFields: any = {
+        name: payload.name, notes: payload.notes, total: payload.total,
+        overall_discount_pct: payload.overall_discount_pct,
+      };
+      if (payload.is_synced !== undefined) baseFields.is_synced = payload.is_synced;
       if (quoteId) {
         const { error } = await supabase.from("opportunity_quotes" as any)
-          .update({ name: payload.name, notes: payload.notes, total: payload.total, overall_discount_pct: payload.overall_discount_pct } as any)
-          .eq("id", quoteId);
+          .update(baseFields).eq("id", quoteId);
         if (error) throw error;
         await supabase.from("opportunity_quote_items" as any).delete().eq("quote_id", quoteId);
       } else {
         const { data, error } = await supabase.from("opportunity_quotes" as any).insert({
           opportunity_id: payload.opportunity_id,
-          name: payload.name, notes: payload.notes, total: payload.total,
-          overall_discount_pct: payload.overall_discount_pct,
+          ...baseFields,
         } as any).select().single();
         if (error) throw error;
         quoteId = (data as any).id;
@@ -541,6 +567,8 @@ export function useSaveQuote() {
     onSuccess: (d) => {
       qc.invalidateQueries({ queryKey: ["quotes", d.opportunity_id] });
       qc.invalidateQueries({ queryKey: ["quote-items", d.id] });
+      qc.invalidateQueries({ queryKey: ["opportunity", d.opportunity_id] });
+      qc.invalidateQueries({ queryKey: ["opportunities"] });
       toast.success("Quote saved");
     },
     onError: (e: any) => toast.error(e.message),

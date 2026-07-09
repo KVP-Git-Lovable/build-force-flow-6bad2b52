@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, Trash2, X, ChevronsUpDown, Pencil } from "lucide-react";
+import { Plus, Trash2, X, ChevronsUpDown, Pencil, Link2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useMasterProducts, useQuoteItems, useSaveQuote, type Quote, type QuoteItem } from "@/hooks/useCustomers";
 
 function inr(n: number) { return `₹ ${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`; }
@@ -30,6 +31,7 @@ export function QuoteForm({
   const [name, setName] = useState(quote?.name || "");
   const [notes, setNotes] = useState(quote?.notes || "");
   const [overallDisc, setOverallDisc] = useState<number>(Number(quote?.overall_discount_pct) || 0);
+  const [isSynced, setIsSynced] = useState<boolean>(!!quote?.is_synced);
   const [rows, setRows] = useState<QuoteItem[]>([emptyRow(0)]);
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export function QuoteForm({
       notes: notes.trim() || null,
       total: grandTotal,
       overall_discount_pct: Number(overallDisc) || 0,
+      is_synced: isSynced,
       items: items.map((r, i) => ({
         ...r,
         sort_order: i,
@@ -75,12 +78,23 @@ export function QuoteForm({
   return (
     <Card>
       <CardContent className="p-4 md:p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 mr-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
             <Label>Quote Name *</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Initial Quote" />
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
+        </div>
+
+        <div className="flex items-center justify-between rounded-md border p-3 bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Link2 className="h-4 w-4 text-primary" />
+            <div>
+              <div className="text-sm font-medium">Sync to Opportunity</div>
+              <div className="text-xs text-muted-foreground">Use this quote's total as the Opportunity Amount</div>
+            </div>
+          </div>
+          <Switch checked={isSynced} onCheckedChange={setIsSynced} />
         </div>
 
         <div className="overflow-x-auto">
