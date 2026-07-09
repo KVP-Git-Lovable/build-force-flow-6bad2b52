@@ -255,54 +255,101 @@ export function useActivities() {
     };
   }, []);
 
-  const createActivity = useCallback(async (activity: Partial<Activity>, targetUserId?: string, silent?: boolean) => {
+  const createActivity = useCallback(async (
+    activity: Partial<Activity>,
+    targetUserId?: string,
+    silent?: boolean,
+    options?: { clientUuid?: string; audio?: { blob: Blob; mimeType: string; fileExtension: string } | null }
+  ) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    const { data, error } = await supabase
-      .from("activity_events")
-      .insert({
+    const clientUuid = options?.clientUuid || generateClientUUID();
+    const basePayload: any = {
+      activity_name: activity.activity_name!,
+      activity_type: activity.activity_type!,
+      activity_date: activity.activity_date!,
+      start_time: activity.start_time || null,
+      end_time: activity.end_time || null,
+      duration_type: activity.duration_type || null,
+      from_date: activity.from_date || null,
+      to_date: activity.to_date || null,
+      total_days: activity.total_days || null,
+      total_hours: activity.total_hours || 0,
+      description: activity.description || null,
+      remarks: activity.remarks || null,
+      status: activity.status || "planned",
+      project_id: activity.project_id || null,
+      site_id: activity.site_id || null,
+      milestone_id: (activity as any).milestone_id || null,
+      grn_po_id: (activity as any).grn_po_id || null,
+      customer_id: (activity as any).customer_id || null,
+      opportunity_id: (activity as any).opportunity_id || null,
+      location_lat: activity.location_lat || null,
+      location_lng: activity.location_lng || null,
+      location_address: activity.location_address || null,
+      attachment_urls: activity.attachment_urls || [],
+      status_history: (activity.status_history as any) || [],
+      photo_urls: (activity.photo_urls as any) || [],
+    };
+
+    const enqueueOffline = async (reason: string) => {
+      await enqueueActivity({
+        client_uuid: clientUuid,
+        payload: basePayload,
+        target_user_id: targetUserId || user.id,
+        audio: options?.audio || null,
+        created_at: Date.now(),
+        attempts: 0,
+        status: "pending",
+        error: null,
+        optimistic_user_id: user.id,
+      });
+      if (!silent) toast({
+        title: "Saved offline",
+        description: "Activity queued — will sync when you're back online.",
+      });
+      // Kick off flush attempt (no-op if offline)
+      flushActivityQueue().catch(() => {});
+      return {
+        id: `pending:${clientUuid}`,
         user_id: targetUserId || user.id,
-        activity_name: activity.activity_name!,
-        activity_type: activity.activity_type!,
-        activity_date: activity.activity_date!,
-        start_time: activity.start_time || null,
-        end_time: activity.end_time || null,
-        duration_type: activity.duration_type || null,
-        from_date: activity.from_date || null,
-        to_date: activity.to_date || null,
-        total_days: activity.total_days || null,
-        total_hours: activity.total_hours || 0,
-        description: activity.description || null,
-        remarks: activity.remarks || null,
-        status: activity.status || "planned",
-        project_id: activity.project_id || null,
-        site_id: activity.site_id || null,
-        milestone_id: (activity as any).milestone_id || null,
-        grn_po_id: (activity as any).grn_po_id || null,
-        customer_id: (activity as any).customer_id || null,
-        opportunity_id: (activity as any).opportunity_id || null,
-        location_lat: activity.location_lat || null,
-        location_lng: activity.location_lng || null,
-        location_address: activity.location_address || null,
-        attachment_urls: activity.attachment_urls || [],
-        status_history: (activity.status_history as any) || [],
-        photo_urls: (activity.photo_urls as any) || [],
-      })
-      .select("*")
-      .single();
+        ...basePayload,
+        created_at: new Date().toISOString(),
+        _pending: true,
+        _client_uuid: clientUuid,
+      } as unknown as Activity;
+    };
 
-    if (error) throw error;
-    if (!silent) toast({ title: "Activity Created", description: "Activity logged successfully" });
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      return enqueueOffline("offline");
+    }
 
-    return data
-      ? ({
-          ...data,
-          attachment_urls: Array.isArray(data.attachment_urls) ? (data.attachment_urls as string[]) : [],
-          status_history: Array.isArray((data as any).status_history) ? (data as any).status_history : [],
-          photo_urls: Array.isArray((data as any).photo_urls) ? (data as any).photo_urls : [],
-        } as unknown as Activity)
-      : null;
+    try {
+      const { data, error } = await supabase
+        .from("activity_events")
+        .insert({ user_id: targetUserId || user.id, client_uuid: clientUuid, ...basePayload })
+        .select("*")
+        .single();
+
+      if (error) throw error;
+      if (!silent) toast({ title: "Activity Created", description: "Activity logged successfully" });
+
+      return data
+        ? ({
+            ...data,
+            attachment_urls: Array.isArray(data.attachment_urls) ? (data.attachment_urls as string[]) : [],
+            status_history: Array.isArray((data as any).status_history) ? (data as any).status_history : [],
+            photo_urls: Array.isArray((data as any).photo_urls) ? (data as any).photo_urls : [],
+          } as unknown as Activity)
+        : null;
+    } catch (err: any) {
+      // Network/fetch failures → queue for later. Real validation errors re-throw.
+      const msg = `${err?.message || ""}`.toLowerCase();
+      const isNetwork = msg.includes("failed to fetch") || msg.includes("network") || msg.includes("load failed");
+      if (isNetwork) return enqueueOffline("network");
+      throw err;
+    }
   }, [toast]);
 
   const updateActivity = useCallback(async (id: string, updates: Partial<Activity>) => {
