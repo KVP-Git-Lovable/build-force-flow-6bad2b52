@@ -200,18 +200,27 @@ export function QuoteForm({
                   onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
                 />
               </div>
+              {r.product_name && !r.product_id && (
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={saveToMaster[i] ?? true}
+                    onCheckedChange={(v) => setSaveToMaster((s) => ({ ...s, [i]: !!v }))}
+                  />
+                  Also add <span className="font-medium text-foreground">"{r.product_name}"</span> to Product Master
+                </label>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs">Qty</Label>
-                  <Input type="number" min={0} value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} />
+                  <Input type="number" inputMode="decimal" min={0} value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} />
                 </div>
                 <div>
                   <Label className="text-xs">Unit Price</Label>
-                  <Input type="number" min={0} step="0.01" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} />
+                  <Input type="number" inputMode="decimal" min={0} step="0.01" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} />
                 </div>
                 <div>
                   <Label className="text-xs">Disc %</Label>
-                  <Input type="number" min={0} max={100} value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} />
+                  <Input type="number" inputMode="decimal" min={0} max={100} value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} />
                 </div>
                 <div>
                   <Label className="text-xs">Total</Label>
@@ -219,6 +228,7 @@ export function QuoteForm({
                 </div>
               </div>
             </div>
+
           ))}
         </div>
 
