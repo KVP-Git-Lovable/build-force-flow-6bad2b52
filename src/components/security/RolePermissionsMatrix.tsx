@@ -9,6 +9,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import HierarchicalPermissionEditor, { PermissionState } from "./HierarchicalPermissionEditor";
 import { usePermissionDefinitions, PermissionDefinition } from "@/hooks/usePermissionDefinitions";
+import { useProfilePermissions } from "@/hooks/useProfilePermissions";
+import { useMemo } from "react";
 
 interface SecurityProfile {
   id: string;
