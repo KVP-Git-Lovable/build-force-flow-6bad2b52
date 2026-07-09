@@ -234,7 +234,7 @@ export function QuoteForm({
 
 
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <Button variant="outline" size="sm" onClick={() => setRows((prev) => [...prev, emptyRow(prev.length)])}>
+          <Button variant="outline" size="sm" onClick={() => setRows((prev) => { setSaveToMaster((s) => ({ ...s, [prev.length]: true })); return [...prev, emptyRow(prev.length)]; })}>
             <Plus className="h-4 w-4 mr-1" />Add Line
           </Button>
           <div className="flex flex-col items-end gap-1 text-sm min-w-[240px]">
