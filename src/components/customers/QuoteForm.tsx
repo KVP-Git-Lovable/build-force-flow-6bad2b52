@@ -31,6 +31,7 @@ export function QuoteForm({
   const [name, setName] = useState(quote?.name || "");
   const [notes, setNotes] = useState(quote?.notes || "");
   const [overallDisc, setOverallDisc] = useState<number>(Number(quote?.overall_discount_pct) || 0);
+  const [isSynced, setIsSynced] = useState<boolean>(!!quote?.is_synced);
   const [rows, setRows] = useState<QuoteItem[]>([emptyRow(0)]);
 
   useEffect(() => {
