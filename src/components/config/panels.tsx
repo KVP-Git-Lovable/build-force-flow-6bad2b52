@@ -4,6 +4,8 @@ import {
 import { EditableListEditor, LeaveTypeEditor, LeaveTypeItem } from "./EditableListEditor";
 import { ApprovalTransitionEditor } from "./ApprovalTransitionEditor";
 import { useAppConfiguration, ApprovalTransition } from "@/hooks/useAppConfiguration";
+import { FieldManager } from "./FieldManager";
+import { WorkflowBuilder } from "./WorkflowBuilder";
 
 const ADMIN_MANAGER = [
   { value: "admin", label: "Admin only" },
@@ -23,6 +25,27 @@ const ALL_MANAGER_ADMIN = [
 type Tab = "config" | "approval";
 
 export function ModulePanel({ module, tab }: { module: string; tab: Tab }) {
+  const legacy = <LegacyModulePanel module={module} tab={tab} />;
+  if (tab === "config") {
+    return (
+      <div className="space-y-6">
+        {legacy}
+        <FieldManager module={module} />
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-6">
+      <WorkflowBuilder module={module} />
+      <details className="rounded-lg border p-3">
+        <summary className="cursor-pointer text-sm font-medium">Legacy approval settings</summary>
+        <div className="pt-3">{legacy}</div>
+      </details>
+    </div>
+  );
+}
+
+function LegacyModulePanel({ module, tab }: { module: string; tab: Tab }) {
   const { getValue, setValue, hasValue } = useAppConfiguration();
   const g = <T,>(key: string) => getValue<T>(module, key);
   const s = (key: string, v: unknown) => setValue(module, key, v);
