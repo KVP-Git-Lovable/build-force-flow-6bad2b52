@@ -485,6 +485,13 @@ export function useToggleQuoteSync() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, oppId, sync }: { id: string; oppId: string; sync: boolean }) => {
+      if (sync) {
+        const { error: clearErr } = await supabase.from("opportunity_quotes" as any)
+          .update({ is_synced: false } as any)
+          .eq("opportunity_id", oppId)
+          .neq("id", id);
+        if (clearErr) throw clearErr;
+      }
       const { error } = await supabase.from("opportunity_quotes" as any)
         .update({ is_synced: sync } as any).eq("id", id);
       if (error) throw error;
@@ -532,6 +539,15 @@ export function useSaveQuote() {
         overall_discount_pct: payload.overall_discount_pct,
       };
       if (payload.is_synced !== undefined) baseFields.is_synced = payload.is_synced;
+      if (payload.is_synced === true) {
+        const clearQuery = supabase.from("opportunity_quotes" as any)
+          .update({ is_synced: false } as any)
+          .eq("opportunity_id", payload.opportunity_id);
+        const { error: clearErr } = quoteId
+          ? await clearQuery.neq("id", quoteId)
+          : await clearQuery;
+        if (clearErr) throw clearErr;
+      }
       if (quoteId) {
         const { error } = await supabase.from("opportunity_quotes" as any)
           .update(baseFields).eq("id", quoteId);
