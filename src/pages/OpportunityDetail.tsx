@@ -137,33 +137,56 @@ export default function OpportunityDetail() {
                   <Plus className="h-4 w-4 mr-1" />New Quote
                 </Button>
               </div>
-              <Card><CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader><TableRow>
-                    <TableHead>Quote Name</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow></TableHeader>
-                  <TableBody>
-                    {quotes.map((q) => (
-                      <TableRow key={q.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setQuoteEditor({ mode: "edit", quoteId: q.id })}>
-                        <TableCell className="font-medium">{q.name}</TableCell>
-                        <TableCell className="text-right">{inr(Number(q.total))}</TableCell>
-                        <TableCell>{format(new Date(q.created_at), "dd MMM yyyy")}</TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); deleteQuote.mutate({ id: q.id, oppId: id! }); }}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {quotes.length === 0 && (
-                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No quotes yet.</TableCell></TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+              <Card><CardContent className="p-0">
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>Quote Name</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {quotes.map((q) => (
+                        <TableRow key={q.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setQuoteEditor({ mode: "edit", quoteId: q.id })}>
+                          <TableCell className="font-medium">{q.name}</TableCell>
+                          <TableCell className="text-right">{inr(Number(q.total))}</TableCell>
+                          <TableCell>{format(new Date(q.created_at), "dd MMM yyyy")}</TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); deleteQuote.mutate({ id: q.id, oppId: id! }); }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {quotes.length === 0 && (
+                        <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No quotes yet.</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                <MobileCardList className="md:hidden p-3">
+                  {quotes.map((q) => (
+                    <MobileCard
+                      key={q.id}
+                      onClick={() => setQuoteEditor({ mode: "edit", quoteId: q.id })}
+                      title={q.name}
+                      badge={<Badge variant="secondary">{inr(Number(q.total))}</Badge>}
+                      actions={
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); deleteQuote.mutate({ id: q.id, oppId: id! }); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      }
+                    >
+                      <MField label="Created" full value={format(new Date(q.created_at), "dd MMM yyyy")} />
+                    </MobileCard>
+                  ))}
+                  {quotes.length === 0 && (
+                    <p className="text-center text-sm text-muted-foreground py-6">No quotes yet.</p>
+                  )}
+                </MobileCardList>
               </CardContent></Card>
+
             </>
           )}
         </TabsContent>
