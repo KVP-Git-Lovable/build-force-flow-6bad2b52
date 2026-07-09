@@ -627,3 +627,19 @@ export function useMasterProducts() {
   });
 }
 
+export function useAddMasterProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ product_name, default_unit_price }: { product_name: string; default_unit_price: number }) => {
+      const { data, error } = await supabase.from("master_products")
+        .insert({ product_name: product_name.trim(), default_unit_price: Number(default_unit_price) || 0, is_active: true })
+        .select("id, product_name, default_uom, default_unit_price, is_active")
+        .single();
+      if (error) throw error;
+      return data as MasterProduct;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["master-products-active"] }); },
+  });
+}
+
+
