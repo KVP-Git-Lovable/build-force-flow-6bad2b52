@@ -1716,6 +1716,39 @@ export type Database = {
           },
         ]
       }
+      master_uom: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          short_code: string
+          sort_order: number
+          uom_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          short_code: string
+          sort_order?: number
+          uom_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          short_code?: string
+          sort_order?: number
+          uom_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       monthly_leave_accrual: {
         Row: {
           allocated: number
