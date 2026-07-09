@@ -38,8 +38,8 @@ export function MilestoneForm({
         <div className="space-y-3">
           <div><Label>Milestone Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div><Label>Invoice Value</Label>
-            <Input type="number" min={0} value={form.invoice_value}
-              onChange={(e) => setForm({ ...form, invoice_value: Number(e.target.value) })} />
+            <NumberInput min={0} value={form.invoice_value}
+              onValueChange={(v) => setForm({ ...form, invoice_value: v })} />
           </div>
           <div><Label>Invoice Number</Label><Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} /></div>
           <div>
