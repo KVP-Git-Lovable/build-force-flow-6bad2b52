@@ -38,6 +38,7 @@ export default function OpportunityDetail() {
   const { data: docs = [] } = useCustomerDocuments(id);
   const { data: quotes = [] } = useQuotes(id);
   const deleteQuote = useDeleteQuote();
+  const toggleSync = useToggleQuoteSync();
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
   const { data: customers = [] } = useCustomers();
