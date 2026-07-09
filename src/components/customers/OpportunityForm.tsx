@@ -117,13 +117,13 @@ export function OpportunityForm({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Probability (%)</Label>
-              <Input type="number" min={0} max={100} value={form.probability}
-                onChange={(e) => setForm({ ...form, probability: Number(e.target.value) })} />
+              <NumberInput min={0} max={100} value={form.probability}
+                onValueChange={(v) => setForm({ ...form, probability: v })} />
             </div>
             <div>
               <Label>Amount</Label>
-              <Input type="number" min={0} value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
+              <NumberInput min={0} value={form.amount}
+                onValueChange={(v) => setForm({ ...form, amount: v })} />
             </div>
           </div>
           <div>
