@@ -464,34 +464,61 @@ export default function CustomerDetail() {
           </div>
 
           {contactView === "list" ? (
-            <Card><CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Name</TableHead><TableHead>Title</TableHead><TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead><TableHead>Reports To</TableHead><TableHead></TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {contacts.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.name}</TableCell>
-                      <TableCell>{c.title || "—"}</TableCell>
-                      <TableCell>{c.email || "—"}</TableCell>
-                      <TableCell>{c.phone || "—"}</TableCell>
-                      <TableCell>{contacts.find((x) => x.id === c.reports_to_id)?.name ?? "—"}</TableCell>
-                      <TableCell className="text-right">
+            <Card><CardContent className="p-0">
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead>Name</TableHead><TableHead>Title</TableHead><TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead><TableHead>Reports To</TableHead><TableHead></TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {contacts.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium">{c.name}</TableCell>
+                        <TableCell>{c.title || "—"}</TableCell>
+                        <TableCell>{c.email || "—"}</TableCell>
+                        <TableCell>{c.phone || "—"}</TableCell>
+                        <TableCell>{contacts.find((x) => x.id === c.reports_to_id)?.name ?? "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" onClick={() => { setEditContact(c); setNewContact(true); }}>Edit</Button>
+                          <Button size="sm" variant="ghost" onClick={() => deleteContact.mutate(c.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {contacts.length === 0 && (
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No contacts yet.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <MobileCardList className="md:hidden p-3">
+                {contacts.map((c) => (
+                  <MobileCard
+                    key={c.id}
+                    title={c.name}
+                    badge={c.title ? <Badge variant="outline" className="text-[10px]">{c.title}</Badge> : undefined}
+                    actions={
+                      <>
                         <Button size="sm" variant="ghost" onClick={() => { setEditContact(c); setNewContact(true); }}>Edit</Button>
                         <Button size="sm" variant="ghost" onClick={() => deleteContact.mutate(c.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {contacts.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No contacts yet.</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                      </>
+                    }
+                  >
+                    <Field label="Email" full value={c.email || "—"} />
+                    <Field label="Phone" value={c.phone || "—"} />
+                    <Field label="Reports To" value={contacts.find((x) => x.id === c.reports_to_id)?.name ?? "—"} />
+                  </MobileCard>
+                ))}
+                {contacts.length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground py-6">No contacts yet.</p>
+                )}
+              </MobileCardList>
             </CardContent></Card>
+
           ) : (
             <Card><CardContent className="p-4">
               <ContactOrgChart contacts={contacts} />
