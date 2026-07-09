@@ -100,6 +100,7 @@ export function AppLayout() {
   return (
     <div className="min-h-screen flex flex-col w-full max-w-full bg-background overflow-x-hidden">
       <AppHeader />
+      <OfflineActivityBanner />
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
