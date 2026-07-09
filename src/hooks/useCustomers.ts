@@ -485,6 +485,13 @@ export function useToggleQuoteSync() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, oppId, sync }: { id: string; oppId: string; sync: boolean }) => {
+      if (sync) {
+        const { error: clearErr } = await supabase.from("opportunity_quotes" as any)
+          .update({ is_synced: false } as any)
+          .eq("opportunity_id", oppId)
+          .neq("id", id);
+        if (clearErr) throw clearErr;
+      }
       const { error } = await supabase.from("opportunity_quotes" as any)
         .update({ is_synced: sync } as any).eq("id", id);
       if (error) throw error;
