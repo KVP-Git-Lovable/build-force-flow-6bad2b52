@@ -85,11 +85,18 @@ export interface ActivityFilters {
 }
 
 export function useActivities() {
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [serverActivities, setServerActivities] = useState<Activity[]>([]);
+  const [pendingItems, setPendingItems] = useState<QueuedActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<{ id: string; full_name: string }[]>([]);
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
-  const [sites, setSites] = useState<{ id: string; site_name: string; is_active: boolean }[]>([]);
+  const [users, setUsers] = useState<{ id: string; full_name: string }[]>(
+    () => readReference<{ id: string; full_name: string }[]>("users") || []
+  );
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>(
+    () => readReference<{ id: string; name: string }[]>("projects") || []
+  );
+  const [sites, setSites] = useState<{ id: string; site_name: string; is_active: boolean }[]>(
+    () => readReference<{ id: string; site_name: string; is_active: boolean }[]>("sites") || []
+  );
   const { toast } = useToast();
 
   const fetchActivities = useCallback(async (filters?: ActivityFilters) => {
