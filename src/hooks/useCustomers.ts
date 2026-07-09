@@ -563,6 +563,8 @@ export function useSaveQuote() {
     onSuccess: (d) => {
       qc.invalidateQueries({ queryKey: ["quotes", d.opportunity_id] });
       qc.invalidateQueries({ queryKey: ["quote-items", d.id] });
+      qc.invalidateQueries({ queryKey: ["opportunity", d.opportunity_id] });
+      qc.invalidateQueries({ queryKey: ["opportunities"] });
       toast.success("Quote saved");
     },
     onError: (e: any) => toast.error(e.message),
