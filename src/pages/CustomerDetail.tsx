@@ -553,38 +553,72 @@ export default function CustomerDetail() {
           <div className="flex justify-end">
             <DocumentUpload customerId={customerId} />
           </div>
-          <Card><CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>File</TableHead><TableHead>Linked To</TableHead><TableHead>Size</TableHead>
-                <TableHead>Uploaded By</TableHead><TableHead>Uploaded</TableHead><TableHead></TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {docs.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />{d.file_name}
-                    </TableCell>
-                    <TableCell>{d.opportunity_id ? oppMap[d.opportunity_id]?.name ?? "Opportunity" : "General"}</TableCell>
-                    <TableCell>{d.file_size ? `${Math.round(d.file_size / 1024)} KB` : "—"}</TableCell>
-                    <TableCell>{d.uploaded_by ? usersMap[d.uploaded_by] ?? "—" : "—"}</TableCell>
-                    <TableCell>{format(new Date(d.created_at), "dd MMM yyyy")}</TableCell>
-                    <TableCell className="text-right">
+          <Card><CardContent className="p-0">
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>File</TableHead><TableHead>Linked To</TableHead><TableHead>Size</TableHead>
+                  <TableHead>Uploaded By</TableHead><TableHead>Uploaded</TableHead><TableHead></TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {docs.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />{d.file_name}
+                      </TableCell>
+                      <TableCell>{d.opportunity_id ? oppMap[d.opportunity_id]?.name ?? "Opportunity" : "General"}</TableCell>
+                      <TableCell>{d.file_size ? `${Math.round(d.file_size / 1024)} KB` : "—"}</TableCell>
+                      <TableCell>{d.uploaded_by ? usersMap[d.uploaded_by] ?? "—" : "—"}</TableCell>
+                      <TableCell>{format(new Date(d.created_at), "dd MMM yyyy")}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" onClick={() => downloadDoc(d.file_url, d.file_name)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteDoc.mutate({ id: d.id, fileUrl: d.file_url })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {docs.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No documents yet.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <MobileCardList className="md:hidden p-3">
+              {docs.map((d) => (
+                <MobileCard
+                  key={d.id}
+                  title={
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="truncate">{d.file_name}</span>
+                    </span>
+                  }
+                  badge={<Badge variant="secondary" className="text-[10px]">{d.opportunity_id ? oppMap[d.opportunity_id]?.name ?? "Opportunity" : "General"}</Badge>}
+                  actions={
+                    <>
                       <Button size="sm" variant="ghost" onClick={() => downloadDoc(d.file_url, d.file_name)}>
                         <Download className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => deleteDoc.mutate({ id: d.id, fileUrl: d.file_url })}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {docs.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No documents yet.</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
+                    </>
+                  }
+                >
+                  <Field label="Size" value={d.file_size ? `${Math.round(d.file_size / 1024)} KB` : "—"} />
+                  <Field label="Uploaded" value={format(new Date(d.created_at), "dd MMM yy")} />
+                  <Field label="Uploaded By" full value={d.uploaded_by ? usersMap[d.uploaded_by] ?? "—" : "—"} />
+                </MobileCard>
+              ))}
+              {docs.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-6">No documents yet.</p>
+              )}
+            </MobileCardList>
           </CardContent></Card>
+
         </TabsContent>
       </Tabs>
 
