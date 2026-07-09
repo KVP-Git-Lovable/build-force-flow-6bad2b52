@@ -50,21 +50,51 @@ export default function RolePermissionsMatrix() {
   const { data: allDefinitions = [] } = usePermissionDefinitions();
   const { hasModuleAccess } = useProfilePermissions();
 
-  // Only surface modules that are currently enabled/visible in the app navigation.
-  // Modules the current viewer can't access are hidden, along with any child
-  // field/action/widget rows that belong to those modules.
+  // Whitelist of modules that mirror the app's navigation. Anything not listed
+  // here (e.g. legacy `module_vendors`) is hidden from the permission matrix.
+  // `module_sites` is intentionally omitted because Projects and Sites are a
+  // single nav item — `module_projects` covers both and is relabeled below.
+  const NAV_MODULES: Record<string, { label?: string; alwaysShow?: boolean }> = {
+    module_admin_panel: {},
+    module_attendance: {},
+    module_activities: {},
+    module_expenses: {},
+    module_gps_tracking: {},
+    module_procurement: {},
+    module_projects: { label: "Projects / Sites", alwaysShow: true },
+    module_master_data: { alwaysShow: true },
+    module_reports: { alwaysShow: true },
+    module_my_team: { alwaysShow: true },
+    module_customers: {},
+    module_opportunities: {},
+  };
+
   const definitions = useMemo(() => {
     const allowedModules = new Set(
       allDefinitions
-        .filter((d) => d.type === "module" && hasModuleAccess(d.name))
+        .filter((d) => {
+          if (d.type !== "module") return false;
+          const cfg = NAV_MODULES[d.name];
+          if (!cfg) return false;
+          return cfg.alwaysShow || hasModuleAccess(d.name);
+        })
         .map((d) => d.name)
     );
-    return allDefinitions.filter((d) =>
-      d.type === "module"
-        ? allowedModules.has(d.name)
-        : !d.parent_module || allowedModules.has(d.parent_module)
-    );
+    // Re-parent orphaned children of hidden `module_sites` onto `module_projects`.
+    return allDefinitions
+      .filter((d) => {
+        if (d.type === "module") return allowedModules.has(d.name);
+        const parent = d.parent_module === "module_sites" ? "module_projects" : d.parent_module;
+        return !parent || allowedModules.has(parent);
+      })
+      .map((d) => {
+        const cfg = d.type === "module" ? NAV_MODULES[d.name] : undefined;
+        const label = cfg?.label ?? d.label;
+        const parent_module = d.parent_module === "module_sites" ? "module_projects" : d.parent_module;
+        return { ...d, label, parent_module };
+      });
   }, [allDefinitions, hasModuleAccess]);
+
 
   // Fetch all profiles
   const profilesQuery = useQuery({
