@@ -213,15 +213,15 @@ export function QuoteForm({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs">Qty</Label>
-                  <Input type="number" inputMode="decimal" min={0} value={r.qty} onChange={(e) => update(i, { qty: Number(e.target.value) })} />
+                  <NumberInput min={0} value={r.qty} onValueChange={(v) => update(i, { qty: v })} />
                 </div>
                 <div>
                   <Label className="text-xs">Unit Price</Label>
-                  <Input type="number" inputMode="decimal" min={0} step="0.01" value={r.unit_price} onChange={(e) => update(i, { unit_price: Number(e.target.value) })} />
+                  <NumberInput min={0} step="0.01" value={r.unit_price} onValueChange={(v) => update(i, { unit_price: v })} />
                 </div>
                 <div>
                   <Label className="text-xs">Disc %</Label>
-                  <Input type="number" inputMode="decimal" min={0} max={100} value={r.discount_pct} onChange={(e) => update(i, { discount_pct: Number(e.target.value) })} />
+                  <NumberInput min={0} max={100} value={r.discount_pct} onValueChange={(v) => update(i, { discount_pct: v })} />
                 </div>
                 <div>
                   <Label className="text-xs">Total</Label>
