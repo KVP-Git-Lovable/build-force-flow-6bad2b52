@@ -69,7 +69,12 @@ export interface Activity {
   site_flag?: string;
   milestone_name?: string;
   milestone_status?: string;
+  // Offline queue metadata
+  _pending?: boolean;
+  _sync_error?: string | null;
+  _client_uuid?: string;
 }
+
 
 export interface ActivityFilters {
   employee: string;
