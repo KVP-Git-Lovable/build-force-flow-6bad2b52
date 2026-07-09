@@ -9,6 +9,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import HierarchicalPermissionEditor, { PermissionState } from "./HierarchicalPermissionEditor";
 import { usePermissionDefinitions, PermissionDefinition } from "@/hooks/usePermissionDefinitions";
+import { useProfilePermissions } from "@/hooks/useProfilePermissions";
+import { useMemo } from "react";
 
 interface SecurityProfile {
   id: string;
@@ -45,7 +47,24 @@ export default function RolePermissionsMatrix() {
   const [permissions, setPermissions] = useState<PermissionState>({});
   const [isDirty, setIsDirty] = useState(false);
 
-  const { data: definitions = [] } = usePermissionDefinitions();
+  const { data: allDefinitions = [] } = usePermissionDefinitions();
+  const { hasModuleAccess } = useProfilePermissions();
+
+  // Only surface modules that are currently enabled/visible in the app navigation.
+  // Modules the current viewer can't access are hidden, along with any child
+  // field/action/widget rows that belong to those modules.
+  const definitions = useMemo(() => {
+    const allowedModules = new Set(
+      allDefinitions
+        .filter((d) => d.type === "module" && hasModuleAccess(d.name))
+        .map((d) => d.name)
+    );
+    return allDefinitions.filter((d) =>
+      d.type === "module"
+        ? allowedModules.has(d.name)
+        : !d.parent_module || allowedModules.has(d.parent_module)
+    );
+  }, [allDefinitions, hasModuleAccess]);
 
   // Fetch all profiles
   const profilesQuery = useQuery({
