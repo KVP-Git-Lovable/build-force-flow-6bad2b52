@@ -95,6 +95,7 @@ export default function AdminControls() {
     // If user has full admin panel access, show all
     const hasFullAdmin = hasModuleAccess("module_admin_panel");
     return allAdminModules.filter((m) => {
+      if (m.module) return hasFullAdmin || hasModuleAccess(m.module);
       if (!m.permission) return hasFullAdmin;
       return hasFullAdmin || hasFieldPermission(m.permission, "read");
     });
