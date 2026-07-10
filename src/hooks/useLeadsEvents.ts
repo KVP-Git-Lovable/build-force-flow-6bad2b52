@@ -217,8 +217,13 @@ export function useLeadAuditLog(leadId?: string) {
       const actorIds = Array.from(new Set(rows.map((r) => r.actor_id).filter(Boolean)));
       let nameMap: Record<string, string> = {};
       if (actorIds.length) {
-        const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", actorIds);
-        nameMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.full_name || p.username || ""]));
+        const { data: usrs } = await supabase.from("users").select("id, full_name, username, email").in("id", actorIds);
+        nameMap = Object.fromEntries((usrs ?? []).map((p: any) => [p.id, p.full_name || p.username || p.email || ""]));
+        const missing = actorIds.filter((id) => !nameMap[id]);
+        if (missing.length) {
+          const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", missing);
+          (profs ?? []).forEach((p: any) => { nameMap[p.id] = p.full_name || p.username || ""; });
+        }
       }
       return rows.map((r) => ({ ...r, actor_name: r.actor_id ? (nameMap[r.actor_id] || "Unknown user") : "System" }));
     },
