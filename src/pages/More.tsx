@@ -41,7 +41,6 @@ const allNavigationItems = [
   { icon: Handshake, label: "Vendors", href: "/vendors", color: "from-pink-500 to-pink-600", module: "module_vendors" },
   { icon: Handshake, label: "Customers", href: "/customers", color: "from-sky-500 to-sky-600", module: "module_customers" },
   { icon: Target, label: "Opportunities", href: "/opportunities", color: "from-violet-500 to-violet-600", module: "module_opportunities" },
-  { icon: Database, label: "Master Data", href: "/master-data", color: "from-amber-500 to-amber-600", module: "module_master_data" },
   { icon: FileBarChart, label: "Reports", href: "/reports", color: "from-teal-500 to-teal-600", module: "module_reports" },
 ];
 

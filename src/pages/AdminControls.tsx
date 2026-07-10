@@ -14,6 +14,7 @@ import {
   Search,
   ListChecks,
   SlidersHorizontal,
+  Database,
 } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
@@ -66,6 +67,14 @@ const allAdminModules = [
     path: "/admin/configuration",
     permission: "field_admin_company_profile",
   },
+  {
+    title: "Master Data",
+    description: "Manage categories, products, UOM, opportunity stages, event types, and more",
+    icon: Database,
+    color: "bg-amber-100 text-amber-600",
+    path: "/master-data",
+    module: "module_master_data",
+  },
 ];
 
 const container = {
@@ -86,6 +95,7 @@ export default function AdminControls() {
     // If user has full admin panel access, show all
     const hasFullAdmin = hasModuleAccess("module_admin_panel");
     return allAdminModules.filter((m) => {
+      if (m.module) return hasFullAdmin || hasModuleAccess(m.module);
       if (!m.permission) return hasFullAdmin;
       return hasFullAdmin || hasFieldPermission(m.permission, "read");
     });
