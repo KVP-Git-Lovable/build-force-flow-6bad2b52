@@ -74,8 +74,8 @@ export function EventForm({
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div><Label>Budget</Label><NumberInput value={f.budget_amount} onChange={(v) => setF({ ...f, budget_amount: v })} /></div>
-              <div><Label>Actual</Label><NumberInput value={f.actual_amount} onChange={(v) => setF({ ...f, actual_amount: v })} /></div>
+              <div><Label>Budget</Label><NumberInput value={f.budget_amount} onValueChange={(v) => setF({ ...f, budget_amount: v })} /></div>
+              <div><Label>Actual</Label><NumberInput value={f.actual_amount} onValueChange={(v) => setF({ ...f, actual_amount: v })} /></div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
