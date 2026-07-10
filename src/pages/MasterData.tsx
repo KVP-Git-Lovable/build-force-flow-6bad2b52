@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler } from "lucide-react";
+import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
 const allMasterModules = [
@@ -69,6 +69,30 @@ const allMasterModules = [
     color: "bg-sky-100 text-sky-600",
     path: "/master-data/opportunity-types",
     module: "module_opportunities" as string | null,
+  },
+  {
+    title: "Event Types",
+    description: "Categories for events (Trade Show, Webinar…)",
+    icon: Calendar,
+    color: "bg-purple-100 text-purple-600",
+    path: "/master-data/event-types",
+    module: "module_leads_events" as string | null,
+  },
+  {
+    title: "Lead Statuses",
+    description: "Lifecycle statuses (New, Qualified, Converted…)",
+    icon: Flag,
+    color: "bg-blue-100 text-blue-600",
+    path: "/master-data/lead-statuses",
+    module: "module_leads_events" as string | null,
+  },
+  {
+    title: "Lead Sources",
+    description: "Where leads come from (Event, Referral, Website…)",
+    icon: Compass,
+    color: "bg-emerald-100 text-emerald-600",
+    path: "/master-data/lead-sources",
+    module: "module_leads_events" as string | null,
   },
 ];
 

@@ -60,6 +60,7 @@ const allNavigationItems = [
   { icon: Truck, label: "Goods Receipt", href: "/grn", color: "from-pink-500 to-pink-600", module: "module_procurement" },
   { icon: Handshake, label: "Customers", href: "/customers", color: "from-sky-500 to-sky-600", module: "module_customers" },
   { icon: Target, label: "Opportunities", href: "/opportunities", color: "from-violet-500 to-violet-600", module: "module_opportunities" },
+  { icon: Users2, label: "Leads & Events", href: "/leads-events", color: "from-fuchsia-500 to-fuchsia-600", module: "module_leads_events" },
   { icon: Database, label: "Master Data", href: "/master-data", color: "from-amber-500 to-amber-600", module: null as string | null },
   { icon: FileBarChart, label: "Reports", href: "/reports", color: "from-teal-500 to-teal-600", module: null as string | null },
 ];
