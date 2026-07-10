@@ -14,6 +14,7 @@ import {
   Search,
   ListChecks,
   SlidersHorizontal,
+  Database,
 } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
@@ -65,6 +66,14 @@ const allAdminModules = [
     color: "bg-emerald-100 text-emerald-600",
     path: "/admin/configuration",
     permission: "field_admin_company_profile",
+  },
+  {
+    title: "Master Data",
+    description: "Manage categories, products, UOM, opportunity stages, event types, and more",
+    icon: Database,
+    color: "bg-amber-100 text-amber-600",
+    path: "/master-data",
+    module: "module_master_data",
   },
 ];
 
