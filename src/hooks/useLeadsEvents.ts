@@ -213,7 +213,14 @@ export function useLeadAuditLog(leadId?: string) {
       const { data, error } = await supabase.from("lead_audit_log" as any).select("*")
         .eq("lead_id", leadId!).order("created_at", { ascending: false });
       if (error) throw error;
-      return data as any[];
+      const rows = (data ?? []) as any[];
+      const actorIds = Array.from(new Set(rows.map((r) => r.actor_id).filter(Boolean)));
+      let nameMap: Record<string, string> = {};
+      if (actorIds.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", actorIds);
+        nameMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.full_name || p.username || ""]));
+      }
+      return rows.map((r) => ({ ...r, actor_name: r.actor_id ? (nameMap[r.actor_id] || "Unknown user") : "System" }));
     },
     enabled: !!leadId,
   });
