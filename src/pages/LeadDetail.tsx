@@ -106,13 +106,20 @@ export default function LeadDetail() {
             <p className="text-sm text-muted-foreground">No history yet</p>
           ) : (
             <div className="space-y-2">
-              {audit.map((a: any) => (
-                <div key={a.id} className="text-sm border-l-2 border-primary pl-3 py-1">
-                  <div className="font-medium">{a.action}</div>
-                  {a.details && <div className="text-xs text-muted-foreground">{typeof a.details === "string" ? a.details : JSON.stringify(a.details)}</div>}
-                  <div className="text-xs text-muted-foreground">{format(new Date(a.created_at), "dd MMM yyyy, HH:mm")}</div>
-                </div>
-              ))}
+              {audit.map((a: any) => {
+                const detail = a.from_value && a.to_value
+                  ? `${a.from_value} → ${a.to_value}`
+                  : (a.to_value || a.from_value || "");
+                return (
+                  <div key={a.id} className="text-sm border-l-2 border-primary pl-3 py-1">
+                    <div className="font-medium capitalize">{a.action}</div>
+                    {detail && <div className="text-xs text-muted-foreground">{detail}</div>}
+                    <div className="text-xs text-muted-foreground">
+                      by {a.actor_name || "System"} · {format(new Date(a.created_at), "dd MMM yyyy, HH:mm")}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
