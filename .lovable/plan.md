@@ -1,82 +1,94 @@
-# Configuration & Approval Workflow — Advanced Engine
+## Leads & Events Module — Implementation Plan
 
-Enhance the existing `/admin/configuration` page. Keep the sidebar and Configuration / Approval Workflow tab layout. All new features are stored in the existing `app_configuration` table (JSON blobs keyed per module) so no schema migrations are needed.
+A new top-level nav item **Leads & Events** with two tabs (Leads | Events), three new master-data lists, business-card OCR via Lovable AI, and a full Lead → Customer/Contact/Opportunity conversion flow that also rolls up activities, attachments, and event association.
 
-## 1. Field-Level Configuration ("Manage Fields")
+---
 
-Each module's Configuration tab keeps its current toggle list, plus a new expandable **Manage Fields** section.
+### 1. Database (single migration)
 
-**Data model** (stored under `app_configuration` as `<module>.fields`):
-```
-[
-  { id, key, label, type: "text|number|dropdown|date|toggle|file",
-    visible: bool, required: bool, builtin: bool, deleted: bool,
-    defaultValue, helpText, options?: string[], order: number }
-]
-```
+New tables (all with standard `id`, `created_at`, `updated_at`, RLS + GRANTs):
 
-**Seeded builtin fields** per module (Activities: Check-In, GPS Track, Voice Note, Take Photo, Upload from Gallery, Milestone, etc.), mirroring current toggles. Builtin fields can't be deleted, only hidden.
+- `master_event_types` — name, sort_order, is_active
+- `master_lead_statuses` — name, color, sort_order, is_active, is_converted_status (bool)
+- `master_lead_sources` — name, sort_order, is_active
+- `events` — name, event_type_id, budget_amount, actual_amount, start_date, end_date, event_details, expected_end_result, owner_id, customer_id (nullable, filled on conversion rollup)
+- `leads` — owner_id, name, title, company, email, phone, website, address, industry, lead_status_id, lead_source_id, related_event_id, converted_customer_id, converted_at, business_card_url
+- `lead_audit_log` — lead_id, actor_id, action, from_value, to_value (auto-populated by triggers on insert + status change)
 
-**UI (`FieldManager.tsx`)**
-- Collapsed default view = current toggle list (visibility only)
-- "Manage Fields" expand reveals a table with columns: drag-handle · Label · Type · Visible · Required · Actions (edit/delete)
-- "+ Add Custom Field" opens dialog: Name, Type, Default, Help Text, Options (for dropdown)
-- Edit dialog for rename / retype / re-option custom fields
-- Delete on custom field → confirm; if `hasData` flag set, offer **Deactivate** (soft-delete via `deleted: true`) instead of hard remove
-- Drag reorder via `@dnd-kit` (already a dep? if not use simple up/down arrows to avoid new deps)
+Extend existing tables:
 
-## 2. Approval Workflow Engine ("Build Workflow")
+- `customer_activities` → add nullable `lead_id uuid`
+- `customer_documents` → add nullable `lead_id uuid`
 
-Approval Workflow tab replaced with a **Workflow Builder** stored at `<module>.workflow`:
+Seed each new master list with the defaults from the spec (New/Contacted/Qualified/Unqualified/Converted etc.). "Converted" status flagged with `is_converted_status = true`.
 
-```
-{
-  steps: [
-    { id, name, approverType: "user|role|reporting_manager",
-      approverIds?: uuid[], approverRoles?: string[],
-      mode: "sequential|parallel",
-      parallelRule?: "all|any" }
-  ],
-  rules: [
-    { id, name,
-      conditions: [{ field, op: "eq|neq|gt|lt|gte|lte|contains", value }],
-      logic: "AND|OR",
-      action: "add_step|skip_to|replace",
-      targetStepId?, extraApproverRoles?, extraApproverIds? }
-  ]
-}
-```
+RLS: authenticated users can read all; insert/update scoped to owner or admins (mirrors the pattern used in `customer_opportunities`).
 
-**UI (`WorkflowBuilder.tsx`)**
-- **Steps list** (vertical, drag-reorderable): each card shows Step Name, Approver Type dropdown, approver picker (roles multiselect or user picker depending on type), Mode toggle (Sequential/Parallel), and Parallel rule (All/Any) when Parallel.
-- **+ Add Step** button appends a new empty step.
-- **Conditional Rules** section below:
-  - "+ Add Rule" opens a visual builder — rows of `[Field ▾] [Op ▾] [Value]` with AND/OR toggle between them, then `THEN [Action ▾] [Target ▾]`.
-  - Field dropdown is populated from that module's field list (builtin + custom).
-- **Workflow Preview** — collapsible panel rendering a simple flow diagram (CSS/flex, no external lib):
-  ```
-  [Step 1 · Manager] → [Step 2 · Finance (Any)] → ... 
-           └─ IF amount > 10000 → +CFO
-  ```
+### 2. Master Data pages
 
-## 3. Shared/Generic Implementation
+Following the exact pattern of `src/pages/master/OpportunityTypesMaster.tsx`:
 
-New files (all reusable across every module):
-- `src/lib/configSchemas.ts` — per-module builtin field seeds + available "condition fields"
-- `src/components/config/FieldManager.tsx` — field list, add/edit/delete dialogs, reorder
-- `src/components/config/FieldEditorDialog.tsx`
-- `src/components/config/WorkflowBuilder.tsx` — steps + rules editor
-- `src/components/config/WorkflowPreview.tsx` — flow diagram
-- `src/components/config/RuleBuilder.tsx` — condition rows + action selector
-- Extend `src/hooks/useAppConfiguration.ts` with typed helpers `getFields(module)`, `setFields`, `getWorkflow`, `setWorkflow`
+- `src/pages/master/EventTypesMaster.tsx`
+- `src/pages/master/LeadStatusesMaster.tsx` (with color picker like Opportunity Stages)
+- `src/pages/master/LeadSourcesMaster.tsx`
 
-Edit `src/components/config/panels.tsx` so every module's Configuration tab renders existing toggles **plus** `<FieldManager module={m}/>`, and every Approval Workflow tab renders `<WorkflowBuilder module={m}/>` (replacing the current `ApprovalTransitionEditor`, which becomes legacy fallback for procurement's named transitions if needed).
+Register routes in `src/App.tsx` and add three cards to `src/pages/MasterData.tsx` (gated on `module_leads_events`).
 
-## 4. Runtime Application (scope note)
+### 3. Leads & Events pages
 
-This ticket delivers the **admin configuration UI + storage**. Wiring individual module forms to read custom fields & execute the workflow engine at submission time is a large separate effort per module; a follow-up ticket will consume `getFields()` / `getWorkflow()` inside each form. Approvers created via the builder are stored and previewable now; enforcement in existing pending-approval flows will be tackled module-by-module afterward.
+- `src/pages/LeadsEvents.tsx` — shell with `<Tabs>` (Leads | Events), route `/leads-events`
+- `src/pages/LeadDetail.tsx` — route `/leads-events/leads/:id`; tabs: Overview | Activities | Attachments | Audit Trail; header "Convert Lead" button
+- `src/pages/EventDetail.tsx` — route `/leads-events/events/:id`; shows linked Leads + Activities/Attachments
 
-## Out of scope
-- No DB schema changes (uses existing `app_configuration` JSON).
-- No changes to existing forms' runtime behavior yet — configuration authoring only.
-- No new npm deps unless `@dnd-kit` is missing (fallback: up/down arrows).
+Components:
+
+- `src/components/leads/LeadForm.tsx` — full form + business-card scan trigger
+- `src/components/leads/BusinessCardScanner.tsx` — upload image → call `scan-business-card` edge function → prefill form fields for user review
+- `src/components/leads/ConvertLeadDialog.tsx` — the conversion form described in the spec
+- `src/components/events/EventForm.tsx`
+- Reuse existing `ActivityForm`, `DocumentUpload` (extend to accept `leadId`)
+
+Mobile: reuse `mobile-card` pattern for list views.
+
+### 4. Business-card OCR
+
+New edge function `supabase/functions/scan-business-card/index.ts`:
+
+- Accepts a signed URL or base64 image
+- Calls Lovable AI Gateway (`google/gemini-2.5-flash`) with structured output (Zod schema: name, title, company, email, phone, website, address)
+- Returns parsed JSON; frontend prefills the Lead form for the user to review before saving
+
+Uses existing `LOVABLE_API_KEY`. Card image stored in the `customer-documents` bucket under `leads/<lead-id>/card.jpg`.
+
+### 5. Convert Lead flow (transactional)
+
+Implemented as a Postgres function `convert_lead(lead_id, payload jsonb)` returning the resulting `customer_id` so the whole conversion is atomic:
+
+1. If `merge_with_existing_customer_id` is set → reuse it; otherwise `INSERT INTO customers` from Account name.
+2. `INSERT INTO customer_contacts` from Name/Title/Email/Phone.
+3. `INSERT INTO customer_opportunities` (name, type, probability, amount, close_date, stage_id, owner_id).
+4. `UPDATE customer_activities SET customer_id = <new>, lead_id = NULL WHERE lead_id = <lead>`.
+5. `UPDATE customer_documents SET customer_id = <new> WHERE lead_id = <lead>`.
+6. `UPDATE events SET customer_id = <new> WHERE id = <lead.related_event_id>` (rolls the event association up to the account).
+7. `UPDATE leads SET converted_customer_id = <new>, lead_status_id = <converted status>, converted_at = now()`.
+8. Insert audit-log row.
+
+`ConvertLeadDialog` calls this via `supabase.rpc('convert_lead', …)`, then navigates to `/customers/<new>`. After conversion the Lead detail shows a read-only "Converted → [Customer Name]" link and disables the Convert button.
+
+### 6. Navigation & permissions
+
+- Add `module_leads_events` to `permission_definitions` and to `RolePermissionsMatrix.tsx` whitelist.
+- `useProfilePermissions.hasModuleAccess('module_leads_events')` gates the nav item.
+- Add item to `src/components/layout/AppHeader.tsx` drawer, `src/pages/More.tsx`, and `ConfigurationWorkflow.tsx` module list.
+
+### 7. Audit trail
+
+Postgres trigger on `leads` (`AFTER INSERT OR UPDATE OF lead_status_id`) writes to `lead_audit_log`. Detail page renders the log as a vertical timeline (reuse Customers Overview timeline styling).
+
+---
+
+### Out of scope for this turn
+
+- Editing the Lead form after conversion (locked read-only)
+- Bulk lead import / CSV
+- Email/campaign integrations
