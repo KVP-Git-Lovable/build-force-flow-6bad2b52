@@ -27,6 +27,8 @@ const MODULES = [
   { id: "attendance", label: "Attendance", icon: Clock, permission: "module_attendance" },
   { id: "customers", label: "Customers / CRM", icon: Users, permission: "module_customers" },
   { id: "opportunities", label: "Opportunities", icon: Store, permission: "module_opportunities" },
+  { id: "leads", label: "Leads", icon: Users, permission: "module_leads" },
+  { id: "events", label: "Events", icon: CalendarDays, permission: "module_events" },
   { id: "reports", label: "Reports", icon: FileBarChart, permission: null },
 ] as const;
 

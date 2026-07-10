@@ -76,7 +76,7 @@ const allMasterModules = [
     icon: Calendar,
     color: "bg-purple-100 text-purple-600",
     path: "/master-data/event-types",
-    module: "module_leads_events" as string | null,
+    module: "module_events" as string | null,
   },
   {
     title: "Lead Statuses",
@@ -84,7 +84,7 @@ const allMasterModules = [
     icon: Flag,
     color: "bg-blue-100 text-blue-600",
     path: "/master-data/lead-statuses",
-    module: "module_leads_events" as string | null,
+    module: "module_leads" as string | null,
   },
   {
     title: "Lead Sources",
@@ -92,7 +92,7 @@ const allMasterModules = [
     icon: Compass,
     color: "bg-emerald-100 text-emerald-600",
     path: "/master-data/lead-sources",
-    module: "module_leads_events" as string | null,
+    module: "module_leads" as string | null,
   },
 ];
 

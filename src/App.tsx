@@ -53,7 +53,8 @@ const OpportunityStagesMaster = lazy(() => import("./pages/master/OpportunitySta
 const OpportunityTypesMaster = lazy(() => import("./pages/master/OpportunityTypesMaster"));
 const UomMaster = lazy(() => import("./pages/master/UomMaster"));
 const ConfigurationWorkflow = lazy(() => import("./pages/ConfigurationWorkflow"));
-const LeadsEvents = lazy(() => import("./pages/LeadsEvents"));
+const Leads = lazy(() => import("./pages/Leads"));
+const Events = lazy(() => import("./pages/Events"));
 const LeadDetail = lazy(() => import("./pages/LeadDetail"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
 const EventTypesMaster = lazy(() => import("./pages/master/EventTypesMaster"));
@@ -138,9 +139,13 @@ const App = () => (
             <Route path="/master-data/event-types" element={<Suspense fallback={<PageFallback />}><EventTypesMaster /></Suspense>} />
             <Route path="/master-data/lead-statuses" element={<Suspense fallback={<PageFallback />}><LeadStatusesMaster /></Suspense>} />
             <Route path="/master-data/lead-sources" element={<Suspense fallback={<PageFallback />}><LeadSourcesMaster /></Suspense>} />
-            <Route path="/leads-events" element={<Suspense fallback={<PageFallback />}><LeadsEvents /></Suspense>} />
-            <Route path="/leads-events/leads/:id" element={<Suspense fallback={<PageFallback />}><LeadDetail /></Suspense>} />
-            <Route path="/leads-events/events/:id" element={<Suspense fallback={<PageFallback />}><EventDetail /></Suspense>} />
+            <Route path="/leads" element={<Suspense fallback={<PageFallback />}><Leads /></Suspense>} />
+            <Route path="/leads/:id" element={<Suspense fallback={<PageFallback />}><LeadDetail /></Suspense>} />
+            <Route path="/events" element={<Suspense fallback={<PageFallback />}><Events /></Suspense>} />
+            <Route path="/events/:id" element={<Suspense fallback={<PageFallback />}><EventDetail /></Suspense>} />
+            <Route path="/leads-events" element={<Navigate to="/leads" replace />} />
+            <Route path="/leads-events/leads/:id" element={<Navigate to="/leads" replace />} />
+            <Route path="/leads-events/events/:id" element={<Navigate to="/events" replace />} />
             <Route path="/reports" element={<Suspense fallback={<PageFallback />}><Analytics /></Suspense>} />
             <Route path="/reports/:type" element={<Navigate to="/reports" replace />} />
             <Route path="/analytics" element={<Navigate to="/reports" replace />} />
