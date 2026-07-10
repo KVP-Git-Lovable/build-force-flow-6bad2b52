@@ -67,7 +67,6 @@ const allNavigationItems = [
 
 const adminItems = [
   { icon: Shield, label: "Admin Controls", href: "/admin-controls", color: "from-emerald-500 to-emerald-600", module: "module_admin_panel" },
-  { icon: Database, label: "Master Data", href: "/master-data", color: "from-amber-500 to-amber-600", module: "module_master_data" },
 ];
 
 export function AppHeader() {
