@@ -53,7 +53,7 @@ export function useDashboard(userId: string | undefined) {
   // Secondary: single RPC call for all aggregate stats
   const cached = getCachedDashboard();
   const summaryQuery = useQuery({
-    queryKey: ["dashboard-summary", userId],
+    queryKey: ["dashboard-summary", userId, "v2"],
     queryFn: async () => {
       if (!userId) return null;
       const { data, error } = await supabase.rpc("get_dashboard_summary");
@@ -63,8 +63,10 @@ export function useDashboard(userId: string | undefined) {
       return result;
     },
     enabled: !!userId,
-    initialData: cached as DashboardSummary | undefined,
-    staleTime: 2 * 60 * 1000,
+    placeholderData: cached as DashboardSummary | undefined,
+    staleTime: 30 * 1000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const summary = summaryQuery.data;
