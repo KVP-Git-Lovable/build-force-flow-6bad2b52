@@ -21,7 +21,6 @@ import {
   Receipt,
   ClipboardList,
   ListChecks,
-  Database,
   ShoppingCart,
   Truck,
   X,
