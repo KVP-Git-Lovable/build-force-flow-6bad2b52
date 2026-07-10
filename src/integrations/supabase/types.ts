@@ -524,6 +524,7 @@ export type Database = {
           created_by: string | null
           customer_id: string | null
           id: string
+          lead_id: string | null
           notes: string | null
           opportunity_id: string | null
           subject: string
@@ -536,6 +537,7 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           id?: string
+          lead_id?: string | null
           notes?: string | null
           opportunity_id?: string | null
           subject: string
@@ -548,6 +550,7 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           id?: string
+          lead_id?: string | null
           notes?: string | null
           opportunity_id?: string | null
           subject?: string
@@ -560,6 +563,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
           {
@@ -637,6 +647,7 @@ export type Database = {
           file_type: string | null
           file_url: string
           id: string
+          lead_id: string | null
           opportunity_id: string | null
           updated_at: string
           uploaded_by: string | null
@@ -649,6 +660,7 @@ export type Database = {
           file_type?: string | null
           file_url: string
           id?: string
+          lead_id?: string | null
           opportunity_id?: string | null
           updated_at?: string
           uploaded_by?: string | null
@@ -661,6 +673,7 @@ export type Database = {
           file_type?: string | null
           file_url?: string
           id?: string
+          lead_id?: string | null
           opportunity_id?: string | null
           updated_at?: string
           uploaded_by?: string | null
@@ -671,6 +684,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_documents_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
           {
@@ -863,6 +883,72 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      events: {
+        Row: {
+          actual_amount: number
+          budget_amount: number
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          end_date: string | null
+          event_details: string | null
+          event_type_id: string | null
+          expected_end_result: string | null
+          id: string
+          name: string
+          owner_id: string | null
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_amount?: number
+          budget_amount?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          end_date?: string | null
+          event_details?: string | null
+          event_type_id?: string | null
+          expected_end_result?: string | null
+          id?: string
+          name: string
+          owner_id?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_amount?: number
+          budget_amount?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          end_date?: string | null
+          event_details?: string | null
+          event_type_id?: string | null
+          expected_end_result?: string | null
+          id?: string
+          name?: string
+          owner_id?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_event_type_id_fkey"
+            columns: ["event_type_id"]
+            isOneToOne: false
+            referencedRelation: "master_event_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expense_approval_rules: {
         Row: {
@@ -1313,6 +1399,139 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          from_value: string | null
+          id: string
+          lead_id: string
+          to_value: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          from_value?: string | null
+          id?: string
+          lead_id: string
+          to_value?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          from_value?: string | null
+          id?: string
+          lead_id?: string
+          to_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_audit_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          address: string | null
+          business_card_url: string | null
+          company: string | null
+          converted_at: string | null
+          converted_customer_id: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          industry: string | null
+          lead_source_id: string | null
+          lead_status_id: string | null
+          name: string
+          owner_id: string | null
+          phone: string | null
+          related_event_id: string | null
+          title: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_card_url?: string | null
+          company?: string | null
+          converted_at?: string | null
+          converted_customer_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          lead_source_id?: string | null
+          lead_status_id?: string | null
+          name: string
+          owner_id?: string | null
+          phone?: string | null
+          related_event_id?: string | null
+          title?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_card_url?: string | null
+          company?: string | null
+          converted_at?: string | null
+          converted_customer_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          lead_source_id?: string | null
+          lead_status_id?: string | null
+          name?: string
+          owner_id?: string | null
+          phone?: string | null
+          related_event_id?: string | null
+          title?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_converted_customer_id_fkey"
+            columns: ["converted_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_lead_source_id_fkey"
+            columns: ["lead_source_id"]
+            isOneToOne: false
+            referencedRelation: "master_lead_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_lead_status_id_fkey"
+            columns: ["lead_status_id"]
+            isOneToOne: false
+            referencedRelation: "master_lead_statuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_related_event_id_fkey"
+            columns: ["related_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_applications: {
         Row: {
           applied_date: string | null
@@ -1668,6 +1887,93 @@ export type Database = {
           gst_number?: string | null
           id?: string
           is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      master_event_types: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      master_lead_sources: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      master_lead_statuses: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_converted_status: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_converted_status?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_converted_status?: boolean
+          name?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -4900,6 +5206,10 @@ export type Database = {
       can_access_object: {
         Args: { _object_name: string; _permission: string; _user_id: string }
         Returns: boolean
+      }
+      convert_lead: {
+        Args: { _lead_id: string; _payload: Json }
+        Returns: string
       }
       ensure_current_user: {
         Args: { _email: string; _full_name?: string; _username?: string }
