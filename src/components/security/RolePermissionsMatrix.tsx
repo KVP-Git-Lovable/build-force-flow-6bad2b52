@@ -67,7 +67,8 @@ export default function RolePermissionsMatrix() {
     module_my_team: { alwaysShow: true },
     module_customers: {},
     module_opportunities: {},
-    module_leads_events: { label: "Leads & Events", alwaysShow: true },
+    module_leads: { label: "Leads", alwaysShow: true },
+    module_events: { label: "Events", alwaysShow: true },
   };
 
   const definitions = useMemo(() => {

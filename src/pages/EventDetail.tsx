@@ -31,7 +31,7 @@ export default function EventDetail() {
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
-      <Button variant="ghost" size="sm" onClick={() => nav("/leads-events")} className="-ml-2">
+      <Button variant="ghost" size="sm" onClick={() => nav("/events")} className="-ml-2">
         <ArrowLeft className="h-4 w-4 mr-1" />Back
       </Button>
 
@@ -74,7 +74,7 @@ export default function EventDetail() {
               {leads.map((l) => {
                 const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
                 return (
-                  <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads-events/leads/${l.id}`)}>
+                  <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads/${l.id}`)}>
                     <TableCell className="font-medium">{l.name}{l.converted_customer_id && <Badge variant="secondary" className="ml-2">Converted</Badge>}</TableCell>
                     <TableCell>{l.company ?? "—"}</TableCell>
                     <TableCell>{l.phone ?? "—"}</TableCell>

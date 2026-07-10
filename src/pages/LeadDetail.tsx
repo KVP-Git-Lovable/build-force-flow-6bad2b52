@@ -45,7 +45,7 @@ export default function LeadDetail() {
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto">
-      <Button variant="ghost" size="sm" onClick={() => nav("/leads-events")} className="-ml-2">
+      <Button variant="ghost" size="sm" onClick={() => nav("/leads")} className="-ml-2">
         <ArrowLeft className="h-4 w-4 mr-1" />Back
       </Button>
 
@@ -85,7 +85,7 @@ export default function LeadDetail() {
               <Briefcase className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
               <div>
                 <div className="text-xs text-muted-foreground">Related Event</div>
-                <button className="text-primary hover:underline" onClick={() => nav(`/leads-events/events/${event.id}`)}>{event.name}</button>
+                <button className="text-primary hover:underline" onClick={() => nav(`/events/${event.id}`)}>{event.name}</button>
               </div>
             </div>
           )}
