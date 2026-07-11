@@ -72,6 +72,7 @@ export default function GPSTracking() {
   // ===== Current Location state =====
   const [currentSelectedUser, setCurrentSelectedUser] = useState<string>("me");
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [locationError, setLocationError] = useState(false);
   const [fetchingUserLocation, setFetchingUserLocation] = useState(false);
 
@@ -88,9 +89,11 @@ export default function GPSTracking() {
   // Get own location
   useEffect(() => {
     if (currentSelectedUser === "me") {
-      getCurrentPosition()
+      setLocationAccuracy(null);
+      getCurrentPosition({ enableHighAccuracy: true, timeout: 20000 })
         .then((pos) => {
           setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
+          setLocationAccuracy(pos.accuracy ?? null);
           setLocationError(false);
         })
         .catch(() => setLocationError(true));
@@ -131,9 +134,13 @@ export default function GPSTracking() {
 
   const retryLocation = () => {
     setLocationError(false);
+    setLocationAccuracy(null);
     if (currentSelectedUser === "me") {
-      getCurrentPosition()
-        .then((pos) => setCurrentLocation({ lat: pos.latitude, lng: pos.longitude }))
+      getCurrentPosition({ enableHighAccuracy: true, timeout: 20000 })
+        .then((pos) => {
+          setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
+          setLocationAccuracy(pos.accuracy ?? null);
+        })
         .catch(() => setLocationError(true));
     } else {
       // Re-trigger by toggling user
@@ -313,6 +320,22 @@ export default function GPSTracking() {
               </CardContent>
             </Card>
           )}
+
+          {currentSelectedUser === "me" && currentLocation && locationAccuracy != null && (
+            <div className={cn(
+              "flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs",
+              locationAccuracy > 500 ? "bg-accent/10 border-accent/40 text-accent-foreground" : "bg-muted/40"
+            )}>
+              <span>
+                Accuracy: ±{locationAccuracy < 1000 ? `${Math.round(locationAccuracy)} m` : `${(locationAccuracy / 1000).toFixed(1)} km`}
+                {locationAccuracy > 500 && " — low accuracy (Wi-Fi/IP based). Enable device GPS or move near a window for a better fix."}
+              </span>
+              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={retryLocation}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
+              </Button>
+            </div>
+          )}
+
 
           <Card className="shadow-card overflow-hidden">
             <CardContent className="p-0">
