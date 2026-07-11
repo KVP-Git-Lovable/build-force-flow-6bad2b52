@@ -42,25 +42,56 @@ async function nativeGetPosition(opts: { enableHighAccuracy: boolean; timeout: n
   };
 }
 
-/** Web fallback for geolocation */
+/**
+ * Web fallback for geolocation.
+ * Uses watchPosition to iterate a few readings and pick the most accurate one,
+ * since a single getCurrentPosition call often returns a cached/low-accuracy fix
+ * (especially on desktop where Wi-Fi/IP geolocation can be off by kilometers).
+ */
 function webGetPosition(opts: { enableHighAccuracy: boolean; timeout: number }): Promise<{ latitude: number; longitude: number; accuracy: number }> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       return reject(new Error('Geolocation not supported'));
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        resolve({
+
+    let best: { latitude: number; longitude: number; accuracy: number } | null = null;
+    let settled = false;
+    const ACCEPT_ACCURACY_M = 50; // return early if we get a reading this good
+    const SAMPLE_MS = Math.min(8000, Math.max(3000, opts.timeout / 2));
+
+    const finish = (err?: any) => {
+      if (settled) return;
+      settled = true;
+      try { navigator.geolocation.clearWatch(watchId); } catch { /* ignore */ }
+      clearTimeout(sampleTimer);
+      clearTimeout(hardTimer);
+      if (best) return resolve(best);
+      reject(err || new Error('Unable to get location'));
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const reading = {
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
-        }),
-      (err) => reject(err),
+        };
+        if (!best || reading.accuracy < best.accuracy) best = reading;
+        if (reading.accuracy <= ACCEPT_ACCURACY_M) finish();
+      },
+      (err) => {
+        // Only reject hard if we never got a reading
+        if (!best) finish(err);
+      },
       {
         enableHighAccuracy: opts.enableHighAccuracy,
         timeout: opts.timeout,
+        maximumAge: 0, // never accept a stale cached fix
       }
     );
+
+    const sampleTimer = setTimeout(() => finish(), SAMPLE_MS);
+    const hardTimer = setTimeout(() => finish(new Error('Location timeout')), opts.timeout);
   });
 }
 
