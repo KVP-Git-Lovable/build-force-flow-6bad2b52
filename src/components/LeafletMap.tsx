@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { format } from "date-fns";
 
 // Fix default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -19,6 +20,20 @@ const activityIcon = new L.Icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
+});
+
+// "Live" pin — pulsing red divIcon for the most recent GPS point
+const liveIcon = L.divIcon({
+  className: "live-gps-pin",
+  html: `
+    <div style="position:relative;width:22px;height:22px;">
+      <span style="position:absolute;inset:0;border-radius:9999px;background:#ef4444;opacity:0.35;animation:livePulse 1.6s ease-out infinite;"></span>
+      <span style="position:absolute;top:4px;left:4px;width:14px;height:14px;border-radius:9999px;background:#ef4444;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>
+    </div>
+    <style>@keyframes livePulse{0%{transform:scale(0.6);opacity:0.6;}100%{transform:scale(2.2);opacity:0;}}</style>
+  `,
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
 });
 
 interface GPSPoint {
@@ -64,15 +79,16 @@ function MapAutoFit({ location, gpsPoints, activityMarkers }: LeafletMapProps) {
 }
 
 export default function LeafletMap({ location, gpsPoints, activityMarkers }: LeafletMapProps) {
-  const polylinePositions: [number, number][] = (gpsPoints || []).map(p => [p.latitude, p.longitude]);
+  const points = gpsPoints || [];
+  const lastIdx = points.length - 1;
 
-  const center: [number, number] = polylinePositions.length > 0
-    ? polylinePositions[0]
+  const center: [number, number] = points.length > 0
+    ? [points[lastIdx].latitude, points[lastIdx].longitude]
     : location
       ? [location.lat, location.lng]
       : [22.5, 78.9];
 
-  const zoom = polylinePositions.length > 0 || location ? 14 : 5;
+  const zoom = points.length > 0 || location ? 14 : 5;
 
   return (
     <MapContainer
@@ -86,16 +102,54 @@ export default function LeafletMap({ location, gpsPoints, activityMarkers }: Lea
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapAutoFit location={location} gpsPoints={gpsPoints} activityMarkers={activityMarkers} />
-      {location && !gpsPoints?.length && (
-        <Marker position={[location.lat, location.lng]}>
+
+      {/* Current location pin (Current Location tab — no gpsPoints) */}
+      {location && points.length === 0 && (
+        <Marker position={[location.lat, location.lng]} icon={liveIcon}>
           <Popup>Current location</Popup>
         </Marker>
       )}
-      {polylinePositions.length > 1 && (
-        <Polyline positions={polylinePositions} pathOptions={{ color: "#3B82F6", weight: 4 }} />
-      )}
+
+      {/* Trail: one small pin per captured GPS point */}
+      {points.map((p, i) => {
+        const isLive = i === lastIdx;
+        if (isLive) {
+          return (
+            <Marker key={`live-${i}`} position={[p.latitude, p.longitude]} icon={liveIcon}>
+              <Popup>
+                <div className="text-xs">
+                  <div className="font-semibold text-red-600">Live location</div>
+                  <div>{format(new Date(p.timestamp), "MMM d, hh:mm a")}</div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        }
+        return (
+          <CircleMarker
+            key={`pt-${i}`}
+            center={[p.latitude, p.longitude]}
+            radius={5}
+            pathOptions={{
+              color: "#1e40af",
+              weight: 1.5,
+              fillColor: "#3B82F6",
+              fillOpacity: 0.9,
+            }}
+          >
+            <Popup>
+              <div className="text-xs">
+                <div className="font-semibold">Point {i + 1}</div>
+                <div>{format(new Date(p.timestamp), "MMM d, hh:mm a")}</div>
+              </div>
+            </Popup>
+          </CircleMarker>
+        );
+      })}
+
+      {/* Activity / stop markers */}
       {(activityMarkers || []).map((m, i) => (
-        <Marker key={i} position={[m.lat, m.lng]} icon={activityIcon}>
+        <Marker key={`act-${i}`} position={[m.lat, m.lng]} icon={activityIcon}>
           <Popup>{m.name}</Popup>
         </Marker>
       ))}
