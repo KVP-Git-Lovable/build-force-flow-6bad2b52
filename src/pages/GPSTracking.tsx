@@ -134,9 +134,13 @@ export default function GPSTracking() {
 
   const retryLocation = () => {
     setLocationError(false);
+    setLocationAccuracy(null);
     if (currentSelectedUser === "me") {
-      getCurrentPosition()
-        .then((pos) => setCurrentLocation({ lat: pos.latitude, lng: pos.longitude }))
+      getCurrentPosition({ enableHighAccuracy: true, timeout: 20000 })
+        .then((pos) => {
+          setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
+          setLocationAccuracy(pos.accuracy ?? null);
+        })
         .catch(() => setLocationError(true));
     } else {
       // Re-trigger by toggling user
