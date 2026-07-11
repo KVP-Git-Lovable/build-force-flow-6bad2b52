@@ -72,6 +72,7 @@ export default function GPSTracking() {
   // ===== Current Location state =====
   const [currentSelectedUser, setCurrentSelectedUser] = useState<string>("me");
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [locationError, setLocationError] = useState(false);
   const [fetchingUserLocation, setFetchingUserLocation] = useState(false);
 
@@ -88,9 +89,11 @@ export default function GPSTracking() {
   // Get own location
   useEffect(() => {
     if (currentSelectedUser === "me") {
-      getCurrentPosition()
+      setLocationAccuracy(null);
+      getCurrentPosition({ enableHighAccuracy: true, timeout: 20000 })
         .then((pos) => {
           setCurrentLocation({ lat: pos.latitude, lng: pos.longitude });
+          setLocationAccuracy(pos.accuracy ?? null);
           setLocationError(false);
         })
         .catch(() => setLocationError(true));
