@@ -317,6 +317,22 @@ export default function GPSTracking() {
             </Card>
           )}
 
+          {currentSelectedUser === "me" && currentLocation && locationAccuracy != null && (
+            <div className={cn(
+              "flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs",
+              locationAccuracy > 500 ? "bg-accent/10 border-accent/40 text-accent-foreground" : "bg-muted/40"
+            )}>
+              <span>
+                Accuracy: ±{locationAccuracy < 1000 ? `${Math.round(locationAccuracy)} m` : `${(locationAccuracy / 1000).toFixed(1)} km`}
+                {locationAccuracy > 500 && " — low accuracy (Wi-Fi/IP based). Enable device GPS or move near a window for a better fix."}
+              </span>
+              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={retryLocation}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
+              </Button>
+            </div>
+          )}
+
+
           <Card className="shadow-card overflow-hidden">
             <CardContent className="p-0">
               <div className="h-[500px] relative">
