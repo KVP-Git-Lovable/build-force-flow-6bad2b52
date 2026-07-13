@@ -140,24 +140,14 @@ export default function LeafletMap({ location, gpsPoints, activityMarkers }: Lea
           );
         }
         return (
-          <CircleMarker
-            key={`pt-${i}`}
-            center={[p.latitude, p.longitude]}
-            radius={5}
-            pathOptions={{
-              color: "#1e40af",
-              weight: 1.5,
-              fillColor: "#3B82F6",
-              fillOpacity: 0.9,
-            }}
-          >
+          <Marker key={`pt-${i}`} position={[p.latitude, p.longitude]} icon={trailIcon}>
             <Popup>
               <div className="text-xs">
                 <div className="font-semibold">Point {i + 1}</div>
                 <div>{format(new Date(p.timestamp), "MMM d, hh:mm a")}</div>
               </div>
             </Popup>
-          </CircleMarker>
+          </Marker>
         );
       })}
 
