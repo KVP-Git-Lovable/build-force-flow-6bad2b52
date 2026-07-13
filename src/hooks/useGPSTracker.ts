@@ -6,6 +6,8 @@ import { format } from "date-fns";
 const INTERVAL_MS = 60_000;          // sample at least every 60s
 const MIN_MOVE_METERS = 100;         // OR every 100m of movement
 const FOREGROUND_POLL_MS = 60_000;   // web / non-native fallback
+const MAX_ACCURACY_M = 100;          // reject fixes worse than 100m (usually IP/Wi-Fi guesses)
+const MAX_JUMP_METERS = 5000;        // reject teleport jumps >5km between consecutive samples
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371000;
@@ -57,11 +59,21 @@ export function useGPSTracker(userId: string | null | undefined) {
     }
 
     async function insertPoint(lat: number, lng: number, accuracy: number | null) {
+      // Reject low-accuracy fixes (IP/Wi-Fi guesses can be 10s of km off)
+      if (accuracy != null && accuracy > MAX_ACCURACY_M) {
+        console.debug("[GPSTracker] rejected low-accuracy fix", accuracy);
+        return;
+      }
       const now = Date.now();
       const last = lastPointRef.current;
       if (last) {
         const dist = haversineMeters(last, { lat, lng });
         const elapsed = now - last.ts;
+        // Reject unrealistic teleport jumps (e.g. sudden 50km hop while stationary)
+        if (dist > MAX_JUMP_METERS && elapsed < 5 * 60_000) {
+          console.debug("[GPSTracker] rejected teleport jump", dist, "m in", elapsed, "ms");
+          return;
+        }
         if (dist < MIN_MOVE_METERS && elapsed < INTERVAL_MS) return;
       }
       lastPointRef.current = { lat, lng, ts: now };
