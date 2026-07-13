@@ -189,6 +189,7 @@ export default function GPSTracking() {
           .eq("user_id", userId)
           .gte("date", from)
           .lte("date", to)
+          .or("accuracy.is.null,accuracy.lte.100")
           .order("timestamp", { ascending: true }),
         supabase
           .from("gps_tracking_stops")
