@@ -117,6 +117,14 @@ export default function LeafletMap({ location, gpsPoints, activityMarkers }: Lea
       />
       <MapAutoFit location={location} gpsPoints={gpsPoints} activityMarkers={activityMarkers} />
 
+      {/* Trail line connecting all GPS points in order */}
+      {points.length > 1 && (
+        <Polyline
+          positions={points.map(p => [p.latitude, p.longitude]) as [number, number][]}
+          pathOptions={{ color: "#7c3aed", weight: 3, opacity: 0.75, dashArray: "6 8" }}
+        />
+      )}
+
       {/* Current location pin (Current Location tab — no gpsPoints) */}
       {location && points.length === 0 && (
         <Marker position={[location.lat, location.lng]} icon={liveIcon}>
