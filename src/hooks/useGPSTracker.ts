@@ -78,8 +78,8 @@ export function useGPSTracker(userId: string | null | undefined) {
 
     async function startNativeBackground() {
       try {
-        const mod = await import("@capacitor-community/background-geolocation");
-        const BackgroundGeolocation = (mod as any).BackgroundGeolocation ?? (mod as any).default;
+        const { registerPlugin } = await import("@capacitor/core");
+        const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
         if (!BackgroundGeolocation?.addWatcher) return false;
 
         const watcherId = await BackgroundGeolocation.addWatcher(
