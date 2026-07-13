@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { format } from "date-fns";
@@ -34,6 +34,20 @@ const liveIcon = L.divIcon({
   `,
   iconSize: [22, 22],
   iconAnchor: [11, 11],
+});
+
+// Orange teardrop pin for GPS trail points
+const trailIcon = L.divIcon({
+  className: "trail-gps-pin",
+  html: `
+    <svg width="24" height="34" viewBox="0 0 24 34" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 0C5.4 0 0 5.4 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.4 18.6 0 12 0z" fill="#f97316" stroke="#ffffff" stroke-width="1.5"/>
+      <circle cx="12" cy="12" r="4.5" fill="#ffffff"/>
+    </svg>
+  `,
+  iconSize: [24, 34],
+  iconAnchor: [12, 34],
+  popupAnchor: [0, -30],
 });
 
 interface GPSPoint {
@@ -126,24 +140,14 @@ export default function LeafletMap({ location, gpsPoints, activityMarkers }: Lea
           );
         }
         return (
-          <CircleMarker
-            key={`pt-${i}`}
-            center={[p.latitude, p.longitude]}
-            radius={5}
-            pathOptions={{
-              color: "#1e40af",
-              weight: 1.5,
-              fillColor: "#3B82F6",
-              fillOpacity: 0.9,
-            }}
-          >
+          <Marker key={`pt-${i}`} position={[p.latitude, p.longitude]} icon={trailIcon}>
             <Popup>
               <div className="text-xs">
                 <div className="font-semibold">Point {i + 1}</div>
                 <div>{format(new Date(p.timestamp), "MMM d, hh:mm a")}</div>
               </div>
             </Popup>
-          </CircleMarker>
+          </Marker>
         );
       })}
 
