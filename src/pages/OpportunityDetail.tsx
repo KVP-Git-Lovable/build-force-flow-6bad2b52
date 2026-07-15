@@ -45,6 +45,9 @@ export default function OpportunityDetail() {
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
   const { data: customers = [] } = useCustomers();
+  const { data: currencies = [] } = useCurrencies(false);
+  const sym = currencySymbol(currencies, (opp as any)?.currency);
+  const inr = (n: number) => money(sym, n);
   const usersMap = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u.full_name || u.username || u.email])), [users]);
   const customersMap = useMemo(() => Object.fromEntries(customers.map((c) => [c.id, c.name])), [customers]);
 
