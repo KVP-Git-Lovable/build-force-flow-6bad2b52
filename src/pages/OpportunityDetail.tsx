@@ -30,6 +30,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const MILESTONE_STATUSES = ["Pending", "Invoiced", "Paid"];
 
+function money(sym: string, n: number) { return `${sym} ${(n ?? 0).toLocaleString()}`; }
+
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
