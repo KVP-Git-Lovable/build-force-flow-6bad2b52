@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Plus, Search, Users, TrendingUp, UserCheck, Clock } from "lucide-react"
 import { useLeads, useLeadStatuses, statusColorClasses } from "@/hooks/useLeadsEvents";
 import { LeadForm } from "@/components/leads/LeadForm";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 function KpiCard({ icon: Icon, label, value, color }: any) {
   return (
@@ -28,6 +29,24 @@ export default function Leads() {
 
   const [q, setQ] = useState("");
   const [leadOpen, setLeadOpen] = useState(false);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const ids = Array.from(new Set(leads.map((l) => l.created_by).filter(Boolean))) as string[];
+    const missing = ids.filter((id) => !userMap[id]);
+    if (!missing.length) return;
+    (async () => {
+      const { data: usrs } = await supabase.from("users").select("id, full_name, username, email").in("id", missing);
+      const map: Record<string, string> = {};
+      (usrs ?? []).forEach((u: any) => { map[u.id] = u.full_name || u.username || u.email || ""; });
+      const remaining = missing.filter((id) => !map[id]);
+      if (remaining.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", remaining);
+        (profs ?? []).forEach((p: any) => { map[p.id] = p.full_name || p.username || ""; });
+      }
+      setUserMap((prev) => ({ ...prev, ...map }));
+    })();
+  }, [leads, userMap]);
 
   const kpis = useMemo(() => {
     const converted = leads.filter((l) => !!l.converted_customer_id).length;
@@ -67,22 +86,25 @@ export default function Leads() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Name</TableHead><TableHead>Company</TableHead>
-            <TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead>
+            <TableHead>Phone</TableHead><TableHead>Status</TableHead>
+            <TableHead>Created By</TableHead><TableHead>Created</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {filteredLeads.map((l) => {
               const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
+              const creator = l.created_by ? (userMap[l.created_by] || "—") : "—";
               return (
                 <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads/${l.id}`)}>
                   <TableCell className="font-medium">{l.name}{l.converted_customer_id && <Badge variant="secondary" className="ml-2">Converted</Badge>}</TableCell>
                   <TableCell>{l.company ?? "—"}</TableCell>
                   <TableCell>{l.phone ?? "—"}</TableCell>
                   <TableCell>{st ? <Badge className={statusColorClasses(st.color)}>{st.name}</Badge> : "—"}</TableCell>
+                  <TableCell className="text-sm">{creator}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{format(new Date(l.created_at), "dd MMM yyyy")}</TableCell>
                 </TableRow>
               );
             })}
-            {filteredLeads.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No leads yet</TableCell></TableRow>}
+            {filteredLeads.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No leads yet</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>

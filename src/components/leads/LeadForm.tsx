@@ -114,6 +114,7 @@ export function LeadForm({
       business_card_url: f.business_card_url || null,
       researched_information: f.researched_information.trim() || null,
       owner_id: lead?.owner_id ?? userId ?? null,
+      ...(lead?.id ? {} : { created_by: userId ?? null }),
     } as any);
     onOpenChange(false);
   };
