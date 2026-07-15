@@ -27,6 +27,7 @@ export default function Auth() {
       const { data } = await supabase
         .from("company_profile")
         .select("company_name, logo_url")
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       return data;
