@@ -45,6 +45,7 @@ export default function CompanyProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["company-profile-public"] });
       toast.success("Company profile saved!");
     },
     onError: (err: any) => {
