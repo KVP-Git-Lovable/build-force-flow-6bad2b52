@@ -195,7 +195,14 @@ export function useSaveLead() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["leads"] }); toast.success("Lead saved"); },
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      if (data?.id) {
+        qc.invalidateQueries({ queryKey: ["lead", data.id] });
+        qc.invalidateQueries({ queryKey: ["lead-audit", data.id] });
+      }
+      toast.success("Lead saved");
+    },
     onError: (e: any) => toast.error(e.message),
   });
 }
