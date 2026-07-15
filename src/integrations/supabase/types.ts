@@ -1457,6 +1457,7 @@ export type Database = {
           owner_id: string | null
           phone: string | null
           related_event_id: string | null
+          researched_information: string | null
           target_conversion_date: string | null
           target_first_contact_date: string | null
           title: string | null
@@ -1482,6 +1483,7 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           related_event_id?: string | null
+          researched_information?: string | null
           target_conversion_date?: string | null
           target_first_contact_date?: string | null
           title?: string | null
@@ -1507,6 +1509,7 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           related_event_id?: string | null
+          researched_information?: string | null
           target_conversion_date?: string | null
           target_first_contact_date?: string | null
           title?: string | null
