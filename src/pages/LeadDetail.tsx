@@ -110,6 +110,15 @@ export default function LeadDetail() {
             </CardContent>
           </Card>
 
+          {lead.researched_information && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Researched Information</CardTitle></CardHeader>
+              <CardContent>
+                <div className="text-sm whitespace-pre-wrap leading-relaxed">{lead.researched_information}</div>
+              </CardContent>
+            </Card>
+          )}
+
           {lead.business_card_url && (
             <Card>
               <CardHeader><CardTitle className="text-base">Business Card</CardTitle></CardHeader>
