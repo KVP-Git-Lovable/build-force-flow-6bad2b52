@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Plus, Search, Users, TrendingUp, UserCheck, Clock } from "lucide-react"
 import { useLeads, useLeadStatuses, statusColorClasses } from "@/hooks/useLeadsEvents";
 import { LeadForm } from "@/components/leads/LeadForm";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 function KpiCard({ icon: Icon, label, value, color }: any) {
   return (
