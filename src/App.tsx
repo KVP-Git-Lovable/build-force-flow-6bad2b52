@@ -60,6 +60,7 @@ const EventDetail = lazy(() => import("./pages/EventDetail"));
 const EventTypesMaster = lazy(() => import("./pages/master/EventTypesMaster"));
 const LeadStatusesMaster = lazy(() => import("./pages/master/LeadStatusesMaster"));
 const LeadSourcesMaster = lazy(() => import("./pages/master/LeadSourcesMaster"));
+const LeadScoringMaster = lazy(() => import("./pages/master/LeadScoringMaster"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
