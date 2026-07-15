@@ -21,7 +21,7 @@ export default function CompanyProfile() {
   const companyQuery = useQuery({
     queryKey: ["company-profile"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("company_profile").select("*").limit(1).maybeSingle();
+      const { data, error } = await supabase.from("company_profile").select("*").order("updated_at", { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -45,6 +45,7 @@ export default function CompanyProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["company-profile-public"] });
       toast.success("Company profile saved!");
     },
     onError: (err: any) => {
