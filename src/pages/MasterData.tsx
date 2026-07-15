@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass, Gauge } from "lucide-react";
+import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass, Gauge, Coins, CreditCard, TrendingUp } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
 const allMasterModules = [

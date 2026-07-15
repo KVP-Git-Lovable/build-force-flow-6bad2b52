@@ -77,6 +77,16 @@ export interface Opportunity {
   close_date: string | null;
   amount: number;
   owner_id: string | null;
+  currency: string | null;
+  payment_terms: string | null;
+  opportunity_source_id: string | null;
+  requirements_highlights: string | null;
+  budget_status: string | null;
+  authority_role: string | null;
+  need_level: string | null;
+  timeline: string | null;
+  primary_contact_id: string | null;
+  stage_changed_at: string | null;
   created_at: string;
   updated_at: string;
 }

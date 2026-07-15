@@ -61,6 +61,9 @@ const EventTypesMaster = lazy(() => import("./pages/master/EventTypesMaster"));
 const LeadStatusesMaster = lazy(() => import("./pages/master/LeadStatusesMaster"));
 const LeadSourcesMaster = lazy(() => import("./pages/master/LeadSourcesMaster"));
 const LeadScoringMaster = lazy(() => import("./pages/master/LeadScoringMaster"));
+const CurrencyMaster = lazy(() => import("./pages/master/CurrencyMaster"));
+const PaymentTermsMaster = lazy(() => import("./pages/master/PaymentTermsMaster"));
+const OpportunityScoringMaster = lazy(() => import("./pages/master/OpportunityScoringMaster"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -141,6 +144,9 @@ const App = () => (
             <Route path="/master-data/lead-statuses" element={<Suspense fallback={<PageFallback />}><LeadStatusesMaster /></Suspense>} />
             <Route path="/master-data/lead-sources" element={<Suspense fallback={<PageFallback />}><LeadSourcesMaster /></Suspense>} />
             <Route path="/master-data/lead-scoring" element={<Suspense fallback={<PageFallback />}><LeadScoringMaster /></Suspense>} />
+            <Route path="/master-data/currencies" element={<Suspense fallback={<PageFallback />}><CurrencyMaster /></Suspense>} />
+            <Route path="/master-data/payment-terms" element={<Suspense fallback={<PageFallback />}><PaymentTermsMaster /></Suspense>} />
+            <Route path="/master-data/opportunity-scoring" element={<Suspense fallback={<PageFallback />}><OpportunityScoringMaster /></Suspense>} />
             <Route path="/leads" element={<Suspense fallback={<PageFallback />}><Leads /></Suspense>} />
             <Route path="/leads/:id" element={<Suspense fallback={<PageFallback />}><LeadDetail /></Suspense>} />
             <Route path="/events" element={<Suspense fallback={<PageFallback />}><Events /></Suspense>} />
