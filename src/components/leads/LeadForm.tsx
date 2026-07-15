@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sparkles, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { BusinessCardScanner } from "./BusinessCardScanner";
 import {
   LeadRow, useSaveLead, useLeadStatuses, useLeadSources, useEvents,
@@ -23,9 +26,10 @@ export function LeadForm({
   const emptyForm = {
     name: "", title: "", company: "", email: "", phone: "", website: "", address: "", industry: "",
     lead_status_id: "", lead_source_id: "", related_event_id: defaultEventId ?? "",
-    business_card_url: "",
+    business_card_url: "", researched_information: "",
   };
   const [f, setF] = useState(emptyForm);
+  const [isElaborating, setIsElaborating] = useState(false);
 
   useEffect(() => {
     if (lead) {
@@ -37,6 +41,7 @@ export function LeadForm({
         lead_source_id: lead.lead_source_id ?? "",
         related_event_id: lead.related_event_id ?? "",
         business_card_url: lead.business_card_url ?? "",
+        researched_information: lead.researched_information ?? "",
       });
     } else {
       setF({ ...emptyForm, related_event_id: defaultEventId ?? "" });
@@ -44,7 +49,6 @@ export function LeadForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead, open, defaultEventId]);
 
-  // Default to first status ("New") when creating a new lead
   useEffect(() => {
     if (!lead && !f.lead_status_id && statuses.length) {
       setF((prev) => ({ ...prev, lead_status_id: statuses[0].id }));
@@ -66,6 +70,32 @@ export function LeadForm({
     }));
   };
 
+  const handleElaborate = async () => {
+    if (!f.company.trim() && !f.name.trim() && !f.researched_information.trim()) {
+      toast.error("Add a name, company, or some notes first");
+      return;
+    }
+    setIsElaborating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("elaborate-lead-research", {
+        body: {
+          name: f.name, designation: f.title, company: f.company,
+          industry: f.industry, website: f.website, draft: f.researched_information,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); return; }
+      if (data?.details) {
+        setF((prev) => ({ ...prev, researched_information: data.details }));
+        toast.success("Research generated");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate research");
+    } finally {
+      setIsElaborating(false);
+    }
+  };
+
   const submit = async () => {
     if (!f.name.trim()) return;
     await save.mutateAsync({
@@ -82,8 +112,9 @@ export function LeadForm({
       lead_source_id: f.lead_source_id || null,
       related_event_id: f.related_event_id || null,
       business_card_url: f.business_card_url || null,
+      researched_information: f.researched_information.trim() || null,
       owner_id: lead?.owner_id ?? userId ?? null,
-    });
+    } as any);
     onOpenChange(false);
   };
 
@@ -99,7 +130,7 @@ export function LeadForm({
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Name *</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
-            <div><Label>Title</Label><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
+            <div><Label>Designation</Label><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
             <div><Label>Company</Label><Input value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} /></div>
             <div><Label>Industry</Label><Input value={f.industry} onChange={(e) => setF({ ...f, industry: e.target.value })} /></div>
             <div><Label>Email</Label><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
@@ -130,6 +161,23 @@ export function LeadForm({
               </Select>
             </div>
           </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <Label>Researched Information</Label>
+              <Button type="button" variant="outline" size="sm" onClick={handleElaborate} disabled={isElaborating}>
+                {isElaborating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+                AI Elaborate
+              </Button>
+            </div>
+            <Textarea
+              rows={5}
+              placeholder="Background research on this lead/company — company size, recent news, pain points, competitor info… or leave blank and click AI Elaborate."
+              value={f.researched_information}
+              onChange={(e) => setF({ ...f, researched_information: e.target.value })}
+            />
+          </div>
+
           <div>
             <Label>Address</Label>
             <Textarea rows={2} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} />
