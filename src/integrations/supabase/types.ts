@@ -705,43 +705,73 @@ export type Database = {
       customer_opportunities: {
         Row: {
           amount: number
+          authority_role: string | null
+          budget_status: string | null
           close_date: string | null
           created_at: string
           created_by: string | null
+          currency: string | null
           customer_id: string | null
           id: string
           name: string
+          need_level: string | null
+          opportunity_source_id: string | null
           owner_id: string | null
+          payment_terms: string | null
+          primary_contact_id: string | null
           probability: number
+          requirements_highlights: string | null
           stage: string | null
+          stage_changed_at: string | null
+          timeline: string | null
           type: string | null
           updated_at: string
         }
         Insert: {
           amount?: number
+          authority_role?: string | null
+          budget_status?: string | null
           close_date?: string | null
           created_at?: string
           created_by?: string | null
+          currency?: string | null
           customer_id?: string | null
           id?: string
           name: string
+          need_level?: string | null
+          opportunity_source_id?: string | null
           owner_id?: string | null
+          payment_terms?: string | null
+          primary_contact_id?: string | null
           probability?: number
+          requirements_highlights?: string | null
           stage?: string | null
+          stage_changed_at?: string | null
+          timeline?: string | null
           type?: string | null
           updated_at?: string
         }
         Update: {
           amount?: number
+          authority_role?: string | null
+          budget_status?: string | null
           close_date?: string | null
           created_at?: string
           created_by?: string | null
+          currency?: string | null
           customer_id?: string | null
           id?: string
           name?: string
+          need_level?: string | null
+          opportunity_source_id?: string | null
           owner_id?: string | null
+          payment_terms?: string | null
+          primary_contact_id?: string | null
           probability?: number
+          requirements_highlights?: string | null
           stage?: string | null
+          stage_changed_at?: string | null
+          timeline?: string | null
           type?: string | null
           updated_at?: string
         }
@@ -1864,6 +1894,39 @@ export type Database = {
         }
         Relationships: []
       }
+      master_currencies: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       master_entities: {
         Row: {
           address: string | null
@@ -1987,6 +2050,33 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_converted_status?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      master_payment_terms: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
           name?: string
           sort_order?: number
           updated_at?: string
