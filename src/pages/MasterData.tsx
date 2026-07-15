@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass, Gauge } from "lucide-react";
+import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass, Gauge, Coins, CreditCard, TrendingUp } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
 const allMasterModules = [
@@ -101,6 +101,30 @@ const allMasterModules = [
     color: "bg-indigo-100 text-indigo-600",
     path: "/master-data/lead-scoring",
     module: "module_leads" as string | null,
+  },
+  {
+    title: "Currency Master",
+    description: "Currencies used in opportunities & quotes (INR, USD, EUR…)",
+    icon: Coins,
+    color: "bg-yellow-100 text-yellow-600",
+    path: "/master-data/currencies",
+    module: "module_opportunities" as string | null,
+  },
+  {
+    title: "Payment Terms",
+    description: "Payment terms for opportunities (Net 30, 50% Advance…)",
+    icon: CreditCard,
+    color: "bg-orange-100 text-orange-600",
+    path: "/master-data/payment-terms",
+    module: "module_opportunities" as string | null,
+  },
+  {
+    title: "Opportunity Scoring Rules",
+    description: "BANT & health thresholds for opportunities",
+    icon: TrendingUp,
+    color: "bg-pink-100 text-pink-600",
+    path: "/master-data/opportunity-scoring",
+    module: "module_opportunities" as string | null,
   },
 ];
 

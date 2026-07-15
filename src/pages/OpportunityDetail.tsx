@@ -22,12 +22,15 @@ import { MilestoneForm } from "@/components/customers/MilestoneForm";
 import { ActivityForm } from "@/components/customers/ActivityForm";
 import { DocumentUpload } from "@/components/customers/DocumentUpload";
 import { OpportunityForm } from "@/components/customers/OpportunityForm";
+import { OpportunityHealthTab } from "@/components/customers/OpportunityHealthTab";
+import { OpportunityBantTab } from "@/components/customers/OpportunityBantTab";
+import { useCurrencies, currencySymbol } from "@/hooks/useOpportunityMasters";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
-function inr(n: number) { return `₹ ${(n ?? 0).toLocaleString()}`; }
-
 const MILESTONE_STATUSES = ["Pending", "Invoiced", "Paid"];
+
+function money(sym: string, n: number) { return `${sym} ${(n ?? 0).toLocaleString()}`; }
 
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +45,9 @@ export default function OpportunityDetail() {
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
   const { data: customers = [] } = useCustomers();
+  const { data: currencies = [] } = useCurrencies(false);
+  const sym = currencySymbol(currencies, (opp as any)?.currency);
+  const inr = (n: number) => money(sym, n);
   const usersMap = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u.full_name || u.username || u.email])), [users]);
   const customersMap = useMemo(() => Object.fromEntries(customers.map((c) => [c.id, c.name])), [customers]);
 
@@ -93,9 +99,19 @@ export default function OpportunityDetail() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="quotes">Quotes</TabsTrigger>
           <TabsTrigger value="milestones">Payment Milestones</TabsTrigger>
+          <TabsTrigger value="health">Health Analysis</TabsTrigger>
+          <TabsTrigger value="bant">BANT Analysis</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="health" className="mt-4">
+          <OpportunityHealthTab opp={opp} />
+        </TabsContent>
+
+        <TabsContent value="bant" className="mt-4">
+          <OpportunityBantTab opp={opp} />
+        </TabsContent>
 
 
         <TabsContent value="overview" className="mt-4">
@@ -117,8 +133,16 @@ export default function OpportunityDetail() {
               <Field label="Probability" value={`${opp.probability}%`} />
               <Field label="Close Date" value={opp.close_date ? format(new Date(opp.close_date), "dd MMM yyyy") : "—"} />
               <Field label="Amount" value={inr(Number(opp.amount))} />
+              <Field label="Currency" value={(opp as any).currency || "INR"} />
+              <Field label="Payment Terms" value={(opp as any).payment_terms || "—"} />
               <Field label="Owner" value={opp.owner_id ? usersMap[opp.owner_id] ?? "—" : "—"} />
             </div>
+            {(opp as any).requirements_highlights && (
+              <div className="mt-6 pt-4 border-t">
+                <div className="text-xs text-muted-foreground mb-1">Requirements Highlights</div>
+                <p className="text-sm whitespace-pre-wrap">{(opp as any).requirements_highlights}</p>
+              </div>
+            )}
 
           </CardContent></Card>
         </TabsContent>
