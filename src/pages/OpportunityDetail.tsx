@@ -22,10 +22,11 @@ import { MilestoneForm } from "@/components/customers/MilestoneForm";
 import { ActivityForm } from "@/components/customers/ActivityForm";
 import { DocumentUpload } from "@/components/customers/DocumentUpload";
 import { OpportunityForm } from "@/components/customers/OpportunityForm";
+import { OpportunityHealthTab } from "@/components/customers/OpportunityHealthTab";
+import { OpportunityBantTab } from "@/components/customers/OpportunityBantTab";
+import { useCurrencies, currencySymbol } from "@/hooks/useOpportunityMasters";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-
-function inr(n: number) { return `₹ ${(n ?? 0).toLocaleString()}`; }
 
 const MILESTONE_STATUSES = ["Pending", "Invoiced", "Paid"];
 
