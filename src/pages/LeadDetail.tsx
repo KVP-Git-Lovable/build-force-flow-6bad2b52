@@ -59,18 +59,26 @@ export default function LeadDetail() {
           <div>
             <CardTitle className="text-xl flex items-center gap-2 flex-wrap">
               {lead.name}
-              {isConverted && !statusIsConverted && <Badge variant="secondary">Converted</Badge>}
-              {currentStatus && <Badge className={statusColorClasses(currentStatus.color)}>{currentStatus.name}</Badge>}
+              {isConverted ? (
+                <Badge className={currentStatus ? statusColorClasses(currentStatus.color) : ""}>
+                  {currentStatus?.name || "Converted"}
+                </Badge>
+              ) : (
+                <Select value={lead.lead_status_id ?? undefined} onValueChange={changeStatus}>
+                  <SelectTrigger
+                    className={`h-auto py-1 px-2.5 border-0 gap-1.5 rounded-full text-xs font-semibold w-auto focus:ring-0 focus:ring-offset-0 hover:opacity-80 ${currentStatus ? statusColorClasses(currentStatus.color) : "bg-gray-100 text-gray-700"}`}
+                  >
+                    <SelectValue placeholder="Set status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statuses.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </CardTitle>
             <div className="text-sm text-muted-foreground">{[lead.title, lead.company].filter(Boolean).join(" · ") || "—"}</div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {!isConverted && (
-              <Select value={lead.lead_status_id ?? undefined} onValueChange={changeStatus}>
-                <SelectTrigger className="w-40"><SelectValue placeholder="Change status" /></SelectTrigger>
-                <SelectContent>{statuses.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-              </Select>
-            )}
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Edit className="h-4 w-4 mr-1" />Edit</Button>
             {!isConverted && <Button size="sm" onClick={() => setConvertOpen(true)}><UserPlus className="h-4 w-4 mr-1" />Convert</Button>}
             {isConverted && lead.converted_customer_id && (
