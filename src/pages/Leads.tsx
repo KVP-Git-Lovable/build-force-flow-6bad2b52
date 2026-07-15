@@ -29,6 +29,24 @@ export default function Leads() {
 
   const [q, setQ] = useState("");
   const [leadOpen, setLeadOpen] = useState(false);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const ids = Array.from(new Set(leads.map((l) => l.created_by).filter(Boolean))) as string[];
+    const missing = ids.filter((id) => !userMap[id]);
+    if (!missing.length) return;
+    (async () => {
+      const { data: usrs } = await supabase.from("users").select("id, full_name, username, email").in("id", missing);
+      const map: Record<string, string> = {};
+      (usrs ?? []).forEach((u: any) => { map[u.id] = u.full_name || u.username || u.email || ""; });
+      const remaining = missing.filter((id) => !map[id]);
+      if (remaining.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", remaining);
+        (profs ?? []).forEach((p: any) => { map[p.id] = p.full_name || p.username || ""; });
+      }
+      setUserMap((prev) => ({ ...prev, ...map }));
+    })();
+  }, [leads, userMap]);
 
   const kpis = useMemo(() => {
     const converted = leads.filter((l) => !!l.converted_customer_id).length;
