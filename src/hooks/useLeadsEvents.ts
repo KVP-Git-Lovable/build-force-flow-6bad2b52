@@ -153,6 +153,7 @@ export interface LeadRow {
   target_first_contact_date: string | null;
   actual_first_contact_date: string | null;
   target_conversion_date: string | null;
+  researched_information: string | null;
   created_at: string;
   updated_at: string;
 }
