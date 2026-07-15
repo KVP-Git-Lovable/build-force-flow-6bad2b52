@@ -133,8 +133,16 @@ export default function OpportunityDetail() {
               <Field label="Probability" value={`${opp.probability}%`} />
               <Field label="Close Date" value={opp.close_date ? format(new Date(opp.close_date), "dd MMM yyyy") : "—"} />
               <Field label="Amount" value={inr(Number(opp.amount))} />
+              <Field label="Currency" value={(opp as any).currency || "INR"} />
+              <Field label="Payment Terms" value={(opp as any).payment_terms || "—"} />
               <Field label="Owner" value={opp.owner_id ? usersMap[opp.owner_id] ?? "—" : "—"} />
             </div>
+            {(opp as any).requirements_highlights && (
+              <div className="mt-6 pt-4 border-t">
+                <div className="text-xs text-muted-foreground mb-1">Requirements Highlights</div>
+                <p className="text-sm whitespace-pre-wrap">{(opp as any).requirements_highlights}</p>
+              </div>
+            )}
 
           </CardContent></Card>
         </TabsContent>
