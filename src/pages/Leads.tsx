@@ -86,22 +86,25 @@ export default function Leads() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Name</TableHead><TableHead>Company</TableHead>
-            <TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead>
+            <TableHead>Phone</TableHead><TableHead>Status</TableHead>
+            <TableHead>Created By</TableHead><TableHead>Created</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {filteredLeads.map((l) => {
               const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
+              const creator = l.created_by ? (userMap[l.created_by] || "—") : "—";
               return (
                 <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads/${l.id}`)}>
                   <TableCell className="font-medium">{l.name}{l.converted_customer_id && <Badge variant="secondary" className="ml-2">Converted</Badge>}</TableCell>
                   <TableCell>{l.company ?? "—"}</TableCell>
                   <TableCell>{l.phone ?? "—"}</TableCell>
                   <TableCell>{st ? <Badge className={statusColorClasses(st.color)}>{st.name}</Badge> : "—"}</TableCell>
+                  <TableCell className="text-sm">{creator}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{format(new Date(l.created_at), "dd MMM yyyy")}</TableCell>
                 </TableRow>
               );
             })}
-            {filteredLeads.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No leads yet</TableCell></TableRow>}
+            {filteredLeads.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No leads yet</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>
