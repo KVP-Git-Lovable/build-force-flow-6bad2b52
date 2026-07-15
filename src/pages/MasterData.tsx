@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass } from "lucide-react";
+import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass, Gauge } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
 const allMasterModules = [
@@ -92,6 +92,14 @@ const allMasterModules = [
     icon: Compass,
     color: "bg-emerald-100 text-emerald-600",
     path: "/master-data/lead-sources",
+    module: "module_leads" as string | null,
+  },
+  {
+    title: "Lead Scoring Rules",
+    description: "BANT scoring thresholds & qualification tiers",
+    icon: Gauge,
+    color: "bg-indigo-100 text-indigo-600",
+    path: "/master-data/lead-scoring",
     module: "module_leads" as string | null,
   },
 ];

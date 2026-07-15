@@ -148,6 +148,11 @@ export interface LeadRow {
   business_card_url: string | null;
   converted_customer_id: string | null;
   converted_at: string | null;
+  created_by: string | null;
+  contact_role: string | null;
+  target_first_contact_date: string | null;
+  actual_first_contact_date: string | null;
+  target_conversion_date: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -1439,9 +1439,11 @@ export type Database = {
       }
       leads: {
         Row: {
+          actual_first_contact_date: string | null
           address: string | null
           business_card_url: string | null
           company: string | null
+          contact_role: string | null
           converted_at: string | null
           converted_customer_id: string | null
           created_at: string
@@ -1455,14 +1457,18 @@ export type Database = {
           owner_id: string | null
           phone: string | null
           related_event_id: string | null
+          target_conversion_date: string | null
+          target_first_contact_date: string | null
           title: string | null
           updated_at: string
           website: string | null
         }
         Insert: {
+          actual_first_contact_date?: string | null
           address?: string | null
           business_card_url?: string | null
           company?: string | null
+          contact_role?: string | null
           converted_at?: string | null
           converted_customer_id?: string | null
           created_at?: string
@@ -1476,14 +1482,18 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           related_event_id?: string | null
+          target_conversion_date?: string | null
+          target_first_contact_date?: string | null
           title?: string | null
           updated_at?: string
           website?: string | null
         }
         Update: {
+          actual_first_contact_date?: string | null
           address?: string | null
           business_card_url?: string | null
           company?: string | null
+          contact_role?: string | null
           converted_at?: string | null
           converted_customer_id?: string | null
           created_at?: string
@@ -1497,6 +1507,8 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           related_event_id?: string | null
+          target_conversion_date?: string | null
+          target_first_contact_date?: string | null
           title?: string | null
           updated_at?: string
           website?: string | null
