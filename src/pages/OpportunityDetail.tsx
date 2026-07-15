@@ -99,9 +99,19 @@ export default function OpportunityDetail() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="quotes">Quotes</TabsTrigger>
           <TabsTrigger value="milestones">Payment Milestones</TabsTrigger>
+          <TabsTrigger value="health">Health Analysis</TabsTrigger>
+          <TabsTrigger value="bant">BANT Analysis</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="health" className="mt-4">
+          <OpportunityHealthTab opp={opp} />
+        </TabsContent>
+
+        <TabsContent value="bant" className="mt-4">
+          <OpportunityBantTab opp={opp} />
+        </TabsContent>
 
 
         <TabsContent value="overview" className="mt-4">
