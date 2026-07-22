@@ -163,8 +163,8 @@ export default function CustomerDetail() {
           {/* KPI CARDS */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <KpiCard label="Total Opportunities" value={String(stats.total)} icon={Target} accent="indigo" />
-            <KpiCard label="Open Pipeline" value={inr(stats.openPipeline)} icon={Wallet} accent="blue" />
-            <KpiCard label="Won Value" value={inr(stats.wonValue)} icon={Trophy} accent="emerald" />
+            <KpiCard label="Open Pipeline" value={mixed(opps.filter((o) => !stageMap[o.stage ?? ""]?.is_closed))} icon={Wallet} accent="blue" />
+            <KpiCard label="Won Value" value={mixed(opps.filter((o) => stageMap[o.stage ?? ""]?.is_won))} icon={Trophy} accent="emerald" />
             <KpiCard label="Total Contacts" value={String(stats.contacts)} icon={Users} accent="violet" />
             <KpiCard label="Last Activity" value={stats.lastActivity ? format(new Date(stats.lastActivity), "dd MMM yyyy") : "—"} icon={Clock} accent="amber" />
           </div>
