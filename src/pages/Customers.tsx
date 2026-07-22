@@ -118,7 +118,7 @@ export default function Customers() {
               </TableRow></TableHeader>
               <TableBody>
                 {filtered.map((c) => {
-                  const s = stats.get(c.id) || { open: 0, pipeline: 0 };
+                  const s = stats.get(c.id) || { open: 0, pipelineRows: [] as any[] };
                   return (
                     <TableRow key={c.id} className="cursor-pointer" onClick={() => nav(`/customers/${c.id}`)}>
                       <TableCell className="font-medium flex items-center gap-2">
