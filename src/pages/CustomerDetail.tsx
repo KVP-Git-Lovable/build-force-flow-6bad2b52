@@ -32,9 +32,10 @@ import { DocumentUpload } from "@/components/customers/DocumentUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
+import { formatCurrency, sumByCurrency, formatMixedCurrencyTotals } from "@/lib/currency";
 
-
-function inr(n: number) { return `₹ ${(n ?? 0).toLocaleString()}`; }
+const mixed = (rows: any[]) =>
+  formatMixedCurrencyTotals(sumByCurrency(rows, (o) => Number(o.amount || 0), (o) => o.currency));
 
 export default function CustomerDetail() {
   const nav = useNavigate();
