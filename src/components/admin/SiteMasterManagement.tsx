@@ -12,21 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -48,14 +33,11 @@ import {
 } from "@/components/ui/command";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Plus, Edit, Loader2, Building2, Users, Check, ChevronsUpDown, X,
-  Paperclip, Download, Target,
+  Plus, Loader2, Building2, Users, Check, ChevronsUpDown, X,
+  Paperclip, Download,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import SiteMilestonesEditor, { LocalMilestone } from "@/components/admin/SiteMilestonesEditor";
-import { milestoneStatusLabel } from "@/components/admin/SiteMilestonesDialog";
 import {
   uploadSiteAttachment,
   attachmentName,
@@ -98,13 +80,6 @@ export const SITE_STATUSES: { value: SiteStatus; label: string }[] = [
 export function siteStatusLabel(status?: string | null) {
   return SITE_STATUSES.find((s) => s.value === status)?.label || "Planned";
 }
-
-const STATUS_VARIANT: Record<SiteStatus, "default" | "secondary" | "destructive" | "outline"> = {
-  planned: "secondary",
-  started: "default",
-  completed: "default",
-  dropped: "destructive",
-};
 
 interface FormState {
   site_name: string;
@@ -194,9 +169,10 @@ export default function SiteMasterManagement() {
   const [milestoneStats, setMilestoneStats] = useState<Record<string, { avg: number; count: number }>>({});
 
   const fetchMilestoneStats = useCallback(async () => {
-    const { data } = await supabase.from("site_milestones").select("site_id, percent_complete");
+    const { data } = await supabase.from("site_milestones").select("site_id, percent_complete, parent_id");
     const acc: Record<string, { sum: number; count: number }> = {};
     (data || []).forEach((m: any) => {
+      if (m.parent_id) return;
       if (!acc[m.site_id]) acc[m.site_id] = { sum: 0, count: 0 };
       acc[m.site_id].sum += m.percent_complete ?? 0;
       acc[m.site_id].count += 1;
@@ -271,7 +247,6 @@ export default function SiteMasterManagement() {
     setSelectedUserIds(siteAssignments[site.id] || []);
     setAttachments(site.attachment_urls || []);
     setDetailSite(null);
-    // load milestones
     const { data } = await supabase.from("site_milestones").select("*").eq("site_id", site.id).order("start_date");
     const loaded: LocalMilestone[] = (data || []).map((m: any) => ({
       id: m.id,
@@ -376,7 +351,6 @@ export default function SiteMasterManagement() {
         toast.success("Site created");
       }
 
-      // reconcile assignments
       const currentAssigned = siteAssignments[siteId] || [];
       const toRemove = currentAssigned.filter((uid) => !userIds.includes(uid));
       const toAdd = userIds.filter((uid) => !currentAssigned.includes(uid));
@@ -453,7 +427,6 @@ export default function SiteMasterManagement() {
         )}
       </CardContent>
 
-      {/* Project Hub */}
       <SiteHubSheet
         site={detailSite as HubSite | null}
         open={!!detailSite}
@@ -465,8 +438,6 @@ export default function SiteMasterManagement() {
         }}
       />
 
-
-      {/* Create/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-[460px] max-h-[88vh] flex flex-col">
           <DialogHeader>

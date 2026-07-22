@@ -47,9 +47,6 @@ const STATUSES: { value: string; label: string }[] = [
   { value: "dropped", label: "Dropped" },
 ];
 
-
-
-
 function initials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 }
@@ -69,6 +66,8 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
   const [savingStatus, setSavingStatus] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [showAddMilestone, setShowAddMilestone] = useState(false);
+  const [subParentName, setSubParentName] = useState<string>("");
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [msForm, setMsForm] = useState({
     name: "",
     start_date: new Date().toISOString().split("T")[0],
@@ -79,8 +78,53 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
     percent_complete: 0,
     status: "not_started",
     is_active: true,
+    parent_id: "" as string,
   });
   const [savingMilestone, setSavingMilestone] = useState(false);
+
+  const openAddSubMilestone = (parentId: string, parentName: string) => {
+    setEditingMilestoneId(null);
+    setSubParentName(parentName);
+    setMsForm({
+      name: "",
+      start_date: new Date().toISOString().split("T")[0],
+      end_date: "",
+      actual_start_date: "",
+      actual_end_date: "",
+      notes: "",
+      percent_complete: 0,
+      status: "not_started",
+      is_active: true,
+      parent_id: parentId,
+    });
+    setShowAddMilestone(true);
+  };
+
+  const openAddTopMilestone = () => {
+    setEditingMilestoneId(null);
+    setSubParentName("");
+    setMsForm((f) => ({ ...f, parent_id: "" }));
+    setShowAddMilestone(true);
+  };
+
+  const openEditMilestone = (m: import("@/hooks/useSiteHub").HubMilestone) => {
+    setEditingMilestoneId(m.id);
+    const parent = m.parent_id ? milestones.find((x) => x.id === m.parent_id) : null;
+    setSubParentName(parent?.name || "");
+    setMsForm({
+      name: m.name,
+      start_date: m.start_date,
+      end_date: m.end_date,
+      actual_start_date: m.actual_start_date || "",
+      actual_end_date: m.actual_end_date || "",
+      notes: m.notes || "",
+      percent_complete: m.percent_complete ?? 0,
+      status: m.status,
+      is_active: m.is_active,
+      parent_id: m.parent_id || "",
+    });
+    setShowAddMilestone(true);
+  };
 
   const currentStatus = status ?? site?.status ?? "planned";
 
@@ -129,8 +173,7 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
     const pct = Math.min(100, Math.max(0, Number(msForm.percent_complete) || 0));
     setSavingMilestone(true);
     try {
-      const { error } = await supabase.from("site_milestones").insert({
-        site_id: site.id,
+      const payload = {
         name: msForm.name.trim(),
         start_date: msForm.start_date,
         end_date: msForm.end_date,
@@ -140,10 +183,20 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
         percent_complete: pct,
         status: msForm.status || (pct >= 100 ? "completed" : pct > 0 ? "in_progress" : "not_started"),
         is_active: msForm.is_active,
-      });
-      if (error) throw error;
-      toast.success("Milestone added");
+        parent_id: msForm.parent_id || null,
+      };
+      if (editingMilestoneId) {
+        const { error } = await supabase.from("site_milestones").update(payload).eq("id", editingMilestoneId);
+        if (error) throw error;
+        toast.success("Milestone updated");
+      } else {
+        const { error } = await supabase.from("site_milestones").insert({ site_id: site.id, ...payload });
+        if (error) throw error;
+        toast.success(msForm.parent_id ? "Sub-task added" : "Milestone added");
+      }
       setShowAddMilestone(false);
+      setSubParentName("");
+      setEditingMilestoneId(null);
       setMsForm({
         name: "",
         start_date: new Date().toISOString().split("T")[0],
@@ -154,10 +207,11 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
         percent_complete: 0,
         status: "not_started",
         is_active: true,
+        parent_id: "",
       });
       reload();
     } catch (err: any) {
-      toast.error(err.message || "Failed to add milestone");
+      toast.error(err.message || "Failed to save milestone");
     } finally {
       setSavingMilestone(false);
     }
@@ -167,7 +221,7 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
     if (!o) { setStatus(null); setActiveTab("overview"); onClose(); }
   };
 
-  
+  if (!site) return null;
 
   return (
     <>
@@ -175,7 +229,6 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
         <DialogContent
           className="p-0 gap-0 max-w-none w-screen h-[100dvh] rounded-none flex flex-col overflow-hidden border-0 [&>button]:hidden"
         >
-          {/* Hero header */}
           <div className="relative shrink-0 bg-gradient-primary text-primary-foreground px-4 sm:px-8 safe-top-8 sm:safe-top-10 pb-6 sm:pb-8">
             <button
               type="button"
@@ -222,7 +275,7 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
                     size="sm"
                     variant="secondary"
                     className="h-9"
-                    onClick={() => setShowAddMilestone(true)}
+                    onClick={openAddTopMilestone}
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add Milestone
                   </Button>
@@ -318,9 +371,8 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
                   </TabsContent>
 
                   <TabsContent value="milestones" className="mt-0">
-                    <SiteMilestoneList milestones={milestones} activities={activities} onChanged={reload} />
+                    <SiteMilestoneList siteId={site!.id} milestones={milestones} activities={activities} onChanged={reload} onAddSubMilestone={openAddSubMilestone} onEditMilestone={openEditMilestone} onOpenActivity={setSelectedActivity} />
                   </TabsContent>
-
 
                   <TabsContent value="gallery" className="mt-0">
                     <SiteGallery gallery={gallery} onActivityClick={openActivityById} />
@@ -346,7 +398,6 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
                       </div>
                     )}
                   </TabsContent>
-
                 </div>
               </div>
             </Tabs>
@@ -354,11 +405,14 @@ export default function SiteHubSheet({ site, open, onClose, onEdit, onStatusChan
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showAddMilestone} onOpenChange={setShowAddMilestone}>
+      <Dialog open={showAddMilestone} onOpenChange={(o) => { setShowAddMilestone(o); if (!o) setEditingMilestoneId(null); }}>
         <DialogContent className="sm:max-w-[520px] max-h-[88vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" /> Add Milestone
+              <Target className="h-5 w-5" />
+              {editingMilestoneId
+                ? `Edit ${msForm.parent_id ? "Sub-Task" : "Milestone"}`
+                : msForm.parent_id ? `Add Sub-Task${subParentName ? ` — under ${subParentName}` : ""}` : "Add Milestone"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 overflow-y-auto max-h-[70vh] pr-1">

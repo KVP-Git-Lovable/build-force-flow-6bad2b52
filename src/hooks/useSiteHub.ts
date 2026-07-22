@@ -14,6 +14,8 @@ export interface HubMilestone {
   status: string;
   notes: string | null;
   is_active: boolean;
+  at_risk: boolean;
+  parent_id: string | null;
 }
 
 export interface HubAssignedUser {
@@ -23,12 +25,12 @@ export interface HubAssignedUser {
 
 export interface HubGalleryPhoto {
   kind: "activity" | "site";
-  storageKey: string; // path for resolving
+  storageKey: string;
   uploadedBy: string;
   at: string | null;
   activityCode: string | null;
   activityId: string | null;
-  label: string; // file name for site docs
+  label: string;
 }
 
 export interface HubAttendance {
@@ -74,6 +76,8 @@ export function useSiteHub(siteId: string | null) {
         status: m.status,
         notes: m.notes,
         is_active: m.is_active,
+        at_risk: !!m.at_risk,
+        parent_id: m.parent_id ?? null,
       }));
       setMilestones(ms);
 
@@ -81,7 +85,6 @@ export function useSiteHub(siteId: string | null) {
       const msMap: Record<string, { name: string; status: string }> = {};
       ms.forEach((m) => { msMap[m.id] = { name: m.name, status: m.status }; });
 
-      // user names for activities + assignments
       const assignIds = (assignRes.data || []).map((a: any) => a.user_id);
       const actUserIds = rawActs.map((a: any) => a.user_id);
       const allUserIds = [...new Set([...assignIds, ...actUserIds])];
@@ -104,7 +107,6 @@ export function useSiteHub(siteId: string | null) {
 
       setAssignedUsers(assignIds.map((id: string) => ({ id, full_name: userMap[id] || "Unknown" })));
 
-      // Build gallery: activity photos + site image attachments
       const galleryItems: HubGalleryPhoto[] = [];
       mappedActs.forEach((a) => {
         (a.photo_urls || []).forEach((p: ActivityPhotoEntry) => {
@@ -138,12 +140,10 @@ export function useSiteHub(siteId: string | null) {
           docs.push({ stored, name });
         }
       });
-      // sort gallery newest first
       galleryItems.sort((x, y) => (y.at || "").localeCompare(x.at || ""));
       setGallery(galleryItems);
       setDocuments(docs);
 
-      // attendance for check-in/out per activity (user + date)
       const attMap: Record<string, HubAttendance> = {};
       const attKeys = [...new Set(mappedActs.map((a) => `${a.user_id}|${a.activity_date}`))];
       if (attKeys.length > 0) {
