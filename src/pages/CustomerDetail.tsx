@@ -439,7 +439,7 @@ export default function CustomerDetail() {
                           <div className="font-medium text-sm truncate">{o.name}</div>
                           <div className="flex justify-between mt-2 text-xs">
                             <span>{o.probability}%</span>
-                            <span className="font-medium">{inr(Number(o.amount))}</span>
+                            <span className="font-medium">{formatCurrency(Number(o.amount), (o as any).currency)}</span>
                           </div>
                         </div>
                       ))}
