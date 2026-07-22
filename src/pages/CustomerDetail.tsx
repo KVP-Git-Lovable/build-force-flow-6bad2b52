@@ -419,7 +419,7 @@ export default function CustomerDetail() {
                         <Badge className={stageColorClasses(s.color)}>{s.name}</Badge>
                         <span className="text-xs text-muted-foreground">{col.length}</span>
                       </div>
-                      <span className="text-xs font-medium">{inr(colTotal)}</span>
+                      <span className="text-xs font-medium">{mixed(col)}</span>
                     </div>
                     <div
                       className="bg-muted/20 rounded-b-lg p-2 space-y-2 min-h-[200px]"
