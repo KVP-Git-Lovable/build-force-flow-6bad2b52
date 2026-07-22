@@ -99,10 +99,10 @@ export default function Opportunities() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Kpi label="Total Opportunities" value={kpis.total.toString()} />
-        <Kpi label="Open Pipeline Value" value={inr(kpis.openVal)} />
-        <Kpi label="Won Value" value={inr(kpis.wonVal)} />
+        <Kpi label="Open Pipeline Value" value={formatMixedCurrencyTotals(kpis.openGroups)} />
+        <Kpi label="Won Value" value={formatMixedCurrencyTotals(kpis.wonGroups)} />
         <Kpi label="Win Rate" value={`${kpis.winRate.toFixed(1)}%`} />
-        <Kpi label="Avg Deal Size" value={inr(kpis.avg)} />
+        <Kpi label="Avg Deal Size" value={formatMixedCurrencyTotals(kpis.avgGroups)} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
