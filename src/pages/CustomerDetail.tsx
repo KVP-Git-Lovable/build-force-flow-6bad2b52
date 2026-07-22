@@ -412,7 +412,6 @@ export default function CustomerDetail() {
             <div className="flex gap-3 overflow-x-auto pb-4">
               {stages.map((s) => {
                 const col = filteredOpps.filter((o) => o.stage === s.name);
-                const colTotal = col.reduce((sum, o) => sum + Number(o.amount || 0), 0);
                 return (
                   <div key={s.id} className="min-w-[280px] w-72 flex-shrink-0">
                     <div className="bg-muted/50 rounded-t-lg px-3 py-2 flex items-center justify-between">
