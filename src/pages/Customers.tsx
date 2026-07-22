@@ -16,14 +16,7 @@ import {
   useOpportunities, useOppStages, useUserLookup,
 } from "@/hooks/useCustomers";
 import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
-
-
-function inr(n: number) {
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)}Cr`;
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}k`;
-  return `₹${n.toLocaleString()}`;
-}
+import { sumByCurrency, formatMixedCurrencyTotals } from "@/lib/currency";
 
 const STATUS_OPTIONS = ["active", "prospect", "inactive"];
 
