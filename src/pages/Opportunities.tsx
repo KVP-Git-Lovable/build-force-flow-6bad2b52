@@ -12,16 +12,10 @@ import {
   stageColorClasses,
 } from "@/hooks/useCustomers";
 import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
+import { formatCurrency, formatCurrencyCompact, sumByCurrency, formatMixedCurrencyTotals } from "@/lib/currency";
 
 
 import { format, parseISO, startOfMonth } from "date-fns";
-
-function inr(n: number) {
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)}Cr`;
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}k`;
-  return `₹${n.toLocaleString()}`;
-}
 
 const STAGE_HEX: Record<string, string> = {
   blue: "#3b82f6", amber: "#f59e0b", green: "#10b981",
