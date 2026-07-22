@@ -32,9 +32,10 @@ import { DocumentUpload } from "@/components/customers/DocumentUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
+import { formatCurrency, sumByCurrency, formatMixedCurrencyTotals } from "@/lib/currency";
 
-
-function inr(n: number) { return `₹ ${(n ?? 0).toLocaleString()}`; }
+const mixed = (rows: any[]) =>
+  formatMixedCurrencyTotals(sumByCurrency(rows, (o) => Number(o.amount || 0), (o) => o.currency));
 
 export default function CustomerDetail() {
   const nav = useNavigate();
@@ -139,7 +140,7 @@ export default function CustomerDetail() {
               <Badge variant="outline">{customer?.status || "active"}</Badge>
               <div className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">{stats.total}</span> opps ·{" "}
-                <span className="font-medium text-foreground">{inr(stats.openPipeline)}</span> pipeline ·{" "}
+                <span className="font-medium text-foreground">{mixed(opps.filter((o) => !stageMap[o.stage ?? ""]?.is_closed))}</span> pipeline ·{" "}
                 <span className="font-medium text-foreground">{stats.contacts}</span> contacts
               </div>
             </div>
@@ -162,8 +163,8 @@ export default function CustomerDetail() {
           {/* KPI CARDS */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <KpiCard label="Total Opportunities" value={String(stats.total)} icon={Target} accent="indigo" />
-            <KpiCard label="Open Pipeline" value={inr(stats.openPipeline)} icon={Wallet} accent="blue" />
-            <KpiCard label="Won Value" value={inr(stats.wonValue)} icon={Trophy} accent="emerald" />
+            <KpiCard label="Open Pipeline" value={mixed(opps.filter((o) => !stageMap[o.stage ?? ""]?.is_closed))} icon={Wallet} accent="blue" />
+            <KpiCard label="Won Value" value={mixed(opps.filter((o) => stageMap[o.stage ?? ""]?.is_won))} icon={Trophy} accent="emerald" />
             <KpiCard label="Total Contacts" value={String(stats.contacts)} icon={Users} accent="violet" />
             <KpiCard label="Last Activity" value={stats.lastActivity ? format(new Date(stats.lastActivity), "dd MMM yyyy") : "—"} icon={Clock} accent="amber" />
           </div>
@@ -217,7 +218,7 @@ export default function CustomerDetail() {
                           <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
                           <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
                           <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
-                          <RTooltip formatter={(v: any) => inr(Number(v))} />
+                          <RTooltip formatter={(v: any) => Number(v).toLocaleString()} />
                           <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                             {pipelineByType.map((t, i) => <Cell key={i} fill={t.hex} />)}
                           </Bar>
@@ -376,7 +377,7 @@ export default function CustomerDetail() {
                         <TableCell><Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge></TableCell>
                         <TableCell>{o.probability}%</TableCell>
                         <TableCell>{o.close_date ? format(new Date(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
-                        <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(Number(o.amount), (o as any).currency)}</TableCell>
                         <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
                       </TableRow>
                     ))}
@@ -396,7 +397,7 @@ export default function CustomerDetail() {
                   >
                     <Field label="Type" value={o.type || "—"} />
                     <Field label="Prob." value={`${o.probability}%`} />
-                    <Field label="Amount" value={inr(Number(o.amount))} />
+                    <Field label="Amount" value={formatCurrency(Number(o.amount), (o as any).currency)} />
                     <Field label="Close" value={o.close_date ? format(new Date(o.close_date), "dd MMM yy") : "—"} />
                     <Field label="Owner" full value={o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"} />
                   </MobileCard>
@@ -411,7 +412,6 @@ export default function CustomerDetail() {
             <div className="flex gap-3 overflow-x-auto pb-4">
               {stages.map((s) => {
                 const col = filteredOpps.filter((o) => o.stage === s.name);
-                const colTotal = col.reduce((sum, o) => sum + Number(o.amount || 0), 0);
                 return (
                   <div key={s.id} className="min-w-[280px] w-72 flex-shrink-0">
                     <div className="bg-muted/50 rounded-t-lg px-3 py-2 flex items-center justify-between">
@@ -419,7 +419,7 @@ export default function CustomerDetail() {
                         <Badge className={stageColorClasses(s.color)}>{s.name}</Badge>
                         <span className="text-xs text-muted-foreground">{col.length}</span>
                       </div>
-                      <span className="text-xs font-medium">{inr(colTotal)}</span>
+                      <span className="text-xs font-medium">{mixed(col)}</span>
                     </div>
                     <div
                       className="bg-muted/20 rounded-b-lg p-2 space-y-2 min-h-[200px]"
@@ -439,7 +439,7 @@ export default function CustomerDetail() {
                           <div className="font-medium text-sm truncate">{o.name}</div>
                           <div className="flex justify-between mt-2 text-xs">
                             <span>{o.probability}%</span>
-                            <span className="font-medium">{inr(Number(o.amount))}</span>
+                            <span className="font-medium">{formatCurrency(Number(o.amount), (o as any).currency)}</span>
                           </div>
                         </div>
                       ))}

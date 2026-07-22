@@ -16,14 +16,7 @@ import {
   useOpportunities, useOppStages, useUserLookup,
 } from "@/hooks/useCustomers";
 import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
-
-
-function inr(n: number) {
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)}Cr`;
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}k`;
-  return `₹${n.toLocaleString()}`;
-}
+import { sumByCurrency, formatMixedCurrencyTotals } from "@/lib/currency";
 
 const STATUS_OPTIONS = ["active", "prospect", "inactive"];
 
@@ -41,19 +34,22 @@ export default function Customers() {
   const stageMap = useMemo(() => Object.fromEntries(stages.map((s) => [s.name, s])), [stages]);
 
   const stats = useMemo(() => {
-    const m = new Map<string, { open: number; pipeline: number }>();
+    const m = new Map<string, { open: number; pipelineRows: any[] }>();
     opps.forEach((o) => {
       if (!o.customer_id) return;
       const isClosed = stageMap[o.stage ?? ""]?.is_closed;
-      const cur = m.get(o.customer_id) || { open: 0, pipeline: 0 };
+      const cur = m.get(o.customer_id) || { open: 0, pipelineRows: [] as any[] };
       if (!isClosed) {
         cur.open += 1;
-        cur.pipeline += Number(o.amount || 0);
+        cur.pipelineRows.push(o);
       }
       m.set(o.customer_id, cur);
     });
     return m;
   }, [opps, stageMap]);
+
+  const pipelineLabel = (rows: any[]) =>
+    formatMixedCurrencyTotals(sumByCurrency(rows, (o) => Number(o.amount || 0), (o) => o.currency));
 
   const [search, setSearch] = useState("");
   const [fStatus, setFStatus] = useState("all");
@@ -122,7 +118,7 @@ export default function Customers() {
               </TableRow></TableHeader>
               <TableBody>
                 {filtered.map((c) => {
-                  const s = stats.get(c.id) || { open: 0, pipeline: 0 };
+                  const s = stats.get(c.id) || { open: 0, pipelineRows: [] as any[] };
                   return (
                     <TableRow key={c.id} className="cursor-pointer" onClick={() => nav(`/customers/${c.id}`)}>
                       <TableCell className="font-medium flex items-center gap-2">
@@ -135,7 +131,7 @@ export default function Customers() {
                       <TableCell><Badge variant="outline">{c.status}</Badge></TableCell>
                       <TableCell>{c.owner_id ? usersMap[c.owner_id] ?? "—" : "—"}</TableCell>
                       <TableCell className="text-right">{s.open}</TableCell>
-                      <TableCell className="text-right font-medium">{inr(s.pipeline)}</TableCell>
+                      <TableCell className="text-right font-medium">{pipelineLabel(s.pipelineRows)}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -151,7 +147,7 @@ export default function Customers() {
           {/* Mobile cards */}
           <MobileCardList className="md:hidden p-3">
             {filtered.map((c) => {
-              const s = stats.get(c.id) || { open: 0, pipeline: 0 };
+              const s = stats.get(c.id) || { open: 0, pipelineRows: [] as any[] };
               return (
                 <MobileCard
                   key={c.id}
@@ -169,7 +165,7 @@ export default function Customers() {
                   <Field label="Industry" value={c.industry || "—"} />
                   <Field label="Owner" value={c.owner_id ? usersMap[c.owner_id] ?? "—" : "—"} />
                   <Field label="Open Opps" value={s.open} />
-                  <Field label="Pipeline" value={inr(s.pipeline)} />
+                  <Field label="Pipeline" value={pipelineLabel(s.pipelineRows)} />
                 </MobileCard>
               );
             })}

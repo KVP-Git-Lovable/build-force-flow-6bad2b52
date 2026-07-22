@@ -12,16 +12,10 @@ import {
   stageColorClasses,
 } from "@/hooks/useCustomers";
 import { MobileCardList, MobileCard, Field } from "@/components/ui/mobile-card";
+import { formatCurrency, formatCurrencyCompact, sumByCurrency, formatMixedCurrencyTotals } from "@/lib/currency";
 
 
 import { format, parseISO, startOfMonth } from "date-fns";
-
-function inr(n: number) {
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)}Cr`;
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}k`;
-  return `₹${n.toLocaleString()}`;
-}
 
 const STAGE_HEX: Record<string, string> = {
   blue: "#3b82f6", amber: "#f59e0b", green: "#10b981",
@@ -50,12 +44,12 @@ export default function Opportunities() {
     const open = opps.filter((o) => !stageMap[o.stage ?? ""]?.is_closed);
     const won = opps.filter((o) => stageMap[o.stage ?? ""]?.is_won);
     const closed = opps.filter((o) => stageMap[o.stage ?? ""]?.is_closed);
-    const openVal = open.reduce((s, o) => s + Number(o.amount || 0), 0);
-    const wonVal = won.reduce((s, o) => s + Number(o.amount || 0), 0);
+    const openGroups = sumByCurrency(open, (o) => Number(o.amount || 0), (o) => (o as any).currency);
+    const wonGroups = sumByCurrency(won, (o) => Number(o.amount || 0), (o) => (o as any).currency);
+    const avgGroups = sumByCurrency(opps, (o) => Number(o.amount || 0), (o) => (o as any).currency)
+      .map((g) => ({ code: g.code, total: total ? g.total / total : 0 }));
     const winRate = closed.length ? (won.length / closed.length) * 100 : 0;
-    const totalAmt = opps.reduce((s, o) => s + Number(o.amount || 0), 0);
-    const avg = total ? totalAmt / total : 0;
-    return { total, openVal, wonVal, winRate, avg };
+    return { total, openGroups, wonGroups, avgGroups, winRate };
   }, [opps, stageMap]);
 
   const byStage = useMemo(() => {
@@ -105,10 +99,10 @@ export default function Opportunities() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Kpi label="Total Opportunities" value={kpis.total.toString()} />
-        <Kpi label="Open Pipeline Value" value={inr(kpis.openVal)} />
-        <Kpi label="Won Value" value={inr(kpis.wonVal)} />
+        <Kpi label="Open Pipeline Value" value={formatMixedCurrencyTotals(kpis.openGroups)} />
+        <Kpi label="Won Value" value={formatMixedCurrencyTotals(kpis.wonGroups)} />
         <Kpi label="Win Rate" value={`${kpis.winRate.toFixed(1)}%`} />
-        <Kpi label="Avg Deal Size" value={inr(kpis.avg)} />
+        <Kpi label="Avg Deal Size" value={formatMixedCurrencyTotals(kpis.avgGroups)} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -134,8 +128,8 @@ export default function Opportunities() {
               <BarChart data={byType}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={inr} />
-                <Tooltip formatter={(v: number) => inr(v)} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => v.toLocaleString()} />
+                <Tooltip formatter={(v: number) => v.toLocaleString()} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                   {byType.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Bar>
@@ -153,8 +147,8 @@ export default function Opportunities() {
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={inr} />
-              <Tooltip formatter={(v: number, k: string) => k === "value" ? inr(v) : v} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v: number) => v.toLocaleString()} />
+              <Tooltip formatter={(v: number, k: string) => k === "value" ? v.toLocaleString() : v} />
               <Legend />
               <Line yAxisId="left" type="monotone" dataKey="count" stroke="#6366f1" name="Opportunities" />
               <Line yAxisId="right" type="monotone" dataKey="value" stroke="#10b981" name="Value" />
@@ -197,7 +191,7 @@ export default function Opportunities() {
                     <TableCell>
                       <Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge>
                     </TableCell>
-                    <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(Number(o.amount), (o as any).currency)}</TableCell>
                     <TableCell>{o.close_date ? format(parseISO(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
                     <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
                   </TableRow>
@@ -232,7 +226,7 @@ export default function Opportunities() {
                     ) : "—"
                   }
                 />
-                <Field label="Amount" value={inr(Number(o.amount))} />
+                <Field label="Amount" value={formatCurrency(Number(o.amount), (o as any).currency)} />
                 <Field label="Close Date" value={o.close_date ? format(parseISO(o.close_date), "dd MMM yyyy") : "—"} />
                 <Field label="Owner" full value={o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"} />
               </MobileCard>
