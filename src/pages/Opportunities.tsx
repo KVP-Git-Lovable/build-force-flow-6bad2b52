@@ -191,7 +191,7 @@ export default function Opportunities() {
                     <TableCell>
                       <Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge>
                     </TableCell>
-                    <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(Number(o.amount), (o as any).currency)}</TableCell>
                     <TableCell>{o.close_date ? format(parseISO(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
                     <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
                   </TableRow>
