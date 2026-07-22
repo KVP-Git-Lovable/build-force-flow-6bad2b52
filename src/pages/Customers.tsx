@@ -131,7 +131,7 @@ export default function Customers() {
                       <TableCell><Badge variant="outline">{c.status}</Badge></TableCell>
                       <TableCell>{c.owner_id ? usersMap[c.owner_id] ?? "—" : "—"}</TableCell>
                       <TableCell className="text-right">{s.open}</TableCell>
-                      <TableCell className="text-right font-medium">{inr(s.pipeline)}</TableCell>
+                      <TableCell className="text-right font-medium">{pipelineLabel(s.pipelineRows)}</TableCell>
                     </TableRow>
                   );
                 })}
