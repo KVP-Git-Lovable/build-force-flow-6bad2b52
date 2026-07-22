@@ -377,7 +377,7 @@ export default function CustomerDetail() {
                         <TableCell><Badge className={stageColorClasses(stageMap[o.stage ?? ""]?.color)}>{o.stage || "—"}</Badge></TableCell>
                         <TableCell>{o.probability}%</TableCell>
                         <TableCell>{o.close_date ? format(new Date(o.close_date), "dd MMM yyyy") : "—"}</TableCell>
-                        <TableCell className="text-right font-medium">{inr(Number(o.amount))}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(Number(o.amount), (o as any).currency)}</TableCell>
                         <TableCell>{o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"}</TableCell>
                       </TableRow>
                     ))}
