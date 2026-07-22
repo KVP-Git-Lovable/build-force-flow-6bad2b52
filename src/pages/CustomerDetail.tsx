@@ -218,7 +218,7 @@ export default function CustomerDetail() {
                           <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
                           <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
                           <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
-                          <RTooltip formatter={(v: any) => inr(Number(v))} />
+                          <RTooltip formatter={(v: any) => Number(v).toLocaleString()} />
                           <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                             {pipelineByType.map((t, i) => <Cell key={i} fill={t.hex} />)}
                           </Bar>
