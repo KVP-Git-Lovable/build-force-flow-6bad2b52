@@ -217,9 +217,14 @@ export default function OpportunityDetail() {
                             >
                               {q.is_synced ? "Synced ✓" : "Sync to Opportunity"}
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => deleteQuote.mutate({ id: q.id, oppId: id! })}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button size="sm" variant="ghost" onClick={() => cloneQuote.mutate({ id: q.id, oppId: id! })} disabled={cloneQuote.isPending} title="Clone quote">
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => deleteQuote.mutate({ id: q.id, oppId: id! })}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
