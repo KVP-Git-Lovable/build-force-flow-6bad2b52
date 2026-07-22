@@ -147,7 +147,7 @@ export default function Customers() {
           {/* Mobile cards */}
           <MobileCardList className="md:hidden p-3">
             {filtered.map((c) => {
-              const s = stats.get(c.id) || { open: 0, pipeline: 0 };
+              const s = stats.get(c.id) || { open: 0, pipelineRows: [] as any[] };
               return (
                 <MobileCard
                   key={c.id}
