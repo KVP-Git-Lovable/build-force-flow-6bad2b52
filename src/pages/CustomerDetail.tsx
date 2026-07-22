@@ -397,7 +397,7 @@ export default function CustomerDetail() {
                   >
                     <Field label="Type" value={o.type || "—"} />
                     <Field label="Prob." value={`${o.probability}%`} />
-                    <Field label="Amount" value={inr(Number(o.amount))} />
+                    <Field label="Amount" value={formatCurrency(Number(o.amount), (o as any).currency)} />
                     <Field label="Close" value={o.close_date ? format(new Date(o.close_date), "dd MMM yy") : "—"} />
                     <Field label="Owner" full value={o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"} />
                   </MobileCard>
