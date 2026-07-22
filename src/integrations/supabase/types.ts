@@ -4919,16 +4919,53 @@ export type Database = {
           },
         ]
       }
+      site_milestone_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          milestone_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          milestone_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          milestone_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_milestone_comments_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "site_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_milestones: {
         Row: {
           actual_end_date: string | null
           actual_start_date: string | null
+          at_risk: boolean
           created_at: string
           end_date: string
           id: string
           is_active: boolean
           name: string
           notes: string | null
+          parent_id: string | null
           percent_complete: number
           priority: string | null
           site_id: string
@@ -4939,12 +4976,14 @@ export type Database = {
         Insert: {
           actual_end_date?: string | null
           actual_start_date?: string | null
+          at_risk?: boolean
           created_at?: string
           end_date: string
           id?: string
           is_active?: boolean
           name: string
           notes?: string | null
+          parent_id?: string | null
           percent_complete?: number
           priority?: string | null
           site_id: string
@@ -4955,12 +4994,14 @@ export type Database = {
         Update: {
           actual_end_date?: string | null
           actual_start_date?: string | null
+          at_risk?: boolean
           created_at?: string
           end_date?: string
           id?: string
           is_active?: boolean
           name?: string
           notes?: string | null
+          parent_id?: string | null
           percent_complete?: number
           priority?: string | null
           site_id?: string
@@ -4969,6 +5010,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "site_milestones_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "site_milestones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "site_milestones_site_id_fkey"
             columns: ["site_id"]
