@@ -128,8 +128,8 @@ export default function Opportunities() {
               <BarChart data={byType}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={inr} />
-                <Tooltip formatter={(v: number) => inr(v)} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => v.toLocaleString()} />
+                <Tooltip formatter={(v: number) => v.toLocaleString()} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                   {byType.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Bar>
