@@ -226,7 +226,7 @@ export default function Opportunities() {
                     ) : "—"
                   }
                 />
-                <Field label="Amount" value={inr(Number(o.amount))} />
+                <Field label="Amount" value={formatCurrency(Number(o.amount), (o as any).currency)} />
                 <Field label="Close Date" value={o.close_date ? format(parseISO(o.close_date), "dd MMM yyyy") : "—"} />
                 <Field label="Owner" full value={o.owner_id ? usersMap[o.owner_id] ?? "—" : "—"} />
               </MobileCard>
