@@ -34,19 +34,22 @@ export default function Customers() {
   const stageMap = useMemo(() => Object.fromEntries(stages.map((s) => [s.name, s])), [stages]);
 
   const stats = useMemo(() => {
-    const m = new Map<string, { open: number; pipeline: number }>();
+    const m = new Map<string, { open: number; pipelineRows: any[] }>();
     opps.forEach((o) => {
       if (!o.customer_id) return;
       const isClosed = stageMap[o.stage ?? ""]?.is_closed;
-      const cur = m.get(o.customer_id) || { open: 0, pipeline: 0 };
+      const cur = m.get(o.customer_id) || { open: 0, pipelineRows: [] as any[] };
       if (!isClosed) {
         cur.open += 1;
-        cur.pipeline += Number(o.amount || 0);
+        cur.pipelineRows.push(o);
       }
       m.set(o.customer_id, cur);
     });
     return m;
   }, [opps, stageMap]);
+
+  const pipelineLabel = (rows: any[]) =>
+    formatMixedCurrencyTotals(sumByCurrency(rows, (o) => Number(o.amount || 0), (o) => o.currency));
 
   const [search, setSearch] = useState("");
   const [fStatus, setFStatus] = useState("all");
