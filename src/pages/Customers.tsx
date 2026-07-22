@@ -165,7 +165,7 @@ export default function Customers() {
                   <Field label="Industry" value={c.industry || "—"} />
                   <Field label="Owner" value={c.owner_id ? usersMap[c.owner_id] ?? "—" : "—"} />
                   <Field label="Open Opps" value={s.open} />
-                  <Field label="Pipeline" value={inr(s.pipeline)} />
+                  <Field label="Pipeline" value={pipelineLabel(s.pipelineRows)} />
                 </MobileCard>
               );
             })}
