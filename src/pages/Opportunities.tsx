@@ -44,12 +44,12 @@ export default function Opportunities() {
     const open = opps.filter((o) => !stageMap[o.stage ?? ""]?.is_closed);
     const won = opps.filter((o) => stageMap[o.stage ?? ""]?.is_won);
     const closed = opps.filter((o) => stageMap[o.stage ?? ""]?.is_closed);
-    const openVal = open.reduce((s, o) => s + Number(o.amount || 0), 0);
-    const wonVal = won.reduce((s, o) => s + Number(o.amount || 0), 0);
+    const openGroups = sumByCurrency(open, (o) => Number(o.amount || 0), (o) => (o as any).currency);
+    const wonGroups = sumByCurrency(won, (o) => Number(o.amount || 0), (o) => (o as any).currency);
+    const avgGroups = sumByCurrency(opps, (o) => Number(o.amount || 0), (o) => (o as any).currency)
+      .map((g) => ({ code: g.code, total: total ? g.total / total : 0 }));
     const winRate = closed.length ? (won.length / closed.length) * 100 : 0;
-    const totalAmt = opps.reduce((s, o) => s + Number(o.amount || 0), 0);
-    const avg = total ? totalAmt / total : 0;
-    return { total, openVal, wonVal, winRate, avg };
+    return { total, openGroups, wonGroups, avgGroups, winRate };
   }, [opps, stageMap]);
 
   const byStage = useMemo(() => {
