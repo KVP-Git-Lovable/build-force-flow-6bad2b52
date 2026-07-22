@@ -147,8 +147,8 @@ export default function Opportunities() {
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={inr} />
-              <Tooltip formatter={(v: number, k: string) => k === "value" ? inr(v) : v} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v: number) => v.toLocaleString()} />
+              <Tooltip formatter={(v: number, k: string) => k === "value" ? v.toLocaleString() : v} />
               <Legend />
               <Line yAxisId="left" type="monotone" dataKey="count" stroke="#6366f1" name="Opportunities" />
               <Line yAxisId="right" type="monotone" dataKey="value" stroke="#10b981" name="Value" />
