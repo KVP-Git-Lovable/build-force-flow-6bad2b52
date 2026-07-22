@@ -140,7 +140,7 @@ export default function CustomerDetail() {
               <Badge variant="outline">{customer?.status || "active"}</Badge>
               <div className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">{stats.total}</span> opps ·{" "}
-                <span className="font-medium text-foreground">{inr(stats.openPipeline)}</span> pipeline ·{" "}
+                <span className="font-medium text-foreground">{mixed(opps.filter((o) => !stageMap[o.stage ?? ""]?.is_closed))}</span> pipeline ·{" "}
                 <span className="font-medium text-foreground">{stats.contacts}</span> contacts
               </div>
             </div>
