@@ -614,6 +614,51 @@ export function useDeleteQuote() {
   });
 }
 
+export function useCloneQuote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, oppId }: { id: string; oppId: string }) => {
+      const { data: src, error: e1 } = await supabase.from("opportunity_quotes" as any)
+        .select("*").eq("id", id).single();
+      if (e1) throw e1;
+      const s: any = src;
+      const { data: items, error: e2 } = await supabase.from("opportunity_quote_items" as any)
+        .select("*").eq("quote_id", id).order("sort_order");
+      if (e2) throw e2;
+      const { data: newQ, error: e3 } = await supabase.from("opportunity_quotes" as any).insert({
+        opportunity_id: s.opportunity_id,
+        name: `${s.name} (Copy)`,
+        notes: s.notes,
+        total: s.total,
+        overall_discount_pct: s.overall_discount_pct,
+        is_synced: false,
+      } as any).select().single();
+      if (e3) throw e3;
+      const newId = (newQ as any).id;
+      if (items && items.length) {
+        const rows = (items as any[]).map((it, i) => ({
+          quote_id: newId,
+          product_id: it.product_id,
+          product_name: it.product_name,
+          qty: it.qty,
+          unit_price: it.unit_price,
+          start_date: it.start_date,
+          end_date: it.end_date,
+          term_months: it.term_months,
+          discount_pct: it.discount_pct,
+          total: it.total,
+          sort_order: i,
+        }));
+        const { error: e4 } = await supabase.from("opportunity_quote_items" as any).insert(rows as any);
+        if (e4) throw e4;
+      }
+      return oppId;
+    },
+    onSuccess: (oppId) => { qc.invalidateQueries({ queryKey: ["quotes", oppId] }); toast.success("Quote cloned"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
 export interface MasterProduct {
   id: string;
   product_name: string;

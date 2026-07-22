@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, FileText, Trash2, Download } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Trash2, Download, Copy } from "lucide-react";
 import {
   useOpportunity, useMilestones, useUpdateMilestone, useDeleteMilestone,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
   useOppStages, useUserLookup, useCustomers, stageColorClasses,
-  useQuotes, useDeleteQuote, useToggleQuoteSync,
+  useQuotes, useDeleteQuote, useToggleQuoteSync, useCloneQuote,
 } from "@/hooks/useCustomers";
 import { QuoteForm } from "@/components/customers/QuoteForm";
 import { MobileCardList, MobileCard, Field as MField } from "@/components/ui/mobile-card";
@@ -41,6 +41,7 @@ export default function OpportunityDetail() {
   const { data: docs = [] } = useCustomerDocuments(id);
   const { data: quotes = [] } = useQuotes(id);
   const deleteQuote = useDeleteQuote();
+  const cloneQuote = useCloneQuote();
   const toggleSync = useToggleQuoteSync();
   const { data: stages = [] } = useOppStages();
   const { data: users = [] } = useUserLookup();
@@ -216,9 +217,14 @@ export default function OpportunityDetail() {
                             >
                               {q.is_synced ? "Synced ✓" : "Sync to Opportunity"}
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => deleteQuote.mutate({ id: q.id, oppId: id! })}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button size="sm" variant="ghost" onClick={() => cloneQuote.mutate({ id: q.id, oppId: id! })} disabled={cloneQuote.isPending} title="Clone quote">
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => deleteQuote.mutate({ id: q.id, oppId: id! })}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
