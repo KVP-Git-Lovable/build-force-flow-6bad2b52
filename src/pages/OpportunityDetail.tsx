@@ -126,35 +126,101 @@ export default function OpportunityDetail() {
         <TabsContent value="overview" className="mt-4">
           <Card><CardContent className="p-4 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              <Field label="Opportunity Name" value={opp.name} />
-              <Field
+              <InlineEditField
+                label="Opportunity Name"
+                value={opp.name}
+                onSave={saveField("name")}
+              />
+              <InlineEditField
                 label="Customer / Account"
-                value={
+                type="select"
+                value={opp.customer_id}
+                options={customers.map((c) => ({ value: c.id, label: c.name }))}
+                display={
                   opp.customer_id ? (
-                    <Link to={`/customers/${opp.customer_id}`} className="text-primary hover:underline">
+                    <Link to={`/customers/${opp.customer_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                       {customersMap[opp.customer_id] ?? "—"}
                     </Link>
-                  ) : "—"
+                  ) : undefined
                 }
+                onSave={saveField("customer_id")}
               />
-              <Field label="Type" value={opp.type || "—"} />
-              <Field label="Stage" value={<Badge className={stageColorClasses(stageMap[opp.stage ?? ""]?.color)}>{opp.stage || "—"}</Badge>} />
-              <Field label="Probability" value={`${opp.probability}%`} />
-              <Field label="Close Date" value={opp.close_date ? format(new Date(opp.close_date), "dd MMM yyyy") : "—"} />
-              <Field label="Amount" value={inr(Number(opp.amount))} />
-              <Field label="Currency" value={(opp as any).currency || "INR"} />
-              <Field label="Payment Terms" value={(opp as any).payment_terms || "—"} />
-              <Field label="Owner" value={opp.owner_id ? usersMap[opp.owner_id] ?? "—" : "—"} />
+              <InlineEditField
+                label="Type"
+                type="select"
+                value={opp.type}
+                options={types.map((t: any) => ({ value: t.name, label: t.name }))}
+                onSave={saveField("type")}
+              />
+              <InlineEditField
+                label="Stage"
+                type="select"
+                value={opp.stage}
+                options={stages.map((s: any) => ({ value: s.name, label: s.name }))}
+                display={opp.stage ? <Badge className={stageColorClasses(stageMap[opp.stage]?.color)}>{opp.stage}</Badge> : undefined}
+                onSave={saveField("stage")}
+              />
+              <InlineEditField
+                label="Probability"
+                type="number"
+                value={opp.probability}
+                display={<>{opp.probability}%</>}
+                onSave={saveField("probability")}
+              />
+              <InlineEditField
+                label="Close Date"
+                type="date"
+                value={opp.close_date ? format(new Date(opp.close_date), "yyyy-MM-dd") : ""}
+                display={opp.close_date ? format(new Date(opp.close_date), "dd MMM yyyy") : undefined}
+                onSave={saveField("close_date")}
+              />
+              <InlineEditField
+                label="Amount"
+                type="number"
+                value={opp.amount}
+                display={<>{inr(Number(opp.amount))}</>}
+                onSave={saveField("amount")}
+              />
+              <InlineEditField
+                label="Currency"
+                type="select"
+                value={(opp as any).currency || "INR"}
+                options={currencies.map((c) => ({ value: c.code, label: `${c.code} (${c.symbol})` }))}
+                onSave={saveField("currency")}
+              />
+              <InlineEditField
+                label="Payment Terms"
+                type="select"
+                value={(opp as any).payment_terms}
+                options={paymentTerms.map((p) => ({ value: p.name, label: p.name }))}
+                onSave={saveField("payment_terms")}
+              />
+              <InlineEditField
+                label="Owner"
+                type="select"
+                value={opp.owner_id}
+                options={users.map((u: any) => ({ value: u.id, label: u.full_name || u.username || u.email }))}
+                display={opp.owner_id ? <>{usersMap[opp.owner_id] ?? "—"}</> : undefined}
+                onSave={saveField("owner_id")}
+              />
             </div>
-            {(opp as any).requirements_highlights && (
-              <div className="mt-6 pt-4 border-t">
-                <div className="text-xs text-muted-foreground mb-1">Requirements Highlights</div>
-                <p className="text-sm whitespace-pre-wrap">{(opp as any).requirements_highlights}</p>
-              </div>
-            )}
-
+            <div className="mt-6 pt-4 border-t">
+              <InlineEditField
+                label="Requirements Highlights"
+                type="textarea"
+                fullWidth
+                value={(opp as any).requirements_highlights}
+                display={
+                  (opp as any).requirements_highlights ? (
+                    <p className="text-sm whitespace-pre-wrap font-normal">{(opp as any).requirements_highlights}</p>
+                  ) : undefined
+                }
+                onSave={saveField("requirements_highlights")}
+              />
+            </div>
           </CardContent></Card>
         </TabsContent>
+
 
         <TabsContent value="quotes" className="mt-4 space-y-3">
           {quoteEditor ? (
