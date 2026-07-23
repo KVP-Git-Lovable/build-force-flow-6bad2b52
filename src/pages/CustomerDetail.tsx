@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Plus, Trash2, FileText, Download, LayoutGrid, List, ArrowLeft,
   Target, Wallet, Trophy, Users, Clock, Phone, Mail, CalendarDays, StickyNote, CheckSquare, FileImage, FileSpreadsheet, File as FileIcon,
+  Star, Pencil,
 } from "lucide-react";
 
 import {
@@ -22,6 +24,8 @@ import {
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
   useOppStages, useOppTypes, useUserLookup, useUpdateOpportunity,
   useCustomer, stageColorClasses,
+  useContactRoles, useUpsertContactRole, useDeleteContactRole, useSetPrimaryContact,
+  CONTACT_ROLE_OPTIONS,
 } from "@/hooks/useCustomers";
 
 import { OpportunityForm } from "@/components/customers/OpportunityForm";
@@ -54,6 +58,11 @@ export default function CustomerDetail() {
   const updateOpp = useUpdateOpportunity();
   const deleteContact = useDeleteContact();
   const deleteDoc = useDeleteCustomerDocument();
+  const { data: contactRoles = [] } = useContactRoles(customerId);
+  const upsertRole = useUpsertContactRole();
+  const deleteRole = useDeleteContactRole();
+  const setPrimary = useSetPrimaryContact();
+  const [roleDialog, setRoleDialog] = useState<{ open: boolean; row?: any }>({ open: false });
 
   const usersMap = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u.full_name || u.username || u.email])), [users]);
   const stageMap = useMemo(() => Object.fromEntries(stages.map((s) => [s.name, s])), [stages]);
@@ -156,6 +165,7 @@ export default function CustomerDetail() {
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="contact-roles">Contact Roles</TabsTrigger>
         </TabsList>
 
         {/* OVERVIEW */}
@@ -620,11 +630,130 @@ export default function CustomerDetail() {
           </CardContent></Card>
 
         </TabsContent>
+
+        {/* CONTACT ROLES */}
+        <TabsContent value="contact-roles" className="mt-4 space-y-4">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => setRoleDialog({ open: true })}>
+              <Plus className="h-4 w-4 mr-1" />Assign Contact Role
+            </Button>
+          </div>
+          <Card><CardContent className="p-0">
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Contact Name</TableHead>
+                  <TableHead>Designation</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Primary</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {contactRoles.map((r) => {
+                    const c = contacts.find((x) => x.id === r.contact_id);
+                    const isPrimary = customer?.primary_contact_id === r.contact_id;
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{c?.name ?? "—"}</TableCell>
+                        <TableCell>{c?.title || "—"}</TableCell>
+                        <TableCell><Badge variant="secondary">{r.role}</Badge></TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm" variant={isPrimary ? "default" : "ghost"}
+                            className={isPrimary ? "" : "text-muted-foreground"}
+                            onClick={() => setPrimary.mutate({
+                              customer_id: customerId,
+                              contact_id: isPrimary ? null : r.contact_id,
+                            })}
+                          >
+                            <Star className={`h-4 w-4 mr-1 ${isPrimary ? "fill-current" : ""}`} />
+                            {isPrimary ? "Yes" : "No"}
+                          </Button>
+                        </TableCell>
+                        <TableCell>{c?.email || "—"}</TableCell>
+                        <TableCell>{c?.phone || "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" onClick={() => setRoleDialog({ open: true, row: r })}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => deleteRole.mutate({ id: r.id, customer_id: customerId })}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {contactRoles.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No contact roles assigned yet.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <MobileCardList className="md:hidden p-3">
+              {contactRoles.map((r) => {
+                const c = contacts.find((x) => x.id === r.contact_id);
+                const isPrimary = customer?.primary_contact_id === r.contact_id;
+                return (
+                  <MobileCard
+                    key={r.id}
+                    title={c?.name ?? "—"}
+                    badge={<Badge variant="secondary" className="text-[10px]">{r.role}</Badge>}
+                    actions={
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => setRoleDialog({ open: true, row: r })}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteRole.mutate({ id: r.id, customer_id: customerId })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    }
+                  >
+                    <Field label="Designation" value={c?.title || "—"} />
+                    <Field label="Primary" value={isPrimary ? "Yes" : "No"} />
+                    <Field label="Email" full value={c?.email || "—"} />
+                    <Field label="Phone" value={c?.phone || "—"} />
+                    <div className="col-span-2">
+                      <Button
+                        size="sm" variant={isPrimary ? "default" : "outline"} className="w-full"
+                        onClick={() => setPrimary.mutate({
+                          customer_id: customerId,
+                          contact_id: isPrimary ? null : r.contact_id,
+                        })}
+                      >
+                        <Star className={`h-4 w-4 mr-1 ${isPrimary ? "fill-current" : ""}`} />
+                        {isPrimary ? "Primary Contact" : "Set as Primary"}
+                      </Button>
+                    </div>
+                  </MobileCard>
+                );
+              })}
+              {contactRoles.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-6">No contact roles assigned yet.</p>
+              )}
+            </MobileCardList>
+          </CardContent></Card>
+        </TabsContent>
       </Tabs>
 
       <OpportunityForm open={newOpp} onOpenChange={setNewOpp} lockCustomerId={customerId} />
       <ContactForm open={newContact} onOpenChange={setNewContact} contact={editContact ?? undefined} customerId={customerId} />
       <ActivityForm open={newAct} onOpenChange={setNewAct} customerId={customerId} />
+
+      <ContactRoleDialog
+        open={roleDialog.open}
+        onOpenChange={(o) => setRoleDialog({ open: o, row: o ? roleDialog.row : undefined })}
+        contacts={contacts}
+        assigned={contactRoles}
+        row={roleDialog.row}
+        onSave={(payload) => upsertRole.mutate(
+          { id: roleDialog.row?.id, customer_id: customerId, ...payload },
+          { onSuccess: () => setRoleDialog({ open: false }) },
+        )}
+      />
+
 
     </div>
   );
@@ -724,3 +853,82 @@ function docStyle(fileName: string, fileType?: string | null) {
   return { icon: FileIcon, bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-600 dark:text-slate-300" };
 }
 
+
+function ContactRoleDialog({
+  open, onOpenChange, contacts, assigned, row, onSave,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  contacts: any[];
+  assigned: any[];
+  row?: any;
+  onSave: (p: { contact_id: string; role: string }) => void;
+}) {
+  const [contactId, setContactId] = useState<string>("");
+  const [role, setRole] = useState<string>("");
+
+  useEffect(() => {
+    if (open) {
+      setContactId(row?.contact_id ?? "");
+      setRole(row?.role ?? "");
+    }
+  }, [open, row]);
+
+  const takenRoles = new Set(
+    assigned
+      .filter((a) => a.contact_id === contactId && a.id !== row?.id)
+      .map((a) => a.role),
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{row ? "Edit Contact Role" : "Assign Contact Role"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Contact</label>
+            <Select value={contactId} onValueChange={setContactId}>
+              <SelectTrigger><SelectValue placeholder="Select contact" /></SelectTrigger>
+              <SelectContent>
+                {contacts.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}{c.title ? ` — ${c.title}` : ""}
+                  </SelectItem>
+                ))}
+                {contacts.length === 0 && (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    No contacts. Add one from the Contacts tab first.
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Role</label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+              <SelectContent>
+                {CONTACT_ROLE_OPTIONS.map((r) => (
+                  <SelectItem key={r} value={r} disabled={takenRoles.has(r)}>
+                    {r}{takenRoles.has(r) ? " (already assigned)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            disabled={!contactId || !role}
+            onClick={() => onSave({ contact_id: contactId, role })}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

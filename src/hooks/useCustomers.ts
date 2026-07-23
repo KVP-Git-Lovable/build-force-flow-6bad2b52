@@ -318,6 +318,94 @@ export function useDeleteContact() {
   });
 }
 
+// ---------- Contact Roles ----------
+export interface ContactRole {
+  id: string;
+  customer_id: string;
+  contact_id: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const CONTACT_ROLE_OPTIONS = [
+  "Decision Maker",
+  "Influencer",
+  "Technical Evaluator",
+  "Procurement",
+  "Finance",
+  "Project Manager",
+  "End User",
+  "Other",
+];
+
+export function useContactRoles(customerId?: string) {
+  return useQuery({
+    queryKey: ["contact-roles", customerId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("customer_contact_roles")
+        .select("*").eq("customer_id", customerId!).order("created_at");
+      if (error) throw error;
+      return (data || []) as ContactRole[];
+    },
+    enabled: !!customerId,
+  });
+}
+
+export function useUpsertContactRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id?: string; customer_id: string; contact_id: string; role: string }) => {
+      if (v.id) {
+        const { error } = await (supabase as any).from("customer_contact_roles")
+          .update({ contact_id: v.contact_id, role: v.role }).eq("id", v.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("customer_contact_roles")
+          .insert({ customer_id: v.customer_id, contact_id: v.contact_id, role: v.role });
+        if (error) throw error;
+      }
+      return v.customer_id;
+    },
+    onSuccess: (cid) => {
+      qc.invalidateQueries({ queryKey: ["contact-roles", cid] });
+      toast.success("Contact role saved");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export function useDeleteContactRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, customer_id }: { id: string; customer_id: string }) => {
+      const { error } = await (supabase as any).from("customer_contact_roles").delete().eq("id", id);
+      if (error) throw error;
+      return customer_id;
+    },
+    onSuccess: (cid) => { qc.invalidateQueries({ queryKey: ["contact-roles", cid] }); toast.success("Removed"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export function useSetPrimaryContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ customer_id, contact_id }: { customer_id: string; contact_id: string | null }) => {
+      const { error } = await supabase.from("customers")
+        .update({ primary_contact_id: contact_id } as any).eq("id", customer_id);
+      if (error) throw error;
+      return customer_id;
+    },
+    onSuccess: (cid) => {
+      qc.invalidateQueries({ queryKey: ["customer", cid] });
+      qc.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("Primary contact updated");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
 // ---------- Activities ----------
 export function useCustomerActivities(scope?: { opportunityId?: string; customerId?: string } | string) {
   const s = typeof scope === "string" ? { opportunityId: scope } : (scope || {});

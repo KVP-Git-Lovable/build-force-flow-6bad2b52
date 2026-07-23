@@ -581,6 +581,48 @@ export type Database = {
           },
         ]
       }
+      customer_contact_roles: {
+        Row: {
+          contact_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_contact_roles_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_contact_roles_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_contacts: {
         Row: {
           created_at: string
