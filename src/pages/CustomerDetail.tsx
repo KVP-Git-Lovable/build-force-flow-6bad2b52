@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -867,7 +867,7 @@ function ContactRoleDialog({
   const [contactId, setContactId] = useState<string>("");
   const [role, setRole] = useState<string>("");
 
-  useMemo(() => {
+  useEffect(() => {
     if (open) {
       setContactId(row?.contact_id ?? "");
       setRole(row?.role ?? "");
