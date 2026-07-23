@@ -46,9 +46,15 @@ export default function OpportunityDetail() {
   const cloneQuote = useCloneQuote();
   const toggleSync = useToggleQuoteSync();
   const { data: stages = [] } = useOppStages();
+  const { data: types = [] } = useOppTypes();
   const { data: users = [] } = useUserLookup();
   const { data: customers = [] } = useCustomers();
   const { data: currencies = [] } = useCurrencies(false);
+  const { data: paymentTerms = [] } = usePaymentTerms(false);
+  const updateOpp = useUpdateOpportunity();
+  const saveField = (field: string) => async (value: any) => {
+    await updateOpp.mutateAsync({ id: id!, [field]: value } as any);
+  };
   const sym = currencySymbol(currencies, (opp as any)?.currency);
   const inr = (n: number) => money(sym, n);
   const usersMap = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u.full_name || u.username || u.email])), [users]);
