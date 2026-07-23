@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Plus, Trash2, FileText, Download, LayoutGrid, List, ArrowLeft,
   Target, Wallet, Trophy, Users, Clock, Phone, Mail, CalendarDays, StickyNote, CheckSquare, FileImage, FileSpreadsheet, File as FileIcon,
+  Star, Pencil,
 } from "lucide-react";
 
 import {
