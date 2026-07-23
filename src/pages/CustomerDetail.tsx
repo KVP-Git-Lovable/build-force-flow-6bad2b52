@@ -630,11 +630,130 @@ export default function CustomerDetail() {
           </CardContent></Card>
 
         </TabsContent>
+
+        {/* CONTACT ROLES */}
+        <TabsContent value="contact-roles" className="mt-4 space-y-4">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => setRoleDialog({ open: true })}>
+              <Plus className="h-4 w-4 mr-1" />Assign Contact Role
+            </Button>
+          </div>
+          <Card><CardContent className="p-0">
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Contact Name</TableHead>
+                  <TableHead>Designation</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Primary</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {contactRoles.map((r) => {
+                    const c = contacts.find((x) => x.id === r.contact_id);
+                    const isPrimary = customer?.primary_contact_id === r.contact_id;
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{c?.name ?? "—"}</TableCell>
+                        <TableCell>{c?.title || "—"}</TableCell>
+                        <TableCell><Badge variant="secondary">{r.role}</Badge></TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm" variant={isPrimary ? "default" : "ghost"}
+                            className={isPrimary ? "" : "text-muted-foreground"}
+                            onClick={() => setPrimary.mutate({
+                              customer_id: customerId,
+                              contact_id: isPrimary ? null : r.contact_id,
+                            })}
+                          >
+                            <Star className={`h-4 w-4 mr-1 ${isPrimary ? "fill-current" : ""}`} />
+                            {isPrimary ? "Yes" : "No"}
+                          </Button>
+                        </TableCell>
+                        <TableCell>{c?.email || "—"}</TableCell>
+                        <TableCell>{c?.phone || "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" onClick={() => setRoleDialog({ open: true, row: r })}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => deleteRole.mutate({ id: r.id, customer_id: customerId })}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {contactRoles.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No contact roles assigned yet.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <MobileCardList className="md:hidden p-3">
+              {contactRoles.map((r) => {
+                const c = contacts.find((x) => x.id === r.contact_id);
+                const isPrimary = customer?.primary_contact_id === r.contact_id;
+                return (
+                  <MobileCard
+                    key={r.id}
+                    title={c?.name ?? "—"}
+                    badge={<Badge variant="secondary" className="text-[10px]">{r.role}</Badge>}
+                    actions={
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => setRoleDialog({ open: true, row: r })}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteRole.mutate({ id: r.id, customer_id: customerId })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    }
+                  >
+                    <Field label="Designation" value={c?.title || "—"} />
+                    <Field label="Primary" value={isPrimary ? "Yes" : "No"} />
+                    <Field label="Email" full value={c?.email || "—"} />
+                    <Field label="Phone" value={c?.phone || "—"} />
+                    <div className="col-span-2">
+                      <Button
+                        size="sm" variant={isPrimary ? "default" : "outline"} className="w-full"
+                        onClick={() => setPrimary.mutate({
+                          customer_id: customerId,
+                          contact_id: isPrimary ? null : r.contact_id,
+                        })}
+                      >
+                        <Star className={`h-4 w-4 mr-1 ${isPrimary ? "fill-current" : ""}`} />
+                        {isPrimary ? "Primary Contact" : "Set as Primary"}
+                      </Button>
+                    </div>
+                  </MobileCard>
+                );
+              })}
+              {contactRoles.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-6">No contact roles assigned yet.</p>
+              )}
+            </MobileCardList>
+          </CardContent></Card>
+        </TabsContent>
       </Tabs>
 
       <OpportunityForm open={newOpp} onOpenChange={setNewOpp} lockCustomerId={customerId} />
       <ContactForm open={newContact} onOpenChange={setNewContact} contact={editContact ?? undefined} customerId={customerId} />
       <ActivityForm open={newAct} onOpenChange={setNewAct} customerId={customerId} />
+
+      <ContactRoleDialog
+        open={roleDialog.open}
+        onOpenChange={(o) => setRoleDialog({ open: o, row: o ? roleDialog.row : undefined })}
+        contacts={contacts}
+        assigned={contactRoles}
+        row={roleDialog.row}
+        onSave={(payload) => upsertRole.mutate(
+          { id: roleDialog.row?.id, customer_id: customerId, ...payload },
+          { onSuccess: () => setRoleDialog({ open: false }) },
+        )}
+      />
+
 
     </div>
   );
