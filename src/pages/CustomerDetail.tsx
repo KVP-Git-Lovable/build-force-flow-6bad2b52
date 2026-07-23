@@ -158,6 +158,7 @@ export default function CustomerDetail() {
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="contact-roles">Contact Roles</TabsTrigger>
         </TabsList>
 
         {/* OVERVIEW */}
