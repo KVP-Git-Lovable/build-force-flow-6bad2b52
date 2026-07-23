@@ -853,3 +853,82 @@ function docStyle(fileName: string, fileType?: string | null) {
   return { icon: FileIcon, bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-600 dark:text-slate-300" };
 }
 
+
+function ContactRoleDialog({
+  open, onOpenChange, contacts, assigned, row, onSave,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  contacts: any[];
+  assigned: any[];
+  row?: any;
+  onSave: (p: { contact_id: string; role: string }) => void;
+}) {
+  const [contactId, setContactId] = useState<string>("");
+  const [role, setRole] = useState<string>("");
+
+  useMemo(() => {
+    if (open) {
+      setContactId(row?.contact_id ?? "");
+      setRole(row?.role ?? "");
+    }
+  }, [open, row]);
+
+  const takenRoles = new Set(
+    assigned
+      .filter((a) => a.contact_id === contactId && a.id !== row?.id)
+      .map((a) => a.role),
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{row ? "Edit Contact Role" : "Assign Contact Role"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Contact</label>
+            <Select value={contactId} onValueChange={setContactId}>
+              <SelectTrigger><SelectValue placeholder="Select contact" /></SelectTrigger>
+              <SelectContent>
+                {contacts.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}{c.title ? ` — ${c.title}` : ""}
+                  </SelectItem>
+                ))}
+                {contacts.length === 0 && (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    No contacts. Add one from the Contacts tab first.
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Role</label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+              <SelectContent>
+                {CONTACT_ROLE_OPTIONS.map((r) => (
+                  <SelectItem key={r} value={r} disabled={takenRoles.has(r)}>
+                    {r}{takenRoles.has(r) ? " (already assigned)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            disabled={!contactId || !role}
+            onClick={() => onSave({ contact_id: contactId, role })}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
