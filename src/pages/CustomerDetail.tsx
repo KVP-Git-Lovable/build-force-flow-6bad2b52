@@ -58,6 +58,11 @@ export default function CustomerDetail() {
   const updateOpp = useUpdateOpportunity();
   const deleteContact = useDeleteContact();
   const deleteDoc = useDeleteCustomerDocument();
+  const { data: contactRoles = [] } = useContactRoles(customerId);
+  const upsertRole = useUpsertContactRole();
+  const deleteRole = useDeleteContactRole();
+  const setPrimary = useSetPrimaryContact();
+  const [roleDialog, setRoleDialog] = useState<{ open: boolean; row?: any }>({ open: false });
 
   const usersMap = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u.full_name || u.username || u.email])), [users]);
   const stageMap = useMemo(() => Object.fromEntries(stages.map((s) => [s.name, s])), [stages]);
