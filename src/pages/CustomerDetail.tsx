@@ -22,6 +22,8 @@ import {
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
   useOppStages, useOppTypes, useUserLookup, useUpdateOpportunity,
   useCustomer, stageColorClasses,
+  useContactRoles, useUpsertContactRole, useDeleteContactRole, useSetPrimaryContact,
+  CONTACT_ROLE_OPTIONS,
 } from "@/hooks/useCustomers";
 
 import { OpportunityForm } from "@/components/customers/OpportunityForm";
