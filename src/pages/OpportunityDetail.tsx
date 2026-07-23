@@ -11,8 +11,9 @@ import { ArrowLeft, Plus, FileText, Trash2, Download, Copy } from "lucide-react"
 import {
   useOpportunity, useMilestones, useUpdateMilestone, useDeleteMilestone,
   useCustomerActivities, useCustomerDocuments, useDeleteCustomerDocument,
-  useOppStages, useUserLookup, useCustomers, stageColorClasses,
+  useOppStages, useOppTypes, useUserLookup, useCustomers, stageColorClasses,
   useQuotes, useDeleteQuote, useToggleQuoteSync, useCloneQuote,
+  useUpdateOpportunity,
 } from "@/hooks/useCustomers";
 import { QuoteForm } from "@/components/customers/QuoteForm";
 import { MobileCardList, MobileCard, Field as MField } from "@/components/ui/mobile-card";
@@ -24,7 +25,8 @@ import { DocumentUpload } from "@/components/customers/DocumentUpload";
 import { OpportunityForm } from "@/components/customers/OpportunityForm";
 import { OpportunityHealthTab } from "@/components/customers/OpportunityHealthTab";
 import { OpportunityBantTab } from "@/components/customers/OpportunityBantTab";
-import { useCurrencies, currencySymbol } from "@/hooks/useOpportunityMasters";
+import { InlineEditField } from "@/components/customers/InlineEditField";
+import { useCurrencies, usePaymentTerms, currencySymbol } from "@/hooks/useOpportunityMasters";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
