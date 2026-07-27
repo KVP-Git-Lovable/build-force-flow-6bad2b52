@@ -2347,6 +2347,7 @@ export type Database = {
           term_months: number | null
           total: number
           unit_price: number
+          uom: string | null
         }
         Insert: {
           created_at?: string
@@ -2362,6 +2363,7 @@ export type Database = {
           term_months?: number | null
           total?: number
           unit_price?: number
+          uom?: string | null
         }
         Update: {
           created_at?: string
@@ -2377,6 +2379,7 @@ export type Database = {
           term_months?: number | null
           total?: number
           unit_price?: number
+          uom?: string | null
         }
         Relationships: [
           {
