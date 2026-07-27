@@ -31,6 +31,7 @@ export function QuoteForm({
   opportunityId, quote, onClose,
 }: { opportunityId: string; quote?: Quote | null; onClose: () => void; }) {
   const { data: products = [] } = useMasterProducts();
+  const { data: uoms = [] } = useUomOptions(true);
   const { data: existingItems } = useQuoteItems(quote?.id);
   const save = useSaveQuote();
   const addMaster = useAddMasterProduct();
