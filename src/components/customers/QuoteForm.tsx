@@ -131,6 +131,7 @@ export function QuoteForm({
               <TableRow>
                 <TableHead className="min-w-[220px]">Product</TableHead>
                 <TableHead className="w-24">Qty</TableHead>
+                <TableHead className="w-28">UOM</TableHead>
                 <TableHead className="w-36">Unit Price</TableHead>
                 <TableHead className="w-28">Disc %</TableHead>
                 <TableHead className="w-32 text-right">Total</TableHead>
@@ -148,11 +149,14 @@ export function QuoteForm({
                       products={products}
                       productId={r.product_id}
                       productName={r.product_name}
-                      onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0 })}
+                      onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0, uom: p.default_uom ?? r.uom ?? null })}
                       onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
                     />
                   </TableCell>
                   <TableCell><NumberInput min={0} className="w-full min-w-[70px]" value={r.qty} onValueChange={(v) => update(i, { qty: v })} /></TableCell>
+                  <TableCell>
+                    <UomPicker uoms={uoms} value={r.uom} onChange={(v) => update(i, { uom: v })} />
+                  </TableCell>
                   <TableCell><NumberInput min={0} step="0.01" className="w-full min-w-[110px]" value={r.unit_price} onValueChange={(v) => update(i, { unit_price: v })} /></TableCell>
                   <TableCell><NumberInput min={0} max={100} className="w-full min-w-[80px]" value={r.discount_pct} onValueChange={(v) => update(i, { discount_pct: v })} /></TableCell>
                   <TableCell className="text-right font-medium">{inr(calcLine(r.qty, r.unit_price, r.discount_pct))}</TableCell>
@@ -164,7 +168,7 @@ export function QuoteForm({
                 </TableRow>
                 {isCustom && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-1 border-0">
+                    <TableCell colSpan={7} className="py-1 border-0">
                       <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer pl-1">
                         <Checkbox
                           checked={saveToMaster[i] ?? false}
