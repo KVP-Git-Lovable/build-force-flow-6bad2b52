@@ -545,6 +545,7 @@ export interface QuoteItem {
   product_name: string | null;
   qty: number;
   unit_price: number;
+  uom: string | null;
   start_date: string | null;
   end_date: string | null;
   term_months: number | null;
