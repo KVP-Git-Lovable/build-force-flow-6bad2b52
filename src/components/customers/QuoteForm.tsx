@@ -204,7 +204,7 @@ export function QuoteForm({
                   products={products}
                   productId={r.product_id}
                   productName={r.product_name}
-                  onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0 })}
+                  onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0, uom: p.default_uom ?? r.uom ?? null })}
                   onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
                 />
               </div>
@@ -223,6 +223,10 @@ export function QuoteForm({
                   <NumberInput min={0} value={r.qty} onValueChange={(v) => update(i, { qty: v })} />
                 </div>
                 <div>
+                  <Label className="text-xs">UOM</Label>
+                  <UomPicker uoms={uoms} value={r.uom} onChange={(v) => update(i, { uom: v })} />
+                </div>
+                <div>
                   <Label className="text-xs">Unit Price</Label>
                   <NumberInput min={0} step="0.01" value={r.unit_price} onValueChange={(v) => update(i, { unit_price: v })} />
                 </div>
@@ -230,7 +234,7 @@ export function QuoteForm({
                   <Label className="text-xs">Disc %</Label>
                   <NumberInput min={0} max={100} value={r.discount_pct} onValueChange={(v) => update(i, { discount_pct: v })} />
                 </div>
-                <div>
+                <div className="col-span-2">
                   <Label className="text-xs">Total</Label>
                   <div className="h-10 flex items-center justify-end font-semibold">{inr(calcLine(r.qty, r.unit_price, r.discount_pct))}</div>
                 </div>
