@@ -732,6 +732,7 @@ export function useCloneQuote() {
           product_name: it.product_name,
           qty: it.qty,
           unit_price: it.unit_price,
+          uom: it.uom,
           start_date: it.start_date,
           end_date: it.end_date,
           term_months: it.term_months,
