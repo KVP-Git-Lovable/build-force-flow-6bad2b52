@@ -12,6 +12,8 @@ import { Plus, Trash2, X, ChevronsUpDown, Pencil, Link2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useMasterProducts, useQuoteItems, useSaveQuote, useAddMasterProduct, type Quote, type QuoteItem } from "@/hooks/useCustomers";
+import { useUomOptions } from "@/hooks/useUomOptions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 function inr(n: number) { return `₹ ${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`; }
