@@ -292,10 +292,10 @@ export function QuoteForm({
 function ProductPicker({
   products, productId, productName, onPickProduct, onFreeText,
 }: {
-  products: { id: string; product_name: string; default_unit_price: number }[];
+  products: { id: string; product_name: string; default_unit_price: number; default_uom?: string | null }[];
   productId: string | null;
   productName: string | null;
-  onPickProduct: (p: { id: string; product_name: string; default_unit_price: number }) => void;
+  onPickProduct: (p: { id: string; product_name: string; default_unit_price: number; default_uom?: string | null }) => void;
   onFreeText: (txt: string) => void;
 }) {
   const [open, setOpen] = useState(false);
