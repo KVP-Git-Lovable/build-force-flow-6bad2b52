@@ -12,6 +12,8 @@ import { Plus, Trash2, X, ChevronsUpDown, Pencil, Link2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useMasterProducts, useQuoteItems, useSaveQuote, useAddMasterProduct, type Quote, type QuoteItem } from "@/hooks/useCustomers";
+import { useUomOptions } from "@/hooks/useUomOptions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 function inr(n: number) { return `₹ ${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`; }
@@ -21,7 +23,7 @@ function calcLine(qty: number, unit: number, disc: number) {
 }
 
 const emptyRow = (i: number): QuoteItem => ({
-  product_id: null, product_name: null, qty: 1, unit_price: 0,
+  product_id: null, product_name: null, qty: 1, unit_price: 0, uom: null,
   start_date: null, end_date: null, term_months: null, discount_pct: 0, total: 0, sort_order: i,
 });
 
@@ -29,6 +31,7 @@ export function QuoteForm({
   opportunityId, quote, onClose,
 }: { opportunityId: string; quote?: Quote | null; onClose: () => void; }) {
   const { data: products = [] } = useMasterProducts();
+  const { data: uoms = [] } = useUomOptions(true);
   const { data: existingItems } = useQuoteItems(quote?.id);
   const save = useSaveQuote();
   const addMaster = useAddMasterProduct();
@@ -128,6 +131,7 @@ export function QuoteForm({
               <TableRow>
                 <TableHead className="min-w-[220px]">Product</TableHead>
                 <TableHead className="w-24">Qty</TableHead>
+                <TableHead className="w-28">UOM</TableHead>
                 <TableHead className="w-36">Unit Price</TableHead>
                 <TableHead className="w-28">Disc %</TableHead>
                 <TableHead className="w-32 text-right">Total</TableHead>
@@ -145,11 +149,14 @@ export function QuoteForm({
                       products={products}
                       productId={r.product_id}
                       productName={r.product_name}
-                      onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0 })}
+                      onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0, uom: p.default_uom ?? r.uom ?? null })}
                       onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
                     />
                   </TableCell>
                   <TableCell><NumberInput min={0} className="w-full min-w-[70px]" value={r.qty} onValueChange={(v) => update(i, { qty: v })} /></TableCell>
+                  <TableCell>
+                    <UomPicker uoms={uoms} value={r.uom} onChange={(v) => update(i, { uom: v })} />
+                  </TableCell>
                   <TableCell><NumberInput min={0} step="0.01" className="w-full min-w-[110px]" value={r.unit_price} onValueChange={(v) => update(i, { unit_price: v })} /></TableCell>
                   <TableCell><NumberInput min={0} max={100} className="w-full min-w-[80px]" value={r.discount_pct} onValueChange={(v) => update(i, { discount_pct: v })} /></TableCell>
                   <TableCell className="text-right font-medium">{inr(calcLine(r.qty, r.unit_price, r.discount_pct))}</TableCell>
@@ -161,7 +168,7 @@ export function QuoteForm({
                 </TableRow>
                 {isCustom && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-1 border-0">
+                    <TableCell colSpan={7} className="py-1 border-0">
                       <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer pl-1">
                         <Checkbox
                           checked={saveToMaster[i] ?? false}
@@ -197,7 +204,7 @@ export function QuoteForm({
                   products={products}
                   productId={r.product_id}
                   productName={r.product_name}
-                  onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0 })}
+                  onPickProduct={(p) => update(i, { product_id: p.id, product_name: p.product_name, unit_price: Number(p.default_unit_price) || 0, uom: p.default_uom ?? r.uom ?? null })}
                   onFreeText={(txt) => update(i, { product_id: null, product_name: txt })}
                 />
               </div>
@@ -216,6 +223,10 @@ export function QuoteForm({
                   <NumberInput min={0} value={r.qty} onValueChange={(v) => update(i, { qty: v })} />
                 </div>
                 <div>
+                  <Label className="text-xs">UOM</Label>
+                  <UomPicker uoms={uoms} value={r.uom} onChange={(v) => update(i, { uom: v })} />
+                </div>
+                <div>
                   <Label className="text-xs">Unit Price</Label>
                   <NumberInput min={0} step="0.01" value={r.unit_price} onValueChange={(v) => update(i, { unit_price: v })} />
                 </div>
@@ -223,7 +234,7 @@ export function QuoteForm({
                   <Label className="text-xs">Disc %</Label>
                   <NumberInput min={0} max={100} value={r.discount_pct} onValueChange={(v) => update(i, { discount_pct: v })} />
                 </div>
-                <div>
+                <div className="col-span-2">
                   <Label className="text-xs">Total</Label>
                   <div className="h-10 flex items-center justify-end font-semibold">{inr(calcLine(r.qty, r.unit_price, r.discount_pct))}</div>
                 </div>
@@ -281,10 +292,10 @@ export function QuoteForm({
 function ProductPicker({
   products, productId, productName, onPickProduct, onFreeText,
 }: {
-  products: { id: string; product_name: string; default_unit_price: number }[];
+  products: { id: string; product_name: string; default_unit_price: number; default_uom?: string | null }[];
   productId: string | null;
   productName: string | null;
-  onPickProduct: (p: { id: string; product_name: string; default_unit_price: number }) => void;
+  onPickProduct: (p: { id: string; product_name: string; default_unit_price: number; default_uom?: string | null }) => void;
   onFreeText: (txt: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -349,5 +360,30 @@ function ProductPicker({
         </PopoverContent>
       </Popover>
     </div>
+  );
+}
+
+function UomPicker({
+  uoms, value, onChange,
+}: {
+  uoms: { id: string; uom_name: string; short_code: string }[];
+  value: string | null;
+  onChange: (v: string) => void;
+}) {
+  const hasInactive = !!value && !uoms.some((u) => u.short_code === value);
+  return (
+    <Select value={value ?? ""} onValueChange={onChange}>
+      <SelectTrigger className="w-full min-w-[90px]">
+        <SelectValue placeholder="UOM" />
+      </SelectTrigger>
+      <SelectContent>
+        {uoms.map((u) => (
+          <SelectItem key={u.id} value={u.short_code}>
+            {u.short_code} — {u.uom_name}
+          </SelectItem>
+        ))}
+        {hasInactive && <SelectItem value={value!}>{value} (inactive)</SelectItem>}
+      </SelectContent>
+    </Select>
   );
 }

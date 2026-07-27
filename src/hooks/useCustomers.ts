@@ -545,6 +545,7 @@ export interface QuoteItem {
   product_name: string | null;
   qty: number;
   unit_price: number;
+  uom: string | null;
   start_date: string | null;
   end_date: string | null;
   term_months: number | null;
@@ -666,6 +667,7 @@ export function useSaveQuote() {
           product_name: it.product_name,
           qty: it.qty,
           unit_price: it.unit_price,
+          uom: it.uom,
           start_date: it.start_date,
           end_date: it.end_date,
           term_months: it.term_months,
@@ -730,6 +732,7 @@ export function useCloneQuote() {
           product_name: it.product_name,
           qty: it.qty,
           unit_price: it.unit_price,
+          uom: it.uom,
           start_date: it.start_date,
           end_date: it.end_date,
           term_months: it.term_months,
