@@ -23,7 +23,7 @@ function calcLine(qty: number, unit: number, disc: number) {
 }
 
 const emptyRow = (i: number): QuoteItem => ({
-  product_id: null, product_name: null, qty: 1, unit_price: 0,
+  product_id: null, product_name: null, qty: 1, unit_price: 0, uom: null,
   start_date: null, end_date: null, term_months: null, discount_pct: 0, total: 0, sort_order: i,
 });
 
