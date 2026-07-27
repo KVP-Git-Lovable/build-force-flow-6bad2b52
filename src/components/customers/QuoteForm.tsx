@@ -362,3 +362,28 @@ function ProductPicker({
     </div>
   );
 }
+
+function UomPicker({
+  uoms, value, onChange,
+}: {
+  uoms: { id: string; uom_name: string; short_code: string }[];
+  value: string | null;
+  onChange: (v: string) => void;
+}) {
+  const hasInactive = !!value && !uoms.some((u) => u.short_code === value);
+  return (
+    <Select value={value ?? ""} onValueChange={onChange}>
+      <SelectTrigger className="w-full min-w-[90px]">
+        <SelectValue placeholder="UOM" />
+      </SelectTrigger>
+      <SelectContent>
+        {uoms.map((u) => (
+          <SelectItem key={u.id} value={u.short_code}>
+            {u.short_code} — {u.uom_name}
+          </SelectItem>
+        ))}
+        {hasInactive && <SelectItem value={value!}>{value} (inactive)</SelectItem>}
+      </SelectContent>
+    </Select>
+  );
+}
