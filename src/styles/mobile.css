@@ -1,0 +1,179 @@
+/* SBEE Cables Mobile Optimization */
+
+/* Prevent zoom on input focus on iOS */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* Improve touch targets (min 44x44px) */
+button,
+a,
+[role="button"],
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 10px 12px;
+}
+
+/* Better mobile spacing */
+@media (max-width: 640px) {
+  body {
+    padding-bottom: 20px;
+  }
+
+  /* Prevent scroll bounce on iOS */
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Optimize modals for mobile */
+  [role="dialog"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+    bottom: 0 !important;
+  }
+
+  /* Better form inputs on mobile */
+  input[type="date"],
+  input[type="time"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="text"],
+  textarea,
+  select {
+    font-size: 16px;
+    padding: 12px;
+    line-height: 1.5;
+  }
+
+  /* Disable default iOS zoom on select/radio/checkbox */
+  select,
+  input[type="checkbox"],
+  input[type="radio"] {
+    zoom: 1.25;
+  }
+
+  /* Better spacing for touch navigation */
+  nav button,
+  nav a {
+    padding: 12px 16px;
+    margin: 4px;
+  }
+
+  /* Optimize list items for touch */
+  li {
+    padding: 8px 0;
+  }
+
+  /* Better card padding on mobile */
+  .card,
+  [role="article"] {
+    padding: 12px;
+    margin: 8px 0;
+  }
+
+  /* Prevent image zoom on double-tap */
+  img {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  /* Safe area support for notched devices */
+  body {
+    padding-left: max(env(safe-area-inset-left), 0px);
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+
+  /* Bottom navigation safe area */
+  nav {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px);
+  }
+
+  /* Better text legibility on mobile */
+  p, span, label {
+    line-height: 1.6;
+  }
+
+  /* Prevent text selection issues */
+  * {
+    -webkit-user-select: text;
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Better button states on mobile */
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.7;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-width: 640px) and (orientation: landscape) {
+  body {
+    padding-bottom: 8px;
+  }
+
+  [role="dialog"] {
+    max-height: 80vh !important;
+    overflow-y: auto;
+  }
+
+  /* Reduce vertical spacing in landscape */
+  .card,
+  [role="article"] {
+    margin: 4px 0;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    padding: 12px 16px;
+  }
+}
+
+/* High DPI screens */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Sharper icons and images */
+  img,
+  svg {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+}
+
+/* Print optimization */
+@media print {
+  nav,
+  footer,
+  [role="navigation"],
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+}
+
+/* Prevent layout shift on scrollbar appearance */
+html {
+  scrollbar-gutter: stable;
+}

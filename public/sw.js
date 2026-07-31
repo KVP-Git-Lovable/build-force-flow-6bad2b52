@@ -1,7 +1,7 @@
-// Jovo PWA service worker: app-shell runtime cache + web push.
+// SBEE Cables PWA service worker: app-shell runtime cache + web push + offline support.
 // NOTE: registration is guarded in src/main.tsx (skipped in Lovable preview/dev).
 
-const RUNTIME_CACHE = "jovo-runtime-v1";
+const RUNTIME_CACHE = "sbee-cables-runtime-v1";
 const OFFLINE_URL = "/";
 
 self.addEventListener("install", (event) => {
@@ -107,7 +107,7 @@ self.addEventListener("push", (event) => {
     payload = { title: "Jovo", body: event.data ? event.data.text() : "" };
   }
 
-  const title = payload.title || "Jovo";
+  const title = payload.title || "SBEE Cables";
   const options = {
     body: payload.message || payload.body || "",
     icon: "/pwa-icon-192.png",
@@ -115,6 +115,7 @@ self.addEventListener("push", (event) => {
     tag: payload.tag || undefined,
     data: payload.data || { url: "/" },
     vibrate: [200, 100, 200],
+    requireInteraction: false,
   };
 
   event.waitUntil(self.registration.showNotification(title, options));

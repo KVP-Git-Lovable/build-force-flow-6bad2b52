@@ -1,13 +1,13 @@
 {
-  "name": "Jovo Automation India LLP",
-  "short_name": "Jovo",
-  "description": "Jovo field force, CRM and operations platform",
+  "name": "SBEE Cables - Field Operations",
+  "short_name": "SBEE",
+  "description": "SBEE Cables field force management, GPS tracking, activities and operations platform",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0a1f44",
-  "theme_color": "#0a1f44",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
   "icons": [
     {
       "src": "/pwa-icon-192.png",
