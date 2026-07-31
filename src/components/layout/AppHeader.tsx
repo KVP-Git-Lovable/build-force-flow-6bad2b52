@@ -81,17 +81,8 @@ export function AppHeader() {
   const displayName = profile?.full_name || profile?.username || "";
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { data: companyProfile } = useQuery({
-    queryKey: ["company-profile"],
-    queryFn: async () => {
-      const { data } = await supabase.from("company_profile").select("company_name, logo_url").order("updated_at", { ascending: false }).limit(1).maybeSingle();
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const companyName = companyProfile?.company_name || "Company";
-  const companyLogo = companyProfile?.logo_url || null;
+  const { companyName: brandName, logoUrl: companyLogo, loading: brandingLoading } = useBranding();
+  const companyName = brandName || (brandingLoading ? "" : "Company");
 
   const showBackButton = location.pathname !== "/dashboard" && location.pathname !== "/";
 
