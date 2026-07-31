@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 import ProfileSetupModal from "@/components/ProfileSetupModal";
+import TodayGPSRoute from "@/components/TodayGPSRoute";
 
 type ProcessingStep = "location" | "photo" | "face" | "saving" | "done" | null;
 
@@ -570,6 +571,15 @@ export default function Attendance() {
           {isCheckedOut ? "Day Ended" : "End My Day"}
         </button>
       </div>
+
+      {/* Today's GPS Route */}
+      {(isCheckedIn || isCheckedOut) && todayRecord && (
+        <TodayGPSRoute
+          userId={userId}
+          checkInTime={todayRecord.check_in_time}
+          checkOutTime={todayRecord.check_out_time}
+        />
+      )}
 
       {/* Calendar View with Present/Absent Summary */}
       <div className="bg-background rounded-2xl p-4 shadow-sm space-y-3">
