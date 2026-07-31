@@ -21,7 +21,7 @@ export default function Auth() {
   const navigate = useNavigate();
 
   const { companyName: brandName, logoUrl: logoSrc, loading: brandingLoading } = useBranding();
-  const companyName = brandName || (brandingLoading ? "" : "");
+  const companyName = brandName ?? "";
 
 
   useEffect(() => {
