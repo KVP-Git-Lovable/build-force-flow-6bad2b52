@@ -5,11 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Building2 } from "lucide-react";
-import bbLogo from "@/assets/bb_logo.png";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useBranding } from "@/hooks/useBranding";
 
 
 export default function Auth() {
@@ -21,22 +20,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { data: company } = useQuery({
-    queryKey: ["company-profile-public"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("company_profile")
-        .select("company_name, logo_url")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const companyName = company?.company_name || "Bharath Builders";
-  const logoSrc = company?.logo_url || bbLogo;
+  const { companyName: brandName, logoUrl: logoSrc, loading: brandingLoading } = useBranding();
+  const companyName = brandName ?? "";
 
 
   useEffect(() => {
@@ -91,8 +76,8 @@ export default function Auth() {
           <div className="flex flex-col items-center mb-6">
             <div className="w-20 h-20 rounded-2xl bg-card shadow-elevated flex items-center justify-center mb-4 p-2 overflow-hidden">
               {logoSrc ? (
-                <img src={logoSrc} alt={companyName} className="w-full h-full object-contain" />
-              ) : (
+                <img src={logoSrc} alt={companyName || "Logo"} className="w-full h-full object-contain" />
+              ) : brandingLoading ? null : (
                 <Building2 className="w-10 h-10 text-primary" />
               )}
             </div>
