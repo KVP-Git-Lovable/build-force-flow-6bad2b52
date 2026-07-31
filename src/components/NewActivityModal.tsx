@@ -61,6 +61,15 @@ export default function NewActivityModal({
   });
   const [searchQuery, setSearchQuery] = useState("");
 
+  const statusColors: Record<string, { bg: string; border: string; dot: string; text: string }> = {
+    "On Track": { bg: "bg-green-50", border: "border-green-300", dot: "bg-green-500", text: "text-green-700" },
+    "At Risk": { bg: "bg-amber-50", border: "border-amber-300", dot: "bg-amber-500", text: "text-amber-700" },
+    "Delayed": { bg: "bg-red-50", border: "border-red-300", dot: "bg-red-500", text: "text-red-700" },
+    "Completed": { bg: "bg-blue-50", border: "border-blue-300", dot: "bg-blue-500", text: "text-blue-700" },
+  };
+
+  const currentStatusColor = statusColors[form.status] || statusColors["On Track"];
+
   useEffect(() => {
     if (!open) {
       setForm({
@@ -118,36 +127,36 @@ export default function NewActivityModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-5">
           {/* Project/Site Selection */}
           <div>
-            <Label className="text-sm font-bold text-gray-700 block mb-3">PROJECT</Label>
+            <Label className="text-xs font-bold uppercase tracking-wide text-gray-600 block mb-3">PROJECT</Label>
             <div className="relative mb-4">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
                 placeholder="Search projects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 rounded-full border-2 border-gray-300 focus:border-purple-500"
+                className="pl-10 rounded-full border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 text-sm"
               />
             </div>
-            <div className="flex gap-3 flex-wrap mb-4">
+            <div className="flex gap-3 flex-wrap">
               {filteredSites.length > 0 ? (
-                filteredSites.map((site) => (
+                filteredSites.slice(0, 4).map((site) => (
                   <motion.button
                     key={site.id}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setForm({ ...form, site_id: site.id })}
                     className={cn(
-                      "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all",
+                      "flex flex-col items-center gap-2 p-2 rounded-xl border-2 transition-all",
                       form.site_id === site.id
-                        ? "border-purple-500 bg-purple-50"
+                        ? "border-purple-500 bg-purple-50 shadow-md"
                         : "border-gray-200 hover:border-gray-300"
                     )}
                   >
-                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl overflow-hidden">
+                    <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-lg overflow-hidden">
                       {site.image ? (
                         <img
                           src={site.image}
@@ -158,7 +167,7 @@ export default function NewActivityModal({
                         "🏢"
                       )}
                     </div>
-                    <span className="text-xs font-medium text-center max-w-[80px] truncate">
+                    <span className="text-xs font-medium text-center max-w-[70px] truncate">
                       {site.site_name}
                     </span>
                   </motion.button>
@@ -171,17 +180,17 @@ export default function NewActivityModal({
 
           {/* Activity Date */}
           <div>
-            <Label className="text-sm font-medium text-gray-700">Activity Date</Label>
+            <Label className="text-xs font-semibold text-gray-700 mb-2 block">Activity Date</Label>
             <Input
               type="date"
               value={form.activity_date}
               onChange={(e) => setForm({ ...form, activity_date: e.target.value })}
-              className="mt-2 rounded-lg border-2 border-gray-300 focus:border-purple-500"
+              className="rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 text-sm"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-2">
               {new Date(form.activity_date).toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
+                weekday: "short",
+                month: "short",
                 day: "numeric",
                 year: "numeric",
               })}
@@ -190,26 +199,26 @@ export default function NewActivityModal({
 
           {/* Description with Rich Media */}
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">Description</Label>
+            <Label className="text-xs font-semibold text-gray-700 mb-2 block">Description</Label>
             <div className="relative">
               <Textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="What's happening in your project?"
-                className="min-h-[120px] rounded-lg border-2 border-gray-300 focus:border-purple-500 pr-12 p-4 resize-none"
+                className="min-h-[100px] rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 pr-12 p-3 resize-none text-sm"
               />
-              <div className="absolute bottom-3 right-3 flex gap-2">
-                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors">
-                  <Camera className="h-5 w-5" />
+              <div className="absolute bottom-2 right-2 flex gap-1">
+                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Photo">
+                  <Camera className="h-4 w-4" />
                 </button>
-                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors">
-                  <MapPin className="h-5 w-5" />
+                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Location">
+                  <MapPin className="h-4 w-4" />
                 </button>
-                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors">
-                  <TrendingUp className="h-5 w-5" />
+                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Metrics">
+                  <TrendingUp className="h-4 w-4" />
                 </button>
-                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors">
-                  <Mic className="h-5 w-5" />
+                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Voice">
+                  <Mic className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -217,7 +226,7 @@ export default function NewActivityModal({
 
           {/* Activity Type */}
           <div>
-            <Label className="text-sm font-bold text-amber-700 block mb-3 bg-amber-50 p-2 rounded">
+            <Label className="text-xs font-bold uppercase tracking-wide text-amber-700 block mb-3 bg-amber-50 px-3 py-2 rounded-lg">
               ACTIVITY TYPE
             </Label>
             <div className="flex flex-wrap gap-2">
@@ -228,9 +237,9 @@ export default function NewActivityModal({
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setForm({ ...form, activity_type: type })}
                   className={cn(
-                    "px-4 py-2 rounded-full border-2 font-medium transition-all text-sm",
+                    "px-3 py-1.5 rounded-full border-2 font-medium transition-all text-xs",
                     form.activity_type === type
-                      ? "border-purple-500 bg-purple-50 text-purple-700"
+                      ? "border-purple-500 bg-purple-50 text-purple-700 shadow-sm"
                       : "border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300"
                   )}
                 >
@@ -241,13 +250,13 @@ export default function NewActivityModal({
           </div>
 
           {/* Status */}
-          <div className="flex items-center justify-between p-3 rounded-lg border-2 border-green-200 bg-green-50">
+          <div className={cn("flex items-center justify-between p-4 rounded-lg border-2 transition-all", currentStatusColor.bg, currentStatusColor.border)}>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="font-medium text-green-700 text-sm">{form.status}</span>
+              <div className={cn("w-3 h-3 rounded-full", currentStatusColor.dot)} />
+              <span className={cn("font-medium text-sm", currentStatusColor.text)}>{form.status}</span>
             </div>
             <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-              <SelectTrigger className="w-auto border-0 bg-transparent">
+              <SelectTrigger className={cn("w-auto border-0 bg-transparent", currentStatusColor.text)}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -260,13 +269,13 @@ export default function NewActivityModal({
           </div>
 
           {/* Submit Button */}
-          <div className="pt-4 border-t-2 border-gray-200">
+          <div className="pt-4 border-t border-gray-200">
             <motion.button
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleSubmit}
               disabled={!form.site_id || !form.activity_type || !form.description.trim() || isLoading}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-full hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold py-3 rounded-full hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <span className="text-lg">✨</span>
               {isLoading ? "Posting..." : "Post"}

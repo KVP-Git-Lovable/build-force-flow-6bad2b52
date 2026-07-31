@@ -970,8 +970,8 @@ export default function Activities() {
         </div>
       </motion.div>
 
-      {/* Activity Report Generator - visible to admins and managers with subordinates */}
-      {(isAdmin || hasSubordinates) && (
+      {/* Activity Report Generator - hidden from UI */}
+      {false && (isAdmin || hasSubordinates) && (
         <motion.div variants={item} className="px-4">
           <ActivityReportGenerator isAdmin={!!isAdmin} filtersOpen={reportFiltersOpen} onFiltersOpenChange={setReportFiltersOpen} />
         </motion.div>
