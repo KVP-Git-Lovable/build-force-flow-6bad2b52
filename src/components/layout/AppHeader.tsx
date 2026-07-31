@@ -1,3 +1,4 @@
+import { useBranding } from "@/hooks/useBranding";
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
