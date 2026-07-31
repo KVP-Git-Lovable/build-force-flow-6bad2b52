@@ -69,7 +69,7 @@ import ActivityPhotoManager from "@/components/activities/ActivityPhotoManager";
 import ActivityDetailsDialog from "@/components/activities/ActivityDetailsDialog";
 import { MultiUserPicker } from "@/components/pm/MultiUserPicker";
 import { milestoneStatusLabel } from "@/components/admin/SiteMilestonesDialog";
-import NewActivityModal from "@/components/NewActivityModal";
+import CreativeActivityForm from "@/components/activities/CreativeActivityForm";
 import OpenGRNPicker from "@/components/procurement/OpenGRNPicker";
 import ReceiveGoodsDialog from "@/components/procurement/ReceiveGoodsDialog";
 
