@@ -143,7 +143,7 @@ export default function LeafletMap({ location, gpsPoints, activityMarkers }: Lea
         <Polyline
           positions={routedPath.map(c => [c[1], c[0]]) as [number, number][]}
           pathOptions={{
-            color: "#f97316",
+            color: "#3b82f6",
             weight: 4,
             opacity: 0.8,
             lineCap: "round",
@@ -167,32 +167,32 @@ export default function LeafletMap({ location, gpsPoints, activityMarkers }: Lea
         </Marker>
       )}
 
-      {/* Trail: one small pin per captured GPS point */}
-      {points.map((p, i) => {
-        const isLive = i === lastIdx;
-        if (isLive) {
-          return (
-            <Marker key={`live-${i}`} position={[p.latitude, p.longitude]} icon={liveIcon}>
-              <Popup>
-                <div className="text-xs">
-                  <div className="font-semibold text-red-600">Live location</div>
-                  <div>{format(new Date(p.timestamp), "MMM d, hh:mm a")}</div>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        }
-        return (
-          <Marker key={`pt-${i}`} position={[p.latitude, p.longitude]} icon={trailIcon}>
+      {/* Trail: only show start and end points (hide intermediate points for cleaner map) */}
+      {points.length > 0 && (
+        <>
+          {/* Start point */}
+          <Marker position={[points[0].latitude, points[0].longitude]} icon={trailIcon}>
             <Popup>
               <div className="text-xs">
-                <div className="font-semibold">Point {i + 1}</div>
-                <div>{format(new Date(p.timestamp), "MMM d, hh:mm a")}</div>
+                <div className="font-semibold">Start</div>
+                <div>{format(new Date(points[0].timestamp), "MMM d, hh:mm a")}</div>
               </div>
             </Popup>
           </Marker>
-        );
-      })}
+
+          {/* End point (live location) */}
+          {points.length > 1 && (
+            <Marker position={[points[lastIdx].latitude, points[lastIdx].longitude]} icon={liveIcon}>
+              <Popup>
+                <div className="text-xs">
+                  <div className="font-semibold text-red-600">Latest location</div>
+                  <div>{format(new Date(points[lastIdx].timestamp), "MMM d, hh:mm a")}</div>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+        </>
+      )}
 
       {/* Activity / stop markers */}
       {(activityMarkers || []).map((m, i) => (
