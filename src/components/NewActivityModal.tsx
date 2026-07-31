@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { format } from "date-fns";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,16 @@ const ACTIVITY_TYPE_CHIPS = [
   "Site Visit/Survey Work",
   "Office Work",
 ];
+
+// Dummy site images - using unsplash URLs
+const SITE_IMAGES: Record<string, string> = {
+  "Aashraya": "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=200&h=200&fit=crop",
+  "BBW Karkala": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=200&h=200&fit=crop",
+  "Bharath mall": "https://images.unsplash.com/photo-1479666601514-eecc9a9aab44?w=200&h=200&fit=crop",
+  "Head office": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=200&h=200&fit=crop",
+  "Bharath Be...": "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=200&h=200&fit=crop",
+  "Prajwal Arc...": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=200&h=200&fit=crop",
+};
 
 export default function NewActivityModal({
   open,
@@ -109,28 +120,20 @@ export default function NewActivityModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 border-0">
         {/* Gradient Header */}
-        <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-6 text-white rounded-t-lg">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <span className="text-3xl">✨</span> New Activity
-              </h2>
-              <p className="text-sm text-white/90 mt-1">Share what's happening on the ground</p>
-            </div>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="text-white hover:bg-white/20 p-2 rounded-full transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
+        <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-6 text-white rounded-t-lg flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <span className="text-3xl">✨</span> New Activity
+            </h2>
+            <p className="text-sm text-white/90 mt-1">Share what's happening on the ground</p>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-4">
           {/* Project/Site Selection */}
           <div>
-            <Label className="text-xs font-bold uppercase tracking-wide text-gray-600 block mb-3">PROJECT</Label>
+            <Label className="text-xs font-bold uppercase tracking-wide text-blue-700 block mb-3">PROJECT</Label>
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -138,40 +141,44 @@ export default function NewActivityModal({
                 placeholder="Search projects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 rounded-full border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 text-sm"
+                className="pl-10 rounded-full border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 text-sm"
               />
             </div>
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-4 flex-wrap">
               {filteredSites.length > 0 ? (
-                filteredSites.slice(0, 4).map((site) => (
-                  <motion.button
-                    key={site.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setForm({ ...form, site_id: site.id })}
-                    className={cn(
-                      "flex flex-col items-center gap-2 p-2 rounded-xl border-2 transition-all",
-                      form.site_id === site.id
-                        ? "border-purple-500 bg-purple-50 shadow-md"
-                        : "border-gray-200 hover:border-gray-300"
-                    )}
-                  >
-                    <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-lg overflow-hidden">
-                      {site.image ? (
+                filteredSites.slice(0, 4).map((site) => {
+                  const imageUrl = SITE_IMAGES[site.site_name] || SITE_IMAGES["Head office"];
+                  return (
+                    <motion.button
+                      key={site.id}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setForm({ ...form, site_id: site.id })}
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-0 transition-all",
+                        form.site_id === site.id
+                          ? "opacity-100"
+                          : "opacity-75 hover:opacity-100"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-16 h-16 rounded-full overflow-hidden border-2 transition-all flex-shrink-0",
+                        form.site_id === site.id
+                          ? "border-purple-500 ring-2 ring-purple-300"
+                          : "border-gray-200"
+                      )}>
                         <img
-                          src={site.image}
+                          src={imageUrl}
                           alt={site.site_name}
                           className="w-full h-full object-cover"
                         />
-                      ) : (
-                        "🏢"
-                      )}
-                    </div>
-                    <span className="text-xs font-medium text-center max-w-[70px] truncate">
-                      {site.site_name}
-                    </span>
-                  </motion.button>
-                ))
+                      </div>
+                      <span className="text-xs font-medium text-center max-w-[70px] truncate text-gray-700">
+                        {site.site_name}
+                      </span>
+                    </motion.button>
+                  );
+                })
               ) : (
                 <p className="text-sm text-gray-500">No projects found</p>
               )}
@@ -179,22 +186,19 @@ export default function NewActivityModal({
           </div>
 
           {/* Activity Date */}
-          <div>
-            <Label className="text-xs font-semibold text-gray-700 mb-2 block">Activity Date</Label>
-            <Input
-              type="date"
-              value={form.activity_date}
-              onChange={(e) => setForm({ ...form, activity_date: e.target.value })}
-              className="rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 text-sm"
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              {new Date(form.activity_date).toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </p>
+          <div className="bg-white rounded-xl p-3 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">Activity Date</p>
+                <p className="text-sm font-medium text-gray-900 mt-1">{format(new Date(form.activity_date), "MMM dd, yyyy")}</p>
+              </div>
+              <Input
+                type="date"
+                value={form.activity_date}
+                onChange={(e) => setForm({ ...form, activity_date: e.target.value })}
+                className="w-24 rounded-lg border border-gray-200 focus:border-purple-500 focus:ring-0 text-xs"
+              />
+            </div>
           </div>
 
           {/* Description with Rich Media */}
@@ -205,19 +209,19 @@ export default function NewActivityModal({
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="What's happening in your project?"
-                className="min-h-[100px] rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 pr-12 p-3 resize-none text-sm"
+                className="min-h-[100px] rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-0 pr-12 p-4 resize-none text-sm"
               />
-              <div className="absolute bottom-2 right-2 flex gap-1">
-                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Photo">
+              <div className="absolute bottom-3 right-3 flex gap-2">
+                <button className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Photo">
                   <Camera className="h-4 w-4" />
                 </button>
-                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Location">
+                <button className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Location">
                   <MapPin className="h-4 w-4" />
                 </button>
-                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Metrics">
+                <button className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Metrics">
                   <TrendingUp className="h-4 w-4" />
                 </button>
-                <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Voice">
+                <button className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-full transition-colors" title="Voice">
                   <Mic className="h-4 w-4" />
                 </button>
               </div>
@@ -226,7 +230,7 @@ export default function NewActivityModal({
 
           {/* Activity Type */}
           <div>
-            <Label className="text-xs font-bold uppercase tracking-wide text-amber-700 block mb-3 bg-amber-50 px-3 py-2 rounded-lg">
+            <Label className="text-xs font-bold uppercase tracking-wide text-amber-700 block mb-3 bg-amber-50 px-3 py-1.5 rounded-lg inline-block">
               ACTIVITY TYPE
             </Label>
             <div className="flex flex-wrap gap-2">
@@ -237,9 +241,9 @@ export default function NewActivityModal({
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setForm({ ...form, activity_type: type })}
                   className={cn(
-                    "px-3 py-1.5 rounded-full border-2 font-medium transition-all text-xs",
+                    "px-4 py-2 rounded-full border font-medium transition-all text-sm",
                     form.activity_type === type
-                      ? "border-purple-500 bg-purple-50 text-purple-700 shadow-sm"
+                      ? "border-purple-500 bg-purple-50 text-purple-700"
                       : "border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300"
                   )}
                 >
@@ -250,13 +254,13 @@ export default function NewActivityModal({
           </div>
 
           {/* Status */}
-          <div className={cn("flex items-center justify-between p-4 rounded-lg border-2 transition-all", currentStatusColor.bg, currentStatusColor.border)}>
+          <div className={cn("flex items-center justify-between p-3 rounded-xl border transition-all", currentStatusColor.bg, currentStatusColor.border)}>
             <div className="flex items-center gap-2">
               <div className={cn("w-3 h-3 rounded-full", currentStatusColor.dot)} />
               <span className={cn("font-medium text-sm", currentStatusColor.text)}>{form.status}</span>
             </div>
             <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-              <SelectTrigger className={cn("w-auto border-0 bg-transparent", currentStatusColor.text)}>
+              <SelectTrigger className={cn("w-auto border-0 bg-transparent text-xs", currentStatusColor.text)}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
