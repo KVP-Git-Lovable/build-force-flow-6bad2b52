@@ -1025,9 +1025,9 @@ export default function Activities() {
         )}
       </motion.div>
 
-      {/* Create/Edit Activity Dialog - use new modal for creation, old dialog for editing */}
+      {/* Create/Edit Activity Dialog - creative composer for creation, legacy dialog for editing */}
       {!editingId ? (
-        <NewActivityModal
+        <CreativeActivityForm
           open={showForm}
           onOpenChange={(open) => {
             if (!open) {
@@ -1039,21 +1039,15 @@ export default function Activities() {
             }
             setShowForm(open);
           }}
-          sites={sites.filter(s => s.is_active)}
+          projects={sites.filter((s) => s.is_active).map((s) => ({ id: s.id, name: s.site_name }))}
+          users={users}
           activityTypes={activityTypes}
-          onSubmit={async (data) => {
-            setForm({
-              ...form,
-              site_id: data.site_id,
-              activity_type: data.activity_type,
-              description: data.description,
-              activity_date: data.activity_date,
-            });
-            // Submit the form
-            await handleSave();
-          }}
-          isLoading={saving}
+          currentUserId={currentUserId}
+          createActivity={createActivity}
+          updateActivity={updateActivity}
+          onCreated={() => fetchActivities()}
         />
+
       ) : (
         <Dialog open={showForm} onOpenChange={(open) => { if (!open) { if (isRecording) { stopRecording(); } clearRecording(); setVoiceToTextMode(false); } setShowForm(open); }}>
           <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
