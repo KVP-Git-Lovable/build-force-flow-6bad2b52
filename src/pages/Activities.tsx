@@ -69,6 +69,7 @@ import ActivityPhotoManager from "@/components/activities/ActivityPhotoManager";
 import ActivityDetailsDialog from "@/components/activities/ActivityDetailsDialog";
 import { MultiUserPicker } from "@/components/pm/MultiUserPicker";
 import { milestoneStatusLabel } from "@/components/admin/SiteMilestonesDialog";
+import NewActivityModal from "@/components/NewActivityModal";
 import OpenGRNPicker from "@/components/procurement/OpenGRNPicker";
 import ReceiveGoodsDialog from "@/components/procurement/ReceiveGoodsDialog";
 
@@ -1024,9 +1025,38 @@ export default function Activities() {
         )}
       </motion.div>
 
-      {/* Create/Edit Activity Dialog */}
-      <Dialog open={showForm} onOpenChange={(open) => { if (!open) { if (isRecording) { stopRecording(); } clearRecording(); setVoiceToTextMode(false); } setShowForm(open); }}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      {/* Create/Edit Activity Dialog - use new modal for creation, old dialog for editing */}
+      {!editingId ? (
+        <NewActivityModal
+          open={showForm}
+          onOpenChange={(open) => {
+            if (!open) {
+              if (isRecording) {
+                stopRecording();
+              }
+              clearRecording();
+              setVoiceToTextMode(false);
+            }
+            setShowForm(open);
+          }}
+          sites={sites.filter(s => s.is_active)}
+          activityTypes={activityTypes}
+          onSubmit={async (data) => {
+            setForm({
+              ...form,
+              site_id: data.site_id,
+              activity_type: data.activity_type,
+              description: data.description,
+              activity_date: data.activity_date,
+            });
+            // Submit the form
+            await handleSave();
+          }}
+          isLoading={isSaving}
+        />
+      ) : (
+        <Dialog open={showForm} onOpenChange={(open) => { if (!open) { if (isRecording) { stopRecording(); } clearRecording(); setVoiceToTextMode(false); } setShowForm(open); }}>
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit Activity" : "Log New Activity"}</DialogTitle>
           </DialogHeader>
@@ -1523,7 +1553,7 @@ export default function Activities() {
           </div>
         </DialogContent>
       </Dialog>
-
+      )}
 
       {/* Add New Site Dialog */}
       <Dialog open={showAddSiteDialog} onOpenChange={setShowAddSiteDialog}>
