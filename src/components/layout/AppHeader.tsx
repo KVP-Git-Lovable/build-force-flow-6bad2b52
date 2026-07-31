@@ -163,7 +163,11 @@ export function AppHeader() {
               )}
               <NavLink to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity text-primary-foreground">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden bg-white/90 p-0.5">
-                  <img src={companyLogo || bbLogo} alt="Logo" className="w-full h-full object-contain" />
+                  {companyLogo ? (
+                    <img src={companyLogo} alt={companyName || "Logo"} className="w-full h-full object-contain" />
+                  ) : brandingLoading ? null : (
+                    <Building2 className="w-5 h-5 text-primary" />
+                  )}
                 </div>
                 <div>
                   <h1 className="text-base font-semibold">{companyName}</h1>
