@@ -1052,7 +1052,7 @@ export default function Activities() {
             // Submit the form
             await handleSave();
           }}
-          isLoading={isSaving}
+          isLoading={saving}
         />
       ) : (
         <Dialog open={showForm} onOpenChange={(open) => { if (!open) { if (isRecording) { stopRecording(); } clearRecording(); setVoiceToTextMode(false); } setShowForm(open); }}>
