@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { format } from "date-fns";
+import { getRouteForTrack } from "@/utils/routeMapper";
 
 // Fix default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -95,6 +96,26 @@ function MapAutoFit({ location, gpsPoints, activityMarkers }: LeafletMapProps) {
 export default function LeafletMap({ location, gpsPoints, activityMarkers }: LeafletMapProps) {
   const points = gpsPoints || [];
   const lastIdx = points.length - 1;
+  const [routedPath, setRoutedPath] = useState<[number, number][]>([]);
+  const [routingLoading, setRoutingLoading] = useState(false);
+
+  useEffect(() => {
+    if (points.length < 2) {
+      setRoutedPath([]);
+      return;
+    }
+
+    setRoutingLoading(true);
+    getRouteForTrack(points)
+      .then(path => {
+        setRoutedPath(path);
+      })
+      .catch(() => {
+        // Fallback to straight line if routing fails
+        setRoutedPath(points.map(p => [p.longitude, p.latitude]) as [number, number][]);
+      })
+      .finally(() => setRoutingLoading(false));
+  }, [points]);
 
   const center: [number, number] = points.length > 0
     ? [points[lastIdx].latitude, points[lastIdx].longitude]
@@ -117,11 +138,25 @@ export default function LeafletMap({ location, gpsPoints, activityMarkers }: Lea
       />
       <MapAutoFit location={location} gpsPoints={gpsPoints} activityMarkers={activityMarkers} />
 
-      {/* Trail line connecting all GPS points in order */}
-      {points.length > 1 && (
+      {/* Route line showing actual path traveled */}
+      {routedPath.length > 0 && (
+        <Polyline
+          positions={routedPath.map(c => [c[1], c[0]]) as [number, number][]}
+          pathOptions={{
+            color: "#f97316",
+            weight: 4,
+            opacity: 0.8,
+            lineCap: "round",
+            lineJoin: "round"
+          }}
+        />
+      )}
+
+      {/* Fallback straight line if routing fails or is loading */}
+      {routingLoading && points.length > 1 && routedPath.length === 0 && (
         <Polyline
           positions={points.map(p => [p.latitude, p.longitude]) as [number, number][]}
-          pathOptions={{ color: "#7c3aed", weight: 3, opacity: 0.75, dashArray: "6 8" }}
+          pathOptions={{ color: "#94a3b8", weight: 2, opacity: 0.5, dashArray: "4 4" }}
         />
       )}
 
