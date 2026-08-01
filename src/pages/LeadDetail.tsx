@@ -14,7 +14,7 @@ import {
   useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
-import { ActivityForm } from "@/components/customers/ActivityForm";
+import { LeadActivityComposer } from "@/components/leads/LeadActivityComposer";
 import { useLeadActivities } from "@/hooks/useLeadActivities";
 import { Plus } from "lucide-react";
 import { LeadForm } from "@/components/leads/LeadForm";
