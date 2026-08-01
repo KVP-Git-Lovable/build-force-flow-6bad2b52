@@ -212,6 +212,7 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
   onOpenChange: (open: boolean) => void;
   onDeleteUser: (user: AppUser) => void;
 }) {
+  const queryClient = useQueryClient();
   const [fullName, setFullName] = useState(user.full_name || "");
   const [username, setUsername] = useState(user.username || "");
   const [phone, setPhone] = useState(user.phone || "");
@@ -298,6 +299,11 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
       }, { onConflict: "user_id" });
       if (empError) throw empError;
 
+      // Invalidate caches to refresh the UI
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-user-security-assignments"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-app-users"] }),
+      ]);
       toast.success("User updated successfully");
       onOpenChange(false);
       onSaved();
