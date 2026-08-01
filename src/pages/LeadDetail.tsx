@@ -40,6 +40,7 @@ export default function LeadDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [cloning, setCloning] = useState(false);
   const [newAct, setNewAct] = useState(false);
+  const [editAct, setEditAct] = useState<any>(null);
 
   if (isLoading || !lead) return <div className="p-6 text-muted-foreground">Loading…</div>;
 
@@ -176,11 +177,17 @@ export default function LeadDetail() {
 
         <TabsContent value="activities" className="mt-4 space-y-3">
           <div className="flex justify-end">
-            <Button size="sm" onClick={() => setNewAct(true)}><Plus className="h-4 w-4 mr-1" />New Activity</Button>
+            <Button size="sm" onClick={() => { setEditAct(null); setNewAct(true); }}><Plus className="h-4 w-4 mr-1" />New Activity</Button>
           </div>
           <Card><CardContent className="p-4 space-y-3">
             {activities.map((a: any) => (
-              <div key={a.id} className="border-l-2 border-primary/40 pl-3 py-2">
+              <div
+                key={a.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => { setEditAct(a); setNewAct(true); }}
+                className="border-l-2 border-primary/40 pl-3 py-2 cursor-pointer rounded-r hover:bg-muted/50 transition-colors"
+              >
                 <div className="flex justify-between gap-2 text-sm">
                   <span className="font-medium">{a.activity_name}</span>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -234,7 +241,13 @@ export default function LeadDetail() {
       </Tabs>
 
       <LeadForm open={editOpen} onOpenChange={setEditOpen} lead={lead} />
-      <ActivityForm open={newAct} onOpenChange={setNewAct} leadId={lead.id} lockOpportunity />
+      <ActivityForm
+        open={newAct}
+        onOpenChange={(v) => { setNewAct(v); if (!v) setEditAct(null); }}
+        leadId={lead.id}
+        activity={editAct}
+        lockOpportunity
+      />
       <ConvertLeadDialog open={convertOpen} onOpenChange={setConvertOpen} lead={lead} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

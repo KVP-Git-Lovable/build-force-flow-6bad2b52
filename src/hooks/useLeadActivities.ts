@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const ACTIVITY_OUTCOMES = [
+  "Not started",
   "Productive",
   "Unproductive",
   "Visited but not available",
@@ -91,6 +92,36 @@ export function useCreateLeadActivity() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["lead-activities"] });
       toast.success("Activity added");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export function useUpdateLeadActivity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: {
+      id: string;
+      activity_type?: string;
+      activity_name?: string;
+      activity_date?: string;
+      description?: string | null;
+      outcome?: string | null;
+    }) => {
+      const { id, ...rest } = v;
+      const { data, error } = await supabase
+        .from("activity_events")
+        .update(rest as any)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lead-activities"] });
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      toast.success("Activity updated");
     },
     onError: (e: any) => toast.error(e.message),
   });
