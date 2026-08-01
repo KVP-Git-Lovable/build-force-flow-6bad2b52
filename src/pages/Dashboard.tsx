@@ -78,11 +78,13 @@ export default function Dashboard() {
   const overviewCards = [
     { label: "My Activities", value: myActivities.total, icon: ListTodo, colorClass: "bg-info/5 text-info", path: "/activities", module: "module_activities" },
     { label: "Completed", value: myActivities.completed, icon: CheckSquare, colorClass: "bg-success/5 text-success", path: "/activities?status=completed", module: "module_activities" },
-    { label: "In Progress", value: myActivities.inProgress, icon: Loader, colorClass: "bg-warning/5 text-warning", path: "/activities?status=in_progress", module: "module_activities" },
     { label: "Today's Activities", value: todayActivities, icon: Activity, colorClass: "bg-primary/5 text-primary", path: "/activities", module: "module_activities" },
+    { label: "Total Pipeline", value: money(leadKpis.pipeline), icon: TrendingUp, colorClass: "bg-info/5 text-info", path: "/leads", module: "module_leads" },
+    { label: "Closing This Month", value: money(leadKpis.closingValue), icon: CalendarClock, colorClass: "bg-warning/5 text-warning", path: "/leads", module: "module_leads" },
     { label: "Pending Leaves", value: pendingLeaves, icon: CalendarOff, colorClass: "bg-accent/5 text-accent", path: "/attendance", module: "module_attendance" },
     { label: "Pending Expenses", value: pendingExpenses.count, icon: Receipt, colorClass: "bg-destructive/5 text-destructive", path: "/expenses", module: "module_expenses" },
   ];
+
 
   const visibleCards = overviewCards.filter((c) => !c.module || hasModuleAccess(c.module));
 
