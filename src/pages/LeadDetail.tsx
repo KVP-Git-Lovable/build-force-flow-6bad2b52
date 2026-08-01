@@ -228,17 +228,26 @@ export default function LeadDetail() {
             <Card>
               <CardHeader><CardTitle className="text-base">Opportunity Highlight</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                <div>
-                  <div className="text-xs text-muted-foreground">Opportunity Value</div>
-                  <div>{(lead as any).opportunity_value != null ? `₹${Number((lead as any).opportunity_value).toLocaleString("en-IN")}` : "—"}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Opportunity Value</div>
+                    <div>{(lead as any).opportunity_value != null ? `₹${Number((lead as any).opportunity_value).toLocaleString("en-IN")}` : "—"}</div>
+                  </div>
+                  <button type="button" aria-label="Edit Opportunity Value" onClick={() => setEditOpen(true)} className="shrink-0 p-1 rounded text-muted-foreground hover:text-primary hover:bg-muted"><Edit className="h-3.5 w-3.5" /></button>
                 </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Close Date</div>
-                  <div>{(lead as any).opportunity_close_date ? format(new Date((lead as any).opportunity_close_date), "dd MMM yyyy") : "—"}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Close Date</div>
+                    <div>{(lead as any).opportunity_close_date ? format(new Date((lead as any).opportunity_close_date), "dd MMM yyyy") : "—"}</div>
+                  </div>
+                  <button type="button" aria-label="Edit Close Date" onClick={() => setEditOpen(true)} className="shrink-0 p-1 rounded text-muted-foreground hover:text-primary hover:bg-muted"><Edit className="h-3.5 w-3.5" /></button>
                 </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Probability of Win</div>
-                  <div>{(lead as any).opportunity_probability != null ? `${(lead as any).opportunity_probability}%` : "—"}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Probability of Win</div>
+                    <div>{(lead as any).opportunity_probability != null ? `${(lead as any).opportunity_probability}%` : "—"}</div>
+                  </div>
+                  <button type="button" aria-label="Edit Probability of Win" onClick={() => setEditOpen(true)} className="shrink-0 p-1 rounded text-muted-foreground hover:text-primary hover:bg-muted"><Edit className="h-3.5 w-3.5" /></button>
                 </div>
               </CardContent>
             </Card>
@@ -246,12 +255,16 @@ export default function LeadDetail() {
 
           {lead.researched_information && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Requirement Overview</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
+                <CardTitle className="text-base">Requirement Overview</CardTitle>
+                <button type="button" aria-label="Edit Requirement Overview" onClick={() => setEditOpen(true)} className="shrink-0 p-1 rounded text-muted-foreground hover:text-primary hover:bg-muted"><Edit className="h-3.5 w-3.5" /></button>
+              </CardHeader>
               <CardContent>
                 <div className="text-sm whitespace-pre-wrap leading-relaxed">{lead.researched_information}</div>
               </CardContent>
             </Card>
           )}
+
 
           {lead.business_card_url && (
             <Card>
