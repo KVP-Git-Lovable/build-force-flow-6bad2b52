@@ -38,11 +38,11 @@ const CreateUserWizard: React.FC<CreateUserWizardProps> = ({ onSuccess }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [managersRes, rolesRes] = await Promise.all([
-        supabase.from('profiles').select('id, username, full_name').order('full_name'),
+      const [usersRes, rolesRes] = await Promise.all([
+        supabase.from('users').select('id, username, full_name').eq('is_active', true).order('full_name'),
         supabase.from('security_profiles').select('id, name').order('name'),
       ]);
-      if (!managersRes.error && managersRes.data) setManagers(managersRes.data);
+      if (!usersRes.error && usersRes.data) setManagers(usersRes.data);
       if (!rolesRes.error && rolesRes.data) setRoles(rolesRes.data);
     };
     fetchData();
@@ -144,7 +144,6 @@ const CreateUserWizard: React.FC<CreateUserWizardProps> = ({ onSuccess }) => {
 
       // Update users table with extra fields
       const updatePayload: Record<string, unknown> = {};
-      if (formData.role_id) updatePayload.role_id = formData.role_id;
       if (formData.phone_number) updatePayload.phone = formData.phone_number;
       if (formData.manager_id) updatePayload.reporting_manager_id = formData.manager_id;
       if (Object.keys(updatePayload).length > 0) {
