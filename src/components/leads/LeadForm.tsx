@@ -29,7 +29,7 @@ export function LeadForm({
   const emptyForm = {
     name: "", title: "", contact_role: "unknown", company: "", email: "", phone: "", website: "", address: "", industry: "",
     lead_status_id: "", lead_source_id: "", related_event_id: defaultEventId ?? "",
-    business_card_url: "", researched_information: "",
+    business_card_url: "", researched_information: "", indicative_budget: "",
     opportunity_value: "", opportunity_close_date: "", opportunity_probability: "",
   };
   const [f, setF] = useState(emptyForm);
@@ -48,6 +48,7 @@ export function LeadForm({
         related_event_id: lead.related_event_id ?? "",
         business_card_url: lead.business_card_url ?? "",
         researched_information: lead.researched_information ?? "",
+        indicative_budget: l.indicative_budget != null ? String(l.indicative_budget) : "",
         opportunity_value: l.opportunity_value != null ? String(l.opportunity_value) : "",
         opportunity_close_date: l.opportunity_close_date ?? "",
         opportunity_probability: l.opportunity_probability != null ? String(l.opportunity_probability) : "",
@@ -145,6 +146,7 @@ export function LeadForm({
       related_event_id: f.related_event_id || null,
       business_card_url: f.business_card_url || null,
       researched_information: f.researched_information.trim() || null,
+      indicative_budget: f.indicative_budget === "" ? null : Number(f.indicative_budget),
       opportunity_value: f.opportunity_value === "" ? null : Number(f.opportunity_value),
       opportunity_close_date: f.opportunity_close_date || null,
       opportunity_probability: f.opportunity_probability === "" ? null : Number(f.opportunity_probability),
@@ -213,6 +215,15 @@ export function LeadForm({
                   {events.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Indicative Budget (₹)</Label>
+              <Input
+                inputMode="decimal"
+                placeholder="Budget shared by the customer"
+                value={f.indicative_budget}
+                onChange={(e) => setF({ ...f, indicative_budget: e.target.value.replace(/[^0-9.]/g, "") })}
+              />
             </div>
           </div>
 

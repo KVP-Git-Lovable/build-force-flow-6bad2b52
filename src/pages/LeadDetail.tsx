@@ -124,7 +124,6 @@ export default function LeadDetail() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Edit className="h-4 w-4 mr-1" />Edit</Button>
-            {!isConverted && <Button size="sm" onClick={() => setConvertOpen(true)}><UserPlus className="h-4 w-4 mr-1" />Convert</Button>}
             <Button variant="outline" size="sm" onClick={cloneLead} disabled={cloning}>
               <Copy className="h-4 w-4 mr-1" />{cloning ? "Cloning…" : "Clone"}
             </Button>
@@ -206,6 +205,11 @@ export default function LeadDetail() {
                 value={event ? (
                   <button className="text-primary hover:underline" onClick={() => nav(`/events/${event.id}`)}>{event.name}</button>
                 ) : "—"}
+              />
+              <Field
+                icon={Tag}
+                label="Indicative Budget"
+                value={(lead as any).indicative_budget != null ? `₹${Number((lead as any).indicative_budget).toLocaleString("en-IN")}` : "—"}
               />
               <Field icon={MapPin} label="Address" value={lead.address} />
               <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
