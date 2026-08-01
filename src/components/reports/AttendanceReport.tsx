@@ -1,18 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ReportShell, SummaryCards } from "./ReportShell";
-import { ReportChartCard } from "./ReportChartCard";
-import { startOfWeek } from "date-fns";
-import { DateField, SelectField } from "./ReportFilters";
+import { SelectField, DateScopeFilter } from "./ReportFilters";
 import { useReportScope } from "./useReportScope";
-import { useReportContext, DateRangePill } from "@/components/analytics/ReportContext";
-import { generateReportPdf } from "./reportPdf";
+import { ReportWorkspace } from "./ReportWorkspace";
+import type { ReportColumn } from "./reportTypes";
+import { DateFieldOption, PresetKey, presetLabel, useDateScope } from "./dateScope";
+
+const DATE_FIELDS: DateFieldOption[] = [
+  { value: "date", label: "Attendance Date" },
+  { value: "created_at", label: "Created Date", timestamp: true },
+];
 
 interface Row {
+  id: string;
   user_id: string;
   full_name: string;
   date: string;
@@ -43,12 +46,11 @@ const t = (d: string | null) => (d ? format(new Date(d), "HH:mm") : "--");
 
 export default function AttendanceReport() {
   const scope = useReportScope();
-  const { from, to, setFrom, setTo } = useReportContext();
+  const { state, patch, from, to } = useDateScope("attendance", "date");
   const [employee, setEmployee] = useState("all");
   const [status, setStatus] = useState("all");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [generated, setGenerated] = useState(false);
 
   const generate = async () => {
@@ -56,19 +58,21 @@ export default function AttendanceReport() {
     try {
       let q = supabase
         .from("attendance")
-        .select("user_id, date, status, check_in_time, check_out_time, total_hours")
-        .gte("date", from)
-        .lte("date", to)
+        .select("id, user_id, date, status, check_in_time, check_out_time, total_hours")
         .order("date", { ascending: true });
+
+      if (state.field === "date") q = q.gte("date", from).lte("date", to);
+      else q = q.gte(state.field, `${from}T00:00:00`).lte(state.field, `${to}T23:59:59`);
+
       if (employee !== "all") q = q.eq("user_id", employee);
-      else if (scope.userIds) q = q.in("user_id", scope.userIds.length ? scope.userIds : ["00000000-0000-0000-0000-000000000000"]);
+      else if (scope.userIds)
+        q = q.in("user_id", scope.userIds.length ? scope.userIds : ["00000000-0000-0000-0000-000000000000"]);
       if (status !== "all") q = q.eq("status", status);
+
       const { data, error } = await q;
       if (error) throw error;
       const nameMap = new Map(scope.users.map((u) => [u.id, u.full_name]));
-      setRows(
-        (data || []).map((r) => ({ ...r, full_name: nameMap.get(r.user_id) || "Unknown" }))
-      );
+      setRows((data || []).map((r) => ({ ...r, full_name: nameMap.get(r.user_id) || "Unknown" })));
       setGenerated(true);
     } catch {
       toast.error("Failed to generate report");
@@ -76,6 +80,38 @@ export default function AttendanceReport() {
       setLoading(false);
     }
   };
+
+  const columns: ReportColumn<Row>[] = useMemo(
+    () => [
+      {
+        key: "full_name",
+        header: "Employee",
+        value: (r) => r.full_name,
+        render: (r) => <span className="font-medium">{r.full_name}</span>,
+        pdfWidth: 3,
+      },
+      { key: "date", header: "Date", value: (r) => format(new Date(r.date), "dd MMM yyyy"), pdfWidth: 2 },
+      { key: "check_in_time", header: "Check In", value: (r) => t(r.check_in_time), pdfWidth: 1.5 },
+      { key: "check_out_time", header: "Check Out", value: (r) => t(r.check_out_time), pdfWidth: 1.5 },
+      {
+        key: "total_hours",
+        header: "Hours",
+        value: (r) => r.total_hours ?? 0,
+        numeric: true,
+        align: "right",
+        render: (r) => r.total_hours?.toFixed(2) || "--",
+        pdfWidth: 1.2,
+      },
+      {
+        key: "status",
+        header: "Status",
+        value: (r) => r.status.replace(/_/g, " "),
+        render: (r) => statusBadge(r.status),
+        pdfWidth: 1.6,
+      },
+    ],
+    []
+  );
 
   const summary = useMemo(() => {
     const present = rows.filter((r) => r.status === "present" || r.status === "late").length;
@@ -90,71 +126,57 @@ export default function AttendanceReport() {
     ];
   }, [rows]);
 
-  const chartData = useMemo(() => {
-    const weeks = new Map<string, { name: string; Present: number; Absent: number }>();
-    rows.forEach((r) => {
-      const wk = format(startOfWeek(new Date(r.date), { weekStartsOn: 1 }), "dd MMM");
-      const e = weeks.get(wk) || { name: wk, Present: 0, Absent: 0 };
-      if (r.status === "present" || r.status === "late") e.Present += 1;
-      else if (r.status === "absent") e.Absent += 1;
-      weeks.set(wk, e);
-    });
-    return Array.from(weeks.values());
-  }, [rows]);
-
-  const download = async () => {
-    setDownloading(true);
-    try {
-      await generateReportPdf({
-        title: "Attendance Report",
-        fileName: `attendance-report-${from}-to-${to}.pdf`,
-        generatedBy: scope.generatedBy,
-        filters: [
-          `Period: ${from} to ${to}`,
-          `Employee: ${employee === "all" ? "All" : scope.users.find((u) => u.id === employee)?.full_name || "-"}`,
-          `Status: ${status === "all" ? "All" : status}`,
-        ],
-        columns: [
-          { header: "Employee", width: 3 },
-          { header: "Date", width: 2 },
-          { header: "Check In", width: 1.5 },
-          { header: "Check Out", width: 1.5 },
-          { header: "Hours", width: 1.2, align: "right" },
-          { header: "Status", width: 1.6 },
-        ],
-        rows: rows.map((r) => [
-          r.full_name,
-          format(new Date(r.date), "dd MMM yyyy"),
-          t(r.check_in_time),
-          t(r.check_out_time),
-          r.total_hours?.toFixed(2) || "--",
-          r.status.replace(/_/g, " "),
-        ]),
-        summary: summary.map((s) => ({ label: s.label, value: s.value })),
-      });
-      toast.success("PDF downloaded");
-    } catch {
-      toast.error("Failed to download PDF");
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const fieldLabel = DATE_FIELDS.find((f) => f.value === state.field)?.label || state.field;
 
   return (
-    <ReportShell
+    <ReportWorkspace
+      module="attendance"
       title="Attendance Report"
       description="Check-in/out times, total hours and status per employee."
-      pill={<DateRangePill />}
+      columns={columns}
+      rows={rows}
+      rowKey={(r) => r.id}
       loading={loading || scope.loading}
-      downloading={downloading}
       generated={generated}
-      recordCount={rows.length}
       onGenerate={generate}
-      onDownload={download}
+      generatedBy={scope.generatedBy}
+      fileName={`attendance-report-${from}-to-${to}.pdf`}
+      summary={summary}
+      defaultCharts={[
+        {
+          id: "default-status",
+          title: "Records by Status",
+          type: "pie",
+          groupBy: "status",
+          measure: "count",
+        },
+      ]}
+      filterState={{ ...state, employee, status }}
+      onApplyFilterState={(s) => {
+        patch({
+          field: (s.field as string) || state.field,
+          preset: (s.preset as PresetKey) || state.preset,
+          customFrom: (s.customFrom as string) || state.customFrom,
+          customTo: (s.customTo as string) || state.customTo,
+        });
+        setEmployee((s.employee as string) || "all");
+        setStatus((s.status as string) || "all");
+      }}
+      filterSummary={[
+        `${fieldLabel}: ${presetLabel(state.preset)} (${from} to ${to})`,
+        `Employee: ${employee === "all" ? "All" : scope.users.find((u) => u.id === employee)?.full_name || "-"}`,
+        `Status: ${status === "all" ? "All" : status}`,
+      ]}
       filters={
         <>
-          <DateField label="From Date" value={from} onChange={setFrom} />
-          <DateField label="To Date" value={to} onChange={setTo} />
+          <DateScopeFilter
+            module="attendance"
+            fields={DATE_FIELDS}
+            state={state}
+            onChange={patch}
+            from={from}
+            to={to}
+          />
           <SelectField
             label="Employee"
             value={employee}
@@ -164,45 +186,6 @@ export default function AttendanceReport() {
           />
           <SelectField label="Status" value={status} onChange={setStatus} allLabel="All Statuses" options={STATUS} />
         </>
-      }
-      summary={<SummaryCards items={summary} />}
-      chart={
-        <ReportChartCard
-          title="Present vs Absent per Week"
-          description="Attendance distribution across the selected date range"
-          type="groupedBar"
-          data={chartData}
-          series={[
-            { key: "Present", label: "Present", color: "hsl(160 64% 42%)" },
-            { key: "Absent", label: "Absent", color: "hsl(0 75% 60%)" },
-          ]}
-        />
-      }
-      table={
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Check In</TableHead>
-              <TableHead>Check Out</TableHead>
-              <TableHead className="text-right">Hours</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r, i) => (
-              <TableRow key={i}>
-                <TableCell className="font-medium">{r.full_name}</TableCell>
-                <TableCell>{format(new Date(r.date), "dd MMM yyyy")}</TableCell>
-                <TableCell>{t(r.check_in_time)}</TableCell>
-                <TableCell>{t(r.check_out_time)}</TableCell>
-                <TableCell className="text-right">{r.total_hours?.toFixed(2) || "--"}</TableCell>
-                <TableCell>{statusBadge(r.status)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
       }
     />
   );
