@@ -104,6 +104,27 @@ export function LeadForm({
     }
   };
 
+  const captureLocation = async () => {
+    setLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      let address = `${pos.latitude.toFixed(6)}, ${pos.longitude.toFixed(6)}`;
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json`
+        );
+        const geo = await res.json();
+        if (geo?.display_name) address = geo.display_name;
+      } catch { /* keep coordinates */ }
+      setF((p) => ({ ...p, address }));
+      toast.success("Address captured from your location");
+    } catch (err: any) {
+      toast.error(err?.message || "Could not get your location");
+    } finally {
+      setLocating(false);
+    }
+  };
+
   const submit = async () => {
     if (!f.name.trim()) return;
     await save.mutateAsync({
@@ -121,9 +142,13 @@ export function LeadForm({
       related_event_id: f.related_event_id || null,
       business_card_url: f.business_card_url || null,
       researched_information: f.researched_information.trim() || null,
+      opportunity_value: f.opportunity_value === "" ? null : Number(f.opportunity_value),
+      opportunity_close_date: f.opportunity_close_date || null,
+      opportunity_probability: f.opportunity_probability === "" ? null : Number(f.opportunity_probability),
       owner_id: lead?.owner_id ?? userId ?? null,
       ...(lead?.id ? {} : { created_by: userId ?? null }),
     } as any);
+
     onOpenChange(false);
   };
 
