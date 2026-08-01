@@ -14,6 +14,9 @@ import {
   useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
+import { ActivityForm } from "@/components/customers/ActivityForm";
+import { useCustomerActivities } from "@/hooks/useCustomers";
+import { Plus } from "lucide-react";
 import { LeadForm } from "@/components/leads/LeadForm";
 import { ConvertLeadDialog } from "@/components/leads/ConvertLeadDialog";
 import { LeadScoreTab } from "@/components/leads/LeadScoreTab";
@@ -30,11 +33,13 @@ export default function LeadDetail() {
   const { data: audit = [] } = useLeadAuditLog(id);
   const save = useSaveLead();
   const del = useDeleteLead();
+  const { data: activities = [] } = useCustomerActivities({ leadId: id });
 
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [cloning, setCloning] = useState(false);
+  const [newAct, setNewAct] = useState(false);
 
   if (isLoading || !lead) return <div className="p-6 text-muted-foreground">Loading…</div>;
 
@@ -117,6 +122,7 @@ export default function LeadDetail() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="score">Lead Score (BANT)</TabsTrigger>
           <TabsTrigger value="sla">Lead SLA</TabsTrigger>
+          <TabsTrigger value="activities">Activities</TabsTrigger>
           <TabsTrigger value="attachments">Attachments</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
         </TabsList>
@@ -168,6 +174,32 @@ export default function LeadDetail() {
           <LeadSlaTab lead={lead as any} />
         </TabsContent>
 
+        <TabsContent value="activities" className="mt-4 space-y-3">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => setNewAct(true)}><Plus className="h-4 w-4 mr-1" />New Activity</Button>
+          </div>
+          <Card><CardContent className="p-4 space-y-3">
+            {activities.map((a: any) => (
+              <div key={a.id} className="border-l-2 border-primary/40 pl-3 py-2">
+                <div className="flex justify-between gap-2 text-sm">
+                  <span className="font-medium">{a.subject}</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {format(new Date(a.activity_date), "dd MMM yyyy")}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap mt-0.5">
+                  <span>{a.type}</span>
+                  {a.outcome && <Badge variant="outline" className="text-[10px]">{a.outcome}</Badge>}
+                </div>
+                {a.notes && <p className="text-sm mt-1 whitespace-pre-wrap">{a.notes}</p>}
+              </div>
+            ))}
+            {activities.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-6">No activities yet.</p>
+            )}
+          </CardContent></Card>
+        </TabsContent>
+
         <TabsContent value="attachments" className="mt-4">
           <LeadAttachments leadId={lead.id} />
         </TabsContent>
@@ -202,6 +234,7 @@ export default function LeadDetail() {
       </Tabs>
 
       <LeadForm open={editOpen} onOpenChange={setEditOpen} lead={lead} />
+      <ActivityForm open={newAct} onOpenChange={setNewAct} leadId={lead.id} lockOpportunity />
       <ConvertLeadDialog open={convertOpen} onOpenChange={setConvertOpen} lead={lead} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
