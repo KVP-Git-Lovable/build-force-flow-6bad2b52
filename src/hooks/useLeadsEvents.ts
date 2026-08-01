@@ -6,6 +6,7 @@ import { toast } from "sonner";
 export interface EventType { id: string; name: string; sort_order: number; is_active: boolean; }
 export interface LeadStatus { id: string; name: string; color: string; sort_order: number; is_active: boolean; is_converted_status: boolean; }
 export interface LeadSource { id: string; name: string; sort_order: number; is_active: boolean; }
+export interface Industry { id: string; name: string; sort_order: number; is_active: boolean; }
 
 export function useEventTypes(activeOnly = true) {
   return useQuery({
@@ -44,6 +45,20 @@ export function useLeadSources(activeOnly = true) {
       const { data, error } = await q;
       if (error) throw error;
       return data as unknown as LeadSource[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useIndustries(activeOnly = true) {
+  return useQuery({
+    queryKey: ["industries", activeOnly],
+    queryFn: async () => {
+      let q = supabase.from("master_industries" as any).select("*").order("sort_order");
+      if (activeOnly) q = q.eq("is_active", true);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data as unknown as Industry[];
     },
     staleTime: 5 * 60 * 1000,
   });

@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BusinessCardScanner } from "./BusinessCardScanner";
 import { getCurrentPosition } from "@/utils/nativePermissions";
 import {
-  LeadRow, useSaveLead, useLeadStatuses, useLeadSources, useEvents,
+  LeadRow, useSaveLead, useLeadStatuses, useLeadSources, useEvents, useIndustries,
 } from "@/hooks/useLeadsEvents";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
@@ -21,6 +21,7 @@ export function LeadForm({
   const save = useSaveLead();
   const { data: statuses = [] } = useLeadStatuses();
   const { data: sources = [] } = useLeadSources();
+  const { data: industries = [] } = useIndustries();
   const { data: events = [] } = useEvents();
   const { userId } = useCurrentUser();
 
@@ -166,7 +167,13 @@ export function LeadForm({
             <div><Label>Name *</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
             <div><Label>Designation</Label><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
             <div><Label>Company</Label><Input value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} /></div>
-            <div><Label>Industry</Label><Input value={f.industry} onChange={(e) => setF({ ...f, industry: e.target.value })} /></div>
+            <div>
+              <Label>Industry</Label>
+              <Select value={f.industry} onValueChange={(v) => setF({ ...f, industry: v })}>
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>{industries.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
             <div><Label>Email</Label><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
             <div><Label>Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
             <div><Label>Website</Label><Input value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} /></div>
