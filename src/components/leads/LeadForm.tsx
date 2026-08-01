@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, MapPin, Target } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BusinessCardScanner } from "./BusinessCardScanner";
+import { getCurrentPosition } from "@/utils/nativePermissions";
 import {
   LeadRow, useSaveLead, useLeadStatuses, useLeadSources, useEvents,
 } from "@/hooks/useLeadsEvents";
@@ -27,12 +28,15 @@ export function LeadForm({
     name: "", title: "", company: "", email: "", phone: "", website: "", address: "", industry: "",
     lead_status_id: "", lead_source_id: "", related_event_id: defaultEventId ?? "",
     business_card_url: "", researched_information: "",
+    opportunity_value: "", opportunity_close_date: "", opportunity_probability: "",
   };
   const [f, setF] = useState(emptyForm);
   const [isElaborating, setIsElaborating] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     if (lead) {
+      const l = lead as any;
       setF({
         name: lead.name, title: lead.title ?? "", company: lead.company ?? "",
         email: lead.email ?? "", phone: lead.phone ?? "", website: lead.website ?? "",
@@ -42,12 +46,16 @@ export function LeadForm({
         related_event_id: lead.related_event_id ?? "",
         business_card_url: lead.business_card_url ?? "",
         researched_information: lead.researched_information ?? "",
+        opportunity_value: l.opportunity_value != null ? String(l.opportunity_value) : "",
+        opportunity_close_date: l.opportunity_close_date ?? "",
+        opportunity_probability: l.opportunity_probability != null ? String(l.opportunity_probability) : "",
       });
     } else {
       setF({ ...emptyForm, related_event_id: defaultEventId ?? "" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead, open, defaultEventId]);
+
 
   useEffect(() => {
     if (!lead && !f.lead_status_id && statuses.length) {
