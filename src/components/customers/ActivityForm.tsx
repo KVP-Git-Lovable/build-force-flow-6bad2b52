@@ -53,6 +53,11 @@ export function ActivityForm({
         activity_date: (activity.activity_date || new Date().toISOString()).slice(0, 10),
         opportunity_id: opportunityId ?? "",
       });
+    } else {
+      setForm((f) => ({
+        ...f, subject: "", notes: "", outcome: OUTCOMES[0],
+        activity_date: new Date().toISOString().slice(0, 10),
+      }));
     }
   }, [activity, open, opportunityId]);
 
