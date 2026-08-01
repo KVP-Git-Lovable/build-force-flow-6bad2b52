@@ -196,7 +196,9 @@ export default function CreativeActivityForm({
   useEffect(() => {
     if (!open) {
       setProjectId("");
-      setProjectSearch("");
+      setLeadId("");
+      setLeadSearch("");
+      setOutcome("");
       setDescription("");
       setActivityType("");
       setActivityDate(format(new Date(), "yyyy-MM-dd"));
