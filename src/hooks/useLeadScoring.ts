@@ -28,6 +28,24 @@ export interface ScoringRules {
   contactRoleScores: Record<ContactRole, number>;
   activityThresholds: { min: number; score: number }[]; // sorted desc by min
   ageBuckets: { maxDays: number; score: number }[]; // sorted asc by maxDays
+  budget: {
+    shared: number;          // budget entered
+    aligned: number;         // budget close to opportunity value
+    none: number;            // no budget shared
+    tolerancePct: number;    // % variance allowed to count as "aligned"
+  };
+  closeDate: {
+    thisMonth: number;
+    nextMonth: number;
+    later: number;
+    none: number;
+  };
+  need: {
+    clear: number;
+    vague: number;
+    none: number;
+    clearMinChars: number;
+  };
   qualification: { high: number; medium: number };
 }
 
@@ -61,8 +79,12 @@ export const DEFAULT_SCORING_RULES: ScoringRules = {
     { maxDays: 30, score: 5 },
     { maxDays: 999999, score: 2 },
   ],
+  budget: { shared: 5, aligned: 10, none: 0, tolerancePct: 10 },
+  closeDate: { thisMonth: 10, nextMonth: 6, later: 3, none: 0 },
+  need: { clear: 10, vague: 4, none: 0, clearMinChars: 80 },
   qualification: { high: 30, medium: 15 },
 };
+
 
 const MODULE = "lead_scoring";
 const KEY = "rules";
