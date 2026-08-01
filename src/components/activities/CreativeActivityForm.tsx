@@ -86,6 +86,8 @@ interface Props {
   editActivity?: ActivityType | null;
   onDelete?: (id: string) => void | Promise<void>;
   attendance?: { check_in_time: string | null; check_out_time: string | null } | null;
+  onDayCheckIn?: () => void | Promise<void>;
+  dayCheckingIn?: boolean;
 }
 
 const STATUS_LABELS: Record<string, string> = {
