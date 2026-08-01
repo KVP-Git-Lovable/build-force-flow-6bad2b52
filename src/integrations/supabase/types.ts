@@ -1548,6 +1548,9 @@ export type Database = {
           lead_source_id: string | null
           lead_status_id: string | null
           name: string
+          opportunity_close_date: string | null
+          opportunity_probability: number | null
+          opportunity_value: number | null
           owner_id: string | null
           phone: string | null
           related_event_id: string | null
@@ -1574,6 +1577,9 @@ export type Database = {
           lead_source_id?: string | null
           lead_status_id?: string | null
           name: string
+          opportunity_close_date?: string | null
+          opportunity_probability?: number | null
+          opportunity_value?: number | null
           owner_id?: string | null
           phone?: string | null
           related_event_id?: string | null
@@ -1600,6 +1606,9 @@ export type Database = {
           lead_source_id?: string | null
           lead_status_id?: string | null
           name?: string
+          opportunity_close_date?: string | null
+          opportunity_probability?: number | null
+          opportunity_value?: number | null
           owner_id?: string | null
           phone?: string | null
           related_event_id?: string | null

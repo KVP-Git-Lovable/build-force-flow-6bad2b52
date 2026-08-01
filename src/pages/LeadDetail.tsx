@@ -150,6 +150,28 @@ export default function LeadDetail() {
             </CardContent>
           </Card>
 
+          {((lead as any).opportunity_value != null ||
+            (lead as any).opportunity_close_date ||
+            (lead as any).opportunity_probability != null) && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Opportunity Highlight</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground">Opportunity Value</div>
+                  <div>{(lead as any).opportunity_value != null ? `₹${Number((lead as any).opportunity_value).toLocaleString("en-IN")}` : "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Close Date</div>
+                  <div>{(lead as any).opportunity_close_date ? format(new Date((lead as any).opportunity_close_date), "dd MMM yyyy") : "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Probability of Win</div>
+                  <div>{(lead as any).opportunity_probability != null ? `${(lead as any).opportunity_probability}%` : "—"}</div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {lead.researched_information && (
             <Card>
               <CardHeader><CardTitle className="text-base">Researched Information</CardTitle></CardHeader>
