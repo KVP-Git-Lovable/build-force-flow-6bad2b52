@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, UserPlus, Phone, Mail, Globe, Building2, MapPin, Briefcase, Copy, Trash2, User, Users, Tag, CalendarDays } from "lucide-react";
+import { ArrowLeft, Edit, Phone, Mail, Globe, Building2, MapPin, Briefcase, Copy, Trash2, User, Users, Tag, CalendarDays } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
