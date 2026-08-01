@@ -151,6 +151,38 @@ export default function Leads() {
 
   const activeFilters = [createdPreset, modifiedPreset, ownerFilter, statusFilter].filter((v) => v !== "all").length;
 
+  const clearAllFilters = () => {
+    setCreatedPreset("all"); setModifiedPreset("all"); setOwnerFilter("all"); setStatusFilter("all");
+  };
+
+  const filterChips = useMemo(() => {
+    const chips: { key: string; label: string; clear: () => void }[] = [];
+    const presetLabel = (v: string) => DATE_PRESETS.find((p) => p.value === v)?.label ?? v;
+    if (createdPreset !== "all") chips.push({ key: "created", label: `Created: ${presetLabel(createdPreset)}`, clear: () => setCreatedPreset("all") });
+    if (modifiedPreset !== "all") chips.push({ key: "modified", label: `Modified: ${presetLabel(modifiedPreset)}`, clear: () => setModifiedPreset("all") });
+    if (ownerFilter !== "all") chips.push({ key: "owner", label: `Owner: ${ownerOptions.find((o) => o.id === ownerFilter)?.name ?? "Unknown"}`, clear: () => setOwnerFilter("all") });
+    if (statusFilter !== "all") chips.push({ key: "status", label: `Status: ${statusMap[statusFilter]?.name ?? "Unknown"}`, clear: () => setStatusFilter("all") });
+    return chips;
+  }, [createdPreset, modifiedPreset, ownerFilter, statusFilter, ownerOptions, statusMap]);
+
+  // Progressive rendering for large lists
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [q, createdPreset, modifiedPreset, ownerFilter, statusFilter]);
+  const visibleLeads = useMemo(() => filteredLeads.slice(0, visibleCount), [filteredLeads, visibleCount]);
+  const hasMore = visibleCount < filteredLeads.length;
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) setVisibleCount((c) => c + PAGE_SIZE);
+    }, { rootMargin: "200px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, filteredLeads.length]);
+
   const kpis = useMemo(() => {
     const now = new Date();
     const monthRange = { start: startOfMonth(now), end: endOfMonth(now) };
