@@ -684,6 +684,7 @@ export type Database = {
         Row: {
           created_at: string
           customer_id: string | null
+          doc_type: string | null
           file_name: string
           file_size: number | null
           file_type: string | null
@@ -692,11 +693,13 @@ export type Database = {
           lead_id: string | null
           opportunity_id: string | null
           updated_at: string
+          updated_by: string | null
           uploaded_by: string | null
         }
         Insert: {
           created_at?: string
           customer_id?: string | null
+          doc_type?: string | null
           file_name: string
           file_size?: number | null
           file_type?: string | null
@@ -705,11 +708,13 @@ export type Database = {
           lead_id?: string | null
           opportunity_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           uploaded_by?: string | null
         }
         Update: {
           created_at?: string
           customer_id?: string | null
+          doc_type?: string | null
           file_name?: string
           file_size?: number | null
           file_type?: string | null
@@ -718,6 +723,7 @@ export type Database = {
           lead_id?: string | null
           opportunity_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
