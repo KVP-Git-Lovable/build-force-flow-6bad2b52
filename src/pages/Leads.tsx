@@ -353,9 +353,9 @@ export default function Leads() {
       <Card className="hidden md:block"><CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Name</TableHead><TableHead>Company</TableHead>
-            <TableHead>Phone</TableHead><TableHead>Status</TableHead>
-            <TableHead>Owner</TableHead><TableHead>Created</TableHead><TableHead>Modified</TableHead>
+            <TableHead>Name</TableHead><TableHead>Designation</TableHead><TableHead>Company</TableHead>
+            <TableHead>Status</TableHead><TableHead>Owner</TableHead>
+            <TableHead className="text-right">Opp. Value</TableHead><TableHead>Close Date</TableHead><TableHead className="text-right">Win %</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {visibleLeads.map((l: any) => {
@@ -365,16 +365,18 @@ export default function Leads() {
               return (
                 <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads/${l.id}`)}>
                   <TableCell className="font-medium">{l.name}{l.converted_customer_id && <Badge variant="secondary" className="ml-2">Converted</Badge>}</TableCell>
+                  <TableCell className="text-sm">{l.designation ?? "—"}</TableCell>
                   <TableCell>{l.company ?? "—"}</TableCell>
-                  <TableCell>{l.phone ?? "—"}</TableCell>
                   <TableCell>{st ? <Badge className={statusColorClasses(st.color)}>{st.name}</Badge> : "—"}</TableCell>
                   <TableCell className="text-sm">{ownerName}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{format(new Date(l.created_at), "dd MMM yyyy")}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{l.updated_at ? format(new Date(l.updated_at), "dd MMM yyyy") : "—"}</TableCell>
+                  <TableCell className="text-right text-sm font-medium">{Number(l.opportunity_value) > 0 ? money(Number(l.opportunity_value)) : "—"}</TableCell>
+                  <TableCell className="text-sm">{l.opportunity_close_date ? format(new Date(l.opportunity_close_date), "dd MMM yyyy") : "—"}</TableCell>
+                  <TableCell className="text-right text-sm">{l.opportunity_probability != null ? `${l.opportunity_probability}%` : "—"}</TableCell>
                 </TableRow>
               );
             })}
-            {filteredLeads.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No leads match the filters</TableCell></TableRow>}
+            {filteredLeads.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No leads match the filters</TableCell></TableRow>}
+
           </TableBody>
         </Table>
       </CardContent></Card>
