@@ -79,7 +79,7 @@ export function ReportChartCard({
       return (
         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
           <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
-          <XAxis type="number" tick={{ fontSize: 11 }} domain={[0, 100]} />
+          <XAxis type="number" tick={{ fontSize: 11 }} />
           <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={120} />
           <Tooltip formatter={(v: number) => formatValue(v)} />
           <Bar dataKey={valueKey} radius={[0, 4, 4, 0]}>
