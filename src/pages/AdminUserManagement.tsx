@@ -303,10 +303,10 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
       }, { onConflict: "user_id" });
       if (empError) throw empError;
 
-      // Invalidate caches to refresh the UI
+      // Refetch data to ensure latest roles are shown
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["admin-user-security-assignments"] }),
-        queryClient.invalidateQueries({ queryKey: ["admin-app-users"] }),
+        queryClient.refetchQueries({ queryKey: ["admin-user-security-assignments"] }),
+        queryClient.refetchQueries({ queryKey: ["admin-app-users"] }),
       ]);
       toast.success("User updated successfully");
       onOpenChange(false);
