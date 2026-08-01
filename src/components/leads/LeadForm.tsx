@@ -14,6 +14,7 @@ import {
   LeadRow, useSaveLead, useLeadStatuses, useLeadSources, useEvents, useIndustries,
 } from "@/hooks/useLeadsEvents";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { CONTACT_ROLE_LABELS, ContactRole } from "@/hooks/useLeadScoring";
 
 export function LeadForm({
   open, onOpenChange, lead, defaultEventId,
@@ -26,7 +27,7 @@ export function LeadForm({
   const { userId } = useCurrentUser();
 
   const emptyForm = {
-    name: "", title: "", company: "", email: "", phone: "", website: "", address: "", industry: "",
+    name: "", title: "", contact_role: "unknown", company: "", email: "", phone: "", website: "", address: "", industry: "",
     lead_status_id: "", lead_source_id: "", related_event_id: defaultEventId ?? "",
     business_card_url: "", researched_information: "",
     opportunity_value: "", opportunity_close_date: "", opportunity_probability: "",
@@ -39,7 +40,7 @@ export function LeadForm({
     if (lead) {
       const l = lead as any;
       setF({
-        name: lead.name, title: lead.title ?? "", company: lead.company ?? "",
+        name: lead.name, title: lead.title ?? "", contact_role: l.contact_role ?? "unknown", company: lead.company ?? "",
         email: lead.email ?? "", phone: lead.phone ?? "", website: lead.website ?? "",
         address: lead.address ?? "", industry: lead.industry ?? "",
         lead_status_id: lead.lead_status_id ?? "",
@@ -132,6 +133,7 @@ export function LeadForm({
       id: lead?.id,
       name: f.name.trim(),
       title: f.title || null,
+      contact_role: f.contact_role || "unknown",
       company: f.company || null,
       email: f.email || null,
       phone: f.phone || null,
@@ -166,6 +168,17 @@ export function LeadForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Name *</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
             <div><Label>Designation</Label><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
+            <div>
+              <Label>Contact Role</Label>
+              <Select value={f.contact_role || "unknown"} onValueChange={(v) => setF({ ...f, contact_role: v })}>
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(CONTACT_ROLE_LABELS) as ContactRole[]).map((r) => (
+                    <SelectItem key={r} value={r}>{CONTACT_ROLE_LABELS[r]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div><Label>Company</Label><Input value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} /></div>
             <div>
               <Label>Industry</Label>

@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, UserPlus, Phone, Mail, Globe, Building2, MapPin, Briefcase, Copy, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, UserPlus, Phone, Mail, Globe, Building2, MapPin, Briefcase, Copy, Trash2, User, Users, Tag, CalendarDays } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, statusColorClasses,
+  useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, useIndustries, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
+import { CONTACT_ROLE_LABELS, ContactRole } from "@/hooks/useLeadScoring";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { LeadActivityComposer } from "@/components/leads/LeadActivityComposer";
 import { useLeadActivities } from "@/hooks/useLeadActivities";
@@ -30,6 +31,7 @@ export default function LeadDetail() {
   const { data: statuses = [] } = useLeadStatuses(false);
   const { data: sources = [] } = useLeadSources(false);
   const { data: events = [] } = useEvents();
+  const { data: industries = [] } = useIndustries();
   const { data: audit = [] } = useLeadAuditLog(id);
   const save = useSaveLead();
   const del = useDeleteLead();
@@ -67,13 +69,15 @@ export default function LeadDetail() {
     }
   };
 
-  const Field = ({ icon: Icon, label, value }: any) =>
-    value ? (
-      <div className="flex items-start gap-2 text-sm">
-        <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-        <div><div className="text-xs text-muted-foreground">{label}</div><div>{value}</div></div>
+  const Field = ({ icon: Icon, label, value }: any) => (
+    <div className="flex items-start gap-2 text-sm">
+      <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="break-words">{value ?? "—"}</div>
       </div>
-    ) : null;
+    </div>
+  );
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto">
@@ -132,21 +136,30 @@ export default function LeadDetail() {
           <Card>
             <CardHeader><CardTitle className="text-base">Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field icon={User} label="Name" value={lead.name} />
+              <Field icon={Briefcase} label="Designation" value={lead.title} />
+              <Field icon={Users} label="Contact Role" value={CONTACT_ROLE_LABELS[((lead as any).contact_role || "unknown") as ContactRole] ?? "Unknown"} />
+              <Field icon={Building2} label="Company" value={lead.company} />
               <Field icon={Mail} label="Email" value={lead.email} />
               <Field icon={Phone} label="Phone" value={lead.phone} />
               <Field icon={Globe} label="Website" value={lead.website} />
-              <Field icon={Building2} label="Industry" value={lead.industry} />
-              <Field icon={MapPin} label="Address" value={lead.address} />
+              <Field icon={Building2} label="Industry" value={industries.find((i) => i.id === lead.industry)?.name ?? lead.industry} />
+              <Field
+                icon={Tag}
+                label="Status"
+                value={currentStatus ? <Badge className={statusColorClasses(currentStatus.color)}>{currentStatus.name}</Badge> : "—"}
+              />
               <Field icon={Briefcase} label="Source" value={source?.name} />
-              {event && (
-                <div className="flex items-start gap-2 text-sm">
-                  <Briefcase className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Related Event</div>
-                    <button className="text-primary hover:underline" onClick={() => nav(`/events/${event.id}`)}>{event.name}</button>
-                  </div>
-                </div>
-              )}
+              <Field
+                icon={CalendarDays}
+                label="Related Event"
+                value={event ? (
+                  <button className="text-primary hover:underline" onClick={() => nav(`/events/${event.id}`)}>{event.name}</button>
+                ) : "—"}
+              />
+              <Field icon={MapPin} label="Address" value={lead.address} />
+              <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
+              <Field icon={CalendarDays} label="Last Modified" value={(lead as any).updated_at ? format(new Date((lead as any).updated_at), "dd MMM yyyy, HH:mm") : "—"} />
             </CardContent>
           </Card>
 
