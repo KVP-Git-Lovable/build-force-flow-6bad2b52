@@ -652,7 +652,8 @@ export default function Activities() {
   const handleCheckIn = async () => {
     setCheckingIn(true);
     try {
-      const result = await checkInForDate(currentUserId, dateStr);
+      const targetDate = editActivityObj?.activity_date || dateStr;
+      const result = await checkInForDate(currentUserId, targetDate);
       setFormAttendance(result);
       toast.success("Checked in successfully");
     } catch (err: any) {
