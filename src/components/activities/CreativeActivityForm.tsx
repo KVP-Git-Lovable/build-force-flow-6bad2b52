@@ -154,6 +154,8 @@ export default function CreativeActivityForm({
   attendance,
   onDayCheckIn,
   dayCheckingIn = false,
+  defaultLeadId,
+
 }: Props) {
   const isEdit = !!editActivity;
   const { profile: currentProfile, initials: currentInitials } = useUserProfile();
