@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, TrendingUp, CalendarClock, CheckCircle2, Activity, X } from "lucide-react";
 import { useLeads, useLeadStatuses, statusColorClasses } from "@/hooks/useLeadsEvents";
 import { LeadForm } from "@/components/leads/LeadForm";
+import { useLeadScoringRules } from "@/hooks/useLeadScoring";
+import { useLeadsInsights, bantScore, BANT_LEVEL_CLASSES, SLA_BADGE_CLASSES } from "@/hooks/useLeadInsights";
 import {
   format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   subWeeks, subMonths, startOfQuarter, endOfQuarter, subQuarters, isWithinInterval,
@@ -170,6 +172,9 @@ export default function Leads() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [q, createdPreset, modifiedPreset, ownerFilter, statusFilter]);
   const visibleLeads = useMemo(() => filteredLeads.slice(0, visibleCount), [filteredLeads, visibleCount]);
+  const { rules: scoringRules } = useLeadScoringRules();
+  const visibleIds = useMemo(() => visibleLeads.map((l: any) => l.id), [visibleLeads]);
+  const { data: insights = {} } = useLeadsInsights(visibleIds);
   const hasMore = visibleCount < filteredLeads.length;
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -288,6 +293,11 @@ export default function Leads() {
           const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
           const owner = ownerOf(l);
           const ownerName = owner ? (userMap[owner] || "—") : "—";
+          const ins = (insights as any)[l.id] ?? { activityCount: 0, documentCount: 0, sla: "Not Started" };
+          const score = bantScore(
+            { statusName: st?.name, contactRole: l.contact_role, activityCount: ins.activityCount, createdAt: l.created_at },
+            scoringRules,
+          );
           return (
             <Card key={l.id} className="cursor-pointer active:opacity-80" onClick={() => nav(`/leads/${l.id}`)}>
               <CardContent className="p-3 space-y-1.5">
@@ -304,7 +314,31 @@ export default function Leads() {
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] text-muted-foreground truncate">Owner: {ownerName}</span>
-                  {Number(l.opportunity_value) > 0 && <span className="text-[11px] font-medium shrink-0">{money(Number(l.opportunity_value))}</span>}
+                  <span className="text-[11px] text-muted-foreground shrink-0">{ins.documentCount} doc{ins.documentCount === 1 ? "" : "s"}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 rounded-md bg-muted/40 p-2">
+                  <div>
+                    <div className="text-[10px] text-muted-foreground">Value</div>
+                    <div className="text-[11px] font-semibold truncate">
+                      {Number(l.opportunity_value) > 0 ? money(Number(l.opportunity_value)) : "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-muted-foreground">Close date</div>
+                    <div className="text-[11px] font-semibold truncate">
+                      {l.opportunity_close_date ? format(new Date(l.opportunity_close_date), "dd MMM yy") : "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-muted-foreground">Win %</div>
+                    <div className="text-[11px] font-semibold">
+                      {l.opportunity_probability != null ? `${l.opportunity_probability}%` : "—"}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Badge className={`${BANT_LEVEL_CLASSES[score.level]} text-[10px]`}>BANT {score.total} · {score.level}</Badge>
+                  <Badge className={`${SLA_BADGE_CLASSES[ins.sla]} text-[10px]`}>{ins.sla}</Badge>
                 </div>
               </CardContent>
             </Card>
