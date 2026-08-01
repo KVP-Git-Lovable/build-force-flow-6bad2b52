@@ -134,21 +134,30 @@ export default function LeadDetail() {
           <Card>
             <CardHeader><CardTitle className="text-base">Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field icon={User} label="Name" value={lead.name} />
+              <Field icon={Briefcase} label="Designation" value={lead.title} />
+              <Field icon={Users} label="Contact Role" value={CONTACT_ROLE_LABELS[((lead as any).contact_role || "unknown") as ContactRole] ?? "Unknown"} />
+              <Field icon={Building2} label="Company" value={lead.company} />
               <Field icon={Mail} label="Email" value={lead.email} />
               <Field icon={Phone} label="Phone" value={lead.phone} />
               <Field icon={Globe} label="Website" value={lead.website} />
-              <Field icon={Building2} label="Industry" value={lead.industry} />
-              <Field icon={MapPin} label="Address" value={lead.address} />
+              <Field icon={Building2} label="Industry" value={industries.find((i) => i.id === lead.industry)?.name ?? lead.industry} />
+              <Field
+                icon={Tag}
+                label="Status"
+                value={currentStatus ? <Badge className={statusColorClasses(currentStatus.color)}>{currentStatus.name}</Badge> : "—"}
+              />
               <Field icon={Briefcase} label="Source" value={source?.name} />
-              {event && (
-                <div className="flex items-start gap-2 text-sm">
-                  <Briefcase className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Related Event</div>
-                    <button className="text-primary hover:underline" onClick={() => nav(`/events/${event.id}`)}>{event.name}</button>
-                  </div>
-                </div>
-              )}
+              <Field
+                icon={CalendarDays}
+                label="Related Event"
+                value={event ? (
+                  <button className="text-primary hover:underline" onClick={() => nav(`/events/${event.id}`)}>{event.name}</button>
+                ) : "—"}
+              />
+              <Field icon={MapPin} label="Address" value={lead.address} />
+              <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
+              <Field icon={CalendarDays} label="Last Modified" value={(lead as any).updated_at ? format(new Date((lead as any).updated_at), "dd MMM yyyy, HH:mm") : "—"} />
             </CardContent>
           </Card>
 
