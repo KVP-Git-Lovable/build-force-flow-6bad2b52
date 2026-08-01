@@ -149,6 +149,61 @@ export function statusScore(statusName: string | undefined | null, rules: Scorin
   return rules.statusScores[statusName.toLowerCase()] ?? 0;
 }
 
+export type BudgetTier = "aligned" | "shared" | "none";
+
+export function budgetTier(
+  budget: number | null | undefined,
+  opportunityValue: number | null | undefined,
+  rules: ScoringRules,
+): BudgetTier {
+  if (budget == null || Number(budget) <= 0) return "none";
+  const opp = Number(opportunityValue ?? 0);
+  if (opp > 0) {
+    const variance = (Math.abs(Number(budget) - opp) / opp) * 100;
+    if (variance <= rules.budget.tolerancePct) return "aligned";
+  }
+  return "shared";
+}
+
+export function budgetScore(
+  budget: number | null | undefined,
+  opportunityValue: number | null | undefined,
+  rules: ScoringRules,
+): number {
+  const tier = budgetTier(budget, opportunityValue, rules);
+  return rules.budget[tier];
+}
+
+export type CloseDateTier = "thisMonth" | "nextMonth" | "later" | "none";
+
+export function closeDateTier(closeDate: string | null | undefined): CloseDateTier {
+  if (!closeDate) return "none";
+  const d = new Date(closeDate);
+  if (isNaN(d.getTime())) return "none";
+  const now = new Date();
+  const months = (d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth());
+  if (months <= 0) return "thisMonth";
+  if (months === 1) return "nextMonth";
+  return "later";
+}
+
+export function closeDateScore(closeDate: string | null | undefined, rules: ScoringRules): number {
+  return rules.closeDate[closeDateTier(closeDate)];
+}
+
+export type NeedTier = "clear" | "vague" | "none";
+
+export function needTier(requirement: string | null | undefined, rules: ScoringRules): NeedTier {
+  const text = (requirement ?? "").trim();
+  if (!text) return "none";
+  return text.length >= rules.need.clearMinChars ? "clear" : "vague";
+}
+
+export function needScore(requirement: string | null | undefined, rules: ScoringRules): number {
+  return rules.need[needTier(requirement, rules)];
+}
+
+
 export function qualificationLevel(total: number, rules: ScoringRules): "High" | "Medium" | "Low" {
   if (total >= rules.qualification.high) return "High";
   if (total >= rules.qualification.medium) return "Medium";
