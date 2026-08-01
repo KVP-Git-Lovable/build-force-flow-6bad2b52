@@ -37,6 +37,18 @@ function Fallback() {
 
 function AnalyticsInner() {
   const { tab, setTab } = useReportContext();
+  const { getValue } = useAppConfiguration();
+
+  const visibleTabs = useMemo(
+    () => TABS.filter((t) => !t.configKey || getValue<boolean>("reports", t.configKey) !== false),
+    [getValue]
+  );
+
+  useEffect(() => {
+    if (!visibleTabs.some((t) => t.key === tab)) setTab("overview");
+  }, [visibleTabs, tab, setTab]);
+
+  const isOn = (key: ReportTabKey) => visibleTabs.some((t) => t.key === key);
 
   return (
     <div className="pb-24">
@@ -56,7 +68,7 @@ function AnalyticsInner() {
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto overflow-x-auto no-scrollbar">
           <div className="flex gap-1 px-3 py-2 min-w-max">
-            {TABS.map((t) => (
+            {visibleTabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
@@ -82,13 +94,21 @@ function AnalyticsInner() {
         >
           {tab === "overview" && <OverviewTab />}
           <Suspense fallback={<Fallback />}>
-            {tab === "attendance" && <AttendanceReport />}
-            {tab === "procurement" && <ProcurementReport />}
-            {tab === "activities" && <ActivityReport />}
-            {tab === "milestones" && <MilestoneReport />}
-            {tab === "expenses" && <ExpenseReport />}
-            {tab === "payments" && <PaymentReport />}
+            {tab === "attendance" && isOn("attendance") && <AttendanceReport />}
+            {tab === "procurement" && isOn("procurement") && <ProcurementReport />}
+            {tab === "activities" && isOn("activities") && <ActivityReport />}
+            {tab === "leads" && isOn("leads") && <LeadReport />}
+            {tab === "milestones" && isOn("milestones") && <MilestoneReport />}
+            {tab === "expenses" && isOn("expenses") && <ExpenseReport />}
+            {tab === "leave" && isOn("leave") && <LeaveReport />}
+            {tab === "payments" && isOn("payments") && <PaymentReport />}
           </Suspense>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
         </motion.div>
       </div>
     </div>
