@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ReportShell, SummaryCards } from "./ReportShell";
-import { DateField, SelectField } from "./ReportFilters";
+import { SelectField, DateScopeFilter } from "./ReportFilters";
 import { useReportScope } from "./useReportScope";
-import { generateReportPdf } from "./reportPdf";
+import { ReportWorkspace } from "./ReportWorkspace";
+import type { ReportColumn } from "./reportTypes";
+import { DateFieldOption, PresetKey, presetLabel, useDateScope } from "./dateScope";
+
+const DATE_FIELDS: DateFieldOption[] = [
+  { value: "from_date", label: "Leave From Date" },
+  { value: "to_date", label: "Leave To Date" },
+  { value: "created_at", label: "Applied Date", timestamp: true },
+];
 
 interface Row {
   id: string;
@@ -38,15 +44,13 @@ const statusBadge = (s: string) => {
 
 export default function LeaveReport() {
   const scope = useReportScope();
-  const [from, setFrom] = useState(format(new Date(), "yyyy-MM-01"));
-  const [to, setTo] = useState(format(new Date(), "yyyy-MM-dd"));
+  const { state, patch, from, to } = useDateScope("leave", "from_date");
   const [employee, setEmployee] = useState("all");
   const [leaveType, setLeaveType] = useState("all");
   const [status, setStatus] = useState("all");
   const [types, setTypes] = useState<{ value: string; label: string }[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [generated, setGenerated] = useState(false);
 
   useEffect(() => {
@@ -63,13 +67,20 @@ export default function LeaveReport() {
       let q = supabase
         .from("leave_applications")
         .select("id, user_id, leave_type_id, from_date, to_date, total_days, status, approved_by")
-        .gte("from_date", from)
-        .lte("from_date", to)
         .order("from_date", { ascending: false });
+
+      if (state.field === "created_at") {
+        q = q.gte("created_at", `${from}T00:00:00`).lte("created_at", `${to}T23:59:59`);
+      } else {
+        q = q.gte(state.field, from).lte(state.field, to);
+      }
+
       if (employee !== "all") q = q.eq("user_id", employee);
-      else if (scope.userIds) q = q.in("user_id", scope.userIds.length ? scope.userIds : ["00000000-0000-0000-0000-000000000000"]);
+      else if (scope.userIds)
+        q = q.in("user_id", scope.userIds.length ? scope.userIds : ["00000000-0000-0000-0000-000000000000"]);
       if (leaveType !== "all") q = q.eq("leave_type_id", leaveType);
       if (status !== "all") q = q.eq("status", status);
+
       const { data, error } = await q;
       if (error) throw error;
 
@@ -102,6 +113,38 @@ export default function LeaveReport() {
     }
   };
 
+  const columns: ReportColumn<Row>[] = useMemo(
+    () => [
+      {
+        key: "full_name",
+        header: "Employee",
+        value: (r) => r.full_name,
+        render: (r) => <span className="font-medium">{r.full_name}</span>,
+        pdfWidth: 2.5,
+      },
+      { key: "leave_type", header: "Leave Type", value: (r) => r.leave_type, pdfWidth: 2 },
+      { key: "from_date", header: "From", value: (r) => format(new Date(r.from_date), "dd MMM yyyy"), pdfWidth: 1.6 },
+      { key: "to_date", header: "To", value: (r) => format(new Date(r.to_date), "dd MMM yyyy"), pdfWidth: 1.6 },
+      {
+        key: "total_days",
+        header: "Days",
+        value: (r) => r.total_days,
+        numeric: true,
+        align: "right",
+        pdfWidth: 1,
+      },
+      {
+        key: "status",
+        header: "Status",
+        value: (r) => r.status,
+        render: (r) => statusBadge(r.status),
+        pdfWidth: 1.4,
+      },
+      { key: "approved_by_name", header: "Approved By", value: (r) => r.approved_by_name, pdfWidth: 2 },
+    ],
+    []
+  );
+
   const summary = useMemo(() => {
     const days = rows.reduce((s, r) => s + r.total_days, 0);
     return [
@@ -112,61 +155,53 @@ export default function LeaveReport() {
     ];
   }, [rows]);
 
-  const download = async () => {
-    setDownloading(true);
-    try {
-      await generateReportPdf({
-        title: "Leave Report",
-        fileName: `leave-report-${from}-to-${to}.pdf`,
-        generatedBy: scope.generatedBy,
-        filters: [
-          `Period: ${from} to ${to}`,
-          `Employee: ${employee === "all" ? "All" : scope.users.find((u) => u.id === employee)?.full_name || "-"}`,
-          `Leave Type: ${leaveType === "all" ? "All" : types.find((t) => t.value === leaveType)?.label || "-"}`,
-          `Status: ${status === "all" ? "All" : status}`,
-        ],
-        columns: [
-          { header: "Employee", width: 2.5 },
-          { header: "Leave Type", width: 2 },
-          { header: "From", width: 1.6 },
-          { header: "To", width: 1.6 },
-          { header: "Days", width: 1, align: "right" },
-          { header: "Status", width: 1.4 },
-          { header: "Approved By", width: 2 },
-        ],
-        rows: rows.map((r) => [
-          r.full_name,
-          r.leave_type,
-          format(new Date(r.from_date), "dd MMM yyyy"),
-          format(new Date(r.to_date), "dd MMM yyyy"),
-          String(r.total_days),
-          r.status,
-          r.approved_by_name,
-        ]),
-        summary,
-      });
-      toast.success("PDF downloaded");
-    } catch {
-      toast.error("Failed to download PDF");
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const fieldLabel = DATE_FIELDS.find((f) => f.value === state.field)?.label || state.field;
 
   return (
-    <ReportShell
+    <ReportWorkspace
+      module="leave"
       title="Leave Report"
       description="Leave applications with type, duration and approval status."
+      columns={columns}
+      rows={rows}
+      rowKey={(r) => r.id}
       loading={loading || scope.loading}
-      downloading={downloading}
       generated={generated}
-      recordCount={rows.length}
       onGenerate={generate}
-      onDownload={download}
+      generatedBy={scope.generatedBy}
+      fileName={`leave-report-${from}-to-${to}.pdf`}
+      summary={summary}
+      defaultCharts={[
+        {
+          id: "default-type",
+          title: "Leave Days by Type",
+          type: "bar",
+          groupBy: "leave_type",
+          measure: "total_days",
+          aggregate: "sum",
+        },
+      ]}
+      filterState={{ ...state, employee, leaveType, status }}
+      onApplyFilterState={(s) => {
+        patch({
+          field: (s.field as string) || state.field,
+          preset: (s.preset as PresetKey) || state.preset,
+          customFrom: (s.customFrom as string) || state.customFrom,
+          customTo: (s.customTo as string) || state.customTo,
+        });
+        setEmployee((s.employee as string) || "all");
+        setLeaveType((s.leaveType as string) || "all");
+        setStatus((s.status as string) || "all");
+      }}
+      filterSummary={[
+        `${fieldLabel}: ${presetLabel(state.preset)} (${from} to ${to})`,
+        `Employee: ${employee === "all" ? "All" : scope.users.find((u) => u.id === employee)?.full_name || "-"}`,
+        `Leave Type: ${leaveType === "all" ? "All" : types.find((t) => t.value === leaveType)?.label || "-"}`,
+        `Status: ${status === "all" ? "All" : status}`,
+      ]}
       filters={
         <>
-          <DateField label="From Date" value={from} onChange={setFrom} />
-          <DateField label="To Date" value={to} onChange={setTo} />
+          <DateScopeFilter module="leave" fields={DATE_FIELDS} state={state} onChange={patch} from={from} to={to} />
           <SelectField
             label="Employee"
             value={employee}
@@ -177,35 +212,6 @@ export default function LeaveReport() {
           <SelectField label="Leave Type" value={leaveType} onChange={setLeaveType} allLabel="All Types" options={types} />
           <SelectField label="Status" value={status} onChange={setStatus} allLabel="All Statuses" options={STATUS} />
         </>
-      }
-      summary={<SummaryCards items={summary} />}
-      table={
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead>Leave Type</TableHead>
-              <TableHead>From</TableHead>
-              <TableHead>To</TableHead>
-              <TableHead className="text-right">Days</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Approved By</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="font-medium">{r.full_name}</TableCell>
-                <TableCell>{r.leave_type}</TableCell>
-                <TableCell>{format(new Date(r.from_date), "dd MMM yyyy")}</TableCell>
-                <TableCell>{format(new Date(r.to_date), "dd MMM yyyy")}</TableCell>
-                <TableCell className="text-right">{r.total_days}</TableCell>
-                <TableCell>{statusBadge(r.status)}</TableCell>
-                <TableCell>{r.approved_by_name}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
       }
     />
   );
