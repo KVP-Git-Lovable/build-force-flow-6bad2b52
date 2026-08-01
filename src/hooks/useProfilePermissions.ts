@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import { ADMIN_MODULE_PATH_MAP } from "@/components/security/permissionModules";
 
 interface ProfilePermission {
@@ -15,6 +15,8 @@ interface ProfilePermission {
 }
 
 export function useProfilePermissions() {
+  const queryClient = useQueryClient();
+
   // Get current user's security profile
   const { data: userProfile } = useQuery({
     queryKey: ["current-user-security-profile"],
@@ -41,7 +43,34 @@ export function useProfilePermissions() {
       if (error) throw error;
       return (data || []) as ProfilePermission[];
     },
+    refetchInterval: 5000, // Auto-refetch every 5 seconds for real-time updates
   });
+
+  // Subscribe to permission changes and refetch when they change
+  useEffect(() => {
+    if (!userProfile?.profile_id) return;
+
+    const subscription = supabase
+      .channel(`profile_permissions_${userProfile.profile_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profile_object_permissions",
+          filter: `profile_id=eq.${userProfile.profile_id}`,
+        },
+        () => {
+          // Invalidate and refetch permissions when they change
+          queryClient.invalidateQueries({ queryKey: ["user-profile-permissions", userProfile.profile_id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [userProfile?.profile_id, queryClient]);
 
   const hasNoProfile = userProfile === null;
 
