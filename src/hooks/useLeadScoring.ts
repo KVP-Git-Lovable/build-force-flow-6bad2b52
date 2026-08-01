@@ -101,8 +101,15 @@ export function useLeadScoringRules() {
         .eq("config_key", KEY)
         .maybeSingle();
       if (error) throw error;
-      if (!data) return DEFAULT_SCORING_RULES;
-      return { ...DEFAULT_SCORING_RULES, ...((data as any).config_value ?? {}) } as ScoringRules;
+      const cv = ((data as any)?.config_value ?? {}) as Partial<ScoringRules>;
+      return {
+        ...DEFAULT_SCORING_RULES,
+        ...cv,
+        budget: { ...DEFAULT_SCORING_RULES.budget, ...(cv.budget ?? {}) },
+        closeDate: { ...DEFAULT_SCORING_RULES.closeDate, ...(cv.closeDate ?? {}) },
+        need: { ...DEFAULT_SCORING_RULES.need, ...(cv.need ?? {}) },
+        qualification: { ...DEFAULT_SCORING_RULES.qualification, ...(cv.qualification ?? {}) },
+      } as ScoringRules;
     },
     staleTime: 60_000,
   });
