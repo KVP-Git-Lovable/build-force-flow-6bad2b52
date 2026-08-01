@@ -14,6 +14,7 @@ import {
   LeadRow, useSaveLead, useLeadStatuses, useLeadSources, useEvents, useIndustries,
 } from "@/hooks/useLeadsEvents";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { CONTACT_ROLE_LABELS, ContactRole } from "@/hooks/useLeadScoring";
 
 export function LeadForm({
   open, onOpenChange, lead, defaultEventId,
