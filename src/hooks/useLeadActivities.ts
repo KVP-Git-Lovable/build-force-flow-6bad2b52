@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const ACTIVITY_OUTCOMES = [
+  "Not started",
   "Productive",
   "Unproductive",
   "Visited but not available",
