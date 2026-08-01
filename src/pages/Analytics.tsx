@@ -16,15 +16,14 @@ const LeadReport = lazy(() => import("@/components/reports/LeadReport"));
 
 const TABS: { key: ReportTabKey; label: string; configKey?: string }[] = [
   { key: "overview", label: "Overview" },
-  { key: "attendance", label: "Attendance", configKey: "attendanceReport" },
-  { key: "procurement", label: "Procurement", configKey: "procurementReport" },
-  { key: "activities", label: "Activities", configKey: "activityReport" },
   { key: "leads", label: "Leads", configKey: "leadReport" },
-  { key: "milestones", label: "Milestones", configKey: "milestoneReport" },
-  { key: "expenses", label: "Expenses", configKey: "expenseReport" },
+  { key: "activities", label: "Activities", configKey: "activityReport" },
+  { key: "attendance", label: "Attendance", configKey: "attendanceReport" },
   { key: "leave", label: "Leave", configKey: "leaveReport" },
-  { key: "payments", label: "Payments", configKey: "paymentReport" },
+  { key: "procurement", label: "Procurement", configKey: "procurementReport" },
+  { key: "expenses", label: "Expenses", configKey: "expenseReport" },
 ];
+
 
 
 function Fallback() {
