@@ -69,6 +69,9 @@ export interface Activity {
   site_flag?: string;
   milestone_name?: string;
   milestone_status?: string;
+  lead_id?: string | null;
+  lead_name?: string;
+
   // Offline queue metadata
   _pending?: boolean;
   _sync_error?: string | null;
