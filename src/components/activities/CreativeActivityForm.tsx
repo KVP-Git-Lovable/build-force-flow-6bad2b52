@@ -90,7 +90,9 @@ interface Props {
   attendance?: { check_in_time: string | null; check_out_time: string | null } | null;
   onDayCheckIn?: () => void | Promise<void>;
   dayCheckingIn?: boolean;
+  defaultLeadId?: string;
 }
+
 
 const STATUS_LABELS: Record<string, string> = {
   planned: "Planned",
