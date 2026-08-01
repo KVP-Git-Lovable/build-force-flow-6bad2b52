@@ -212,16 +212,68 @@ export function LeadForm({
             />
           </div>
 
+          <div className="rounded-lg border p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              <Label className="text-sm font-semibold">Opportunity Highlight</Label>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs">Opportunity Value (₹)</Label>
+                <Input
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={f.opportunity_value}
+                  onChange={(e) => setF({ ...f, opportunity_value: e.target.value.replace(/[^0-9.]/g, "") })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Close Date</Label>
+                <Input
+                  type="date"
+                  value={f.opportunity_close_date}
+                  onChange={(e) => setF({ ...f, opportunity_close_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Probability of Win (%)</Label>
+                <Input
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={f.opportunity_probability}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^0-9]/g, "");
+                    if (v === "" || Number(v) <= 100) setF({ ...f, opportunity_probability: v });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
           <div>
-            <Label>Address</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label>Address</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={captureLocation}
+                disabled={locating}
+                aria-label="Use my current location"
+              >
+                {locating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <MapPin className="h-4 w-4 mr-1" />}
+                Use location
+              </Button>
+            </div>
             <Textarea rows={2} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={submit} disabled={!f.name.trim() || save.isPending}>{lead ? "Save" : "Create"}</Button>
         </DialogFooter>
       </DialogContent>
+
     </Dialog>
   );
 }
