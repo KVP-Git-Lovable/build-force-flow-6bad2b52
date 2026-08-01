@@ -207,18 +207,20 @@ export default function GPSTracking() {
       // Filter GPS points: remove poor accuracy and unrealistic speeds
       let filteredPoints = (pointsRes.data || []) as GPSPoint[];
 
-      // Remove points with poor accuracy (> 100m)
-      filteredPoints = filteredPoints.filter(p => !p.accuracy || p.accuracy <= 100);
+      // Remove points with poor accuracy (> 50m for stricter filtering)
+      filteredPoints = filteredPoints.filter(p => !p.accuracy || p.accuracy <= 50);
 
-      // Remove points that represent impossible speeds (> 80 km/hr for field work)
-      const MAX_SPEED_KMH = 80;
+      // Remove points that represent unrealistic speeds
+      // Field work max speed: 50 km/hr (more conservative)
+      const MAX_SPEED_KMH = 50;
+      const MIN_TIME_SECONDS = 5; // Ignore jumps < 5 seconds apart (likely noise)
       const cleanedPoints: GPSPoint[] = [];
 
       for (let i = 0; i < filteredPoints.length; i++) {
         if (i === 0) {
           cleanedPoints.push(filteredPoints[i]);
         } else {
-          const prev = filteredPoints[i - 1];
+          const prev = cleanedPoints[cleanedPoints.length - 1];
           const curr = filteredPoints[i];
 
           // Calculate distance using Haversine
@@ -231,16 +233,20 @@ export default function GPSTracking() {
             Math.sin(dLon / 2) ** 2;
           const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-          // Calculate time difference in hours
+          // Calculate time difference
           const prevTime = new Date(prev.timestamp).getTime();
           const currTime = new Date(curr.timestamp).getTime();
-          const timeHours = (currTime - prevTime) / (1000 * 60 * 60);
+          const timeSeconds = (currTime - prevTime) / 1000;
+          const timeHours = timeSeconds / 3600;
+
+          // Skip if too close in time (likely noise)
+          if (timeSeconds < MIN_TIME_SECONDS) continue;
 
           // Calculate speed
           const speedKmh = timeHours > 0 ? distance / timeHours : 0;
 
-          // Only include if speed is realistic (< MAX_SPEED_KMH)
-          if (speedKmh <= MAX_SPEED_KMH) {
+          // Only include if speed is realistic (< MAX_SPEED_KMH) and distance > 50m
+          if (speedKmh <= MAX_SPEED_KMH && distance > 0.05) {
             cleanedPoints.push(curr);
           }
         }
