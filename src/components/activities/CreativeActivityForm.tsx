@@ -42,6 +42,7 @@ import CameraCapture from "@/components/CameraCapture";
 import { isNative, takeNativePhoto } from "@/utils/nativePermissions";
 import OpenGRNPicker from "@/components/procurement/OpenGRNPicker";
 import { receiptDrivenStatus } from "@/lib/procurement";
+import { ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
 
 interface GrnLineItem {
   id: string;
@@ -145,7 +146,10 @@ export default function CreativeActivityForm({
   const isEdit = !!editActivity;
   const { profile: currentProfile, initials: currentInitials } = useUserProfile();
   const [projectId, setProjectId] = useState("");
-  const [projectSearch, setProjectSearch] = useState("");
+  const [leadId, setLeadId] = useState("");
+  const [leadSearch, setLeadSearch] = useState("");
+  const [leadOptions, setLeadOptions] = useState<{ id: string; name: string; company: string | null }[]>([]);
+  const [outcome, setOutcome] = useState("");
   const [description, setDescription] = useState("");
   const [activityType, setActivityType] = useState("");
   const [activityDate, setActivityDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
@@ -193,7 +197,9 @@ export default function CreativeActivityForm({
   useEffect(() => {
     if (!open) {
       setProjectId("");
-      setProjectSearch("");
+      setLeadId("");
+      setLeadSearch("");
+      setOutcome("");
       setDescription("");
       setActivityType("");
       setActivityDate(format(new Date(), "yyyy-MM-dd"));
@@ -216,6 +222,8 @@ export default function CreativeActivityForm({
     // Prefill on edit
     if (editActivity) {
       setProjectId(editActivity.site_id || "");
+      setLeadId((editActivity as any).lead_id || "");
+      setOutcome((editActivity as any).outcome || "");
       setDescription(editActivity.description || "");
       setActivityType(editActivity.activity_type || "");
       setActivityDate(editActivity.activity_date || format(new Date(), "yyyy-MM-dd"));
@@ -238,6 +246,23 @@ export default function CreativeActivityForm({
       setCheckedIn(false);
     }
   }, [open, editActivity, clearRecording]);
+
+  // Load leads for the picker
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("leads")
+        .select("id, name, company")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (!cancelled) setLeadOptions((data as any[]) || []);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+
 
   // Load PO items + already-received qty whenever a PO is selected for GRN
   useEffect(() => {
@@ -304,11 +329,15 @@ export default function CreativeActivityForm({
     }
   }, [isGrnType]);
 
-  const filteredProjects = useMemo(() => {
-    const q = projectSearch.trim().toLowerCase();
-    if (!q) return projects;
-    return projects.filter((p) => p.name.toLowerCase().includes(q));
-  }, [projects, projectSearch]);
+  const filteredLeads = useMemo(() => {
+    const q = leadSearch.trim().toLowerCase();
+    if (!q) return leadOptions;
+    return leadOptions.filter(
+      (l) => l.name.toLowerCase().includes(q) || (l.company || "").toLowerCase().includes(q)
+    );
+  }, [leadOptions, leadSearch]);
+
+  const selectedLead = leadOptions.find((l) => l.id === leadId);
 
   const filteredUsers = useMemo(() => {
     const q = assignSearch.trim().toLowerCase();
@@ -463,11 +492,11 @@ export default function CreativeActivityForm({
     }
   }, [clearRecording, isFinalizing, isRecording, isStartingRecording, isTranscribing, startRecording, stopRecording]);
 
-  const canPost = !!description.trim() || !!activityType || !!projectId;
+  const canPost = !!description.trim() || !!activityType || !!leadId;
 
   const handlePost = async () => {
     if (!canPost) {
-      toast.error("Add a project, type, or description to post");
+      toast.error("Add a lead, type, or description to post");
       return;
     }
     if (isEdit && !editActivity) return;
@@ -528,6 +557,8 @@ export default function CreativeActivityForm({
         activity_date: activityDate,
         description: description || null,
         site_id: projectId || null,
+        lead_id: leadId || null,
+        outcome: outcome || null,
         photo_urls: photos,
         grn_po_id: isGrnType ? (grnPoId || null) : null,
         ...(canAssign ? { assigned_user_ids: assignedIds } : {}),
@@ -764,14 +795,14 @@ export default function CreativeActivityForm({
                 </div>
               )}
 
-              {/* Project picker */}
+              {/* Lead picker */}
               <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-fuchsia-50 dark:from-indigo-950/30 dark:to-fuchsia-950/30 border border-indigo-100 dark:border-indigo-900/50 px-3 sm:px-4 pt-4 pb-3 shadow-sm min-w-0 max-w-full overflow-hidden">
                 <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
-                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Project</p>
-                  {selectedProject && (
+                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Lead</p>
+                  {selectedLead && (
                     <button
                       className="text-[11px] text-muted-foreground hover:text-foreground shrink-0"
-                      onClick={() => setProjectId("")}
+                      onClick={() => setLeadId("")}
                     >
                       Clear
                     </button>
@@ -780,22 +811,22 @@ export default function CreativeActivityForm({
                 <div className="relative mb-3">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Search projects..."
-                    value={projectSearch}
-                    onChange={(e) => setProjectSearch(e.target.value)}
+                    placeholder="Search leads..."
+                    value={leadSearch}
+                    onChange={(e) => setLeadSearch(e.target.value)}
                     className="pl-9 h-9 rounded-full bg-background/80 border-0"
                   />
                 </div>
                 <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1 scrollbar-none max-w-full">
-                  {filteredProjects.length === 0 && (
-                    <p className="text-xs text-muted-foreground py-4">No projects found</p>
+                  {filteredLeads.length === 0 && (
+                    <p className="text-xs text-muted-foreground py-4">No leads found</p>
                   )}
-                  {filteredProjects.map((p) => {
-                    const active = p.id === projectId;
+                  {filteredLeads.map((p) => {
+                    const active = p.id === leadId;
                     return (
                       <button
                         key={p.id}
-                        onClick={() => setProjectId(p.id)}
+                        onClick={() => setLeadId(active ? "" : p.id)}
                         className="shrink-0 flex flex-col items-center gap-1.5 w-16 focus:outline-none group"
                       >
                         <div
@@ -808,15 +839,11 @@ export default function CreativeActivityForm({
                         >
                           <div
                             className={cn(
-                              "h-full w-full rounded-full overflow-hidden bg-gradient-to-br flex items-center justify-center text-white font-semibold text-sm border-2 border-background",
-                              !p.image_url && gradientFor(p.id)
+                              "h-full w-full rounded-full overflow-hidden flex items-center justify-center text-white font-semibold text-sm border-2 border-background bg-gradient-to-br",
+                              gradientFor(p.id)
                             )}
                           >
-                            {p.image_url ? (
-                              <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" />
-                            ) : (
-                              initials(p.name)
-                            )}
+                            {initials(p.name)}
                           </div>
                           {active && (
                             <div className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-emerald-500 border-2 border-background flex items-center justify-center">
@@ -829,7 +856,7 @@ export default function CreativeActivityForm({
                             "text-[10px] w-full text-center truncate leading-tight",
                             active ? "font-semibold text-foreground" : "text-muted-foreground"
                           )}
-                          title={p.name}
+                          title={p.company ? `${p.name} · ${p.company}` : p.name}
                         >
                           {p.name}
                         </p>
@@ -838,6 +865,7 @@ export default function CreativeActivityForm({
                   })}
                 </div>
               </div>
+
 
               {/* Activity date */}
               <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-2.5 shadow-sm flex items-center gap-2 min-w-0">
@@ -906,8 +934,8 @@ export default function CreativeActivityForm({
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder={
-                      selectedProject
-                        ? `What's happening at ${selectedProject.name}?`
+                      selectedLead
+                        ? `What's happening with ${selectedLead.name}?`
                         : "What's happening in your project?"
                     }
                     rows={3}
@@ -1149,6 +1177,34 @@ export default function CreativeActivityForm({
                 </div>
               </div>
 
+              {/* Outcome */}
+              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-100 dark:border-emerald-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 mb-2">
+                  Outcome
+                </p>
+                <div className="flex flex-wrap gap-2 min-w-0">
+                  {ACTIVITY_OUTCOMES.map((o) => {
+                    const active = o === outcome;
+                    return (
+                      <button
+                        key={o}
+                        onClick={() => setOutcome(active ? "" : o)}
+                        className={cn(
+                          "max-w-full px-3.5 min-h-8 h-auto py-1.5 rounded-full text-xs font-medium border transition-all whitespace-normal break-words [overflow-wrap:anywhere]",
+                          active
+                            ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-transparent shadow-md"
+                            : "bg-white dark:bg-background border-emerald-200 dark:border-emerald-900/60 text-foreground hover:border-emerald-400 hover:text-emerald-600"
+                        )}
+                      >
+                        {o}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+
+
               {/* GRN — Goods Receipt (only when Activity Type contains "GRN") */}
               {isGrnType && (
                 <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/30 border border-sky-100 dark:border-sky-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden space-y-3">
@@ -1160,7 +1216,7 @@ export default function CreativeActivityForm({
                   </div>
 
                   {!projectId ? (
-                    <p className="text-xs text-muted-foreground">Select a Project/Site above to see open Purchase Orders.</p>
+                    <p className="text-xs text-muted-foreground">Goods receipts are captured from the Procurement module for site-linked orders.</p>
                   ) : (
                     <OpenGRNPicker siteId={projectId} value={grnPoId} onChange={setGrnPoId} />
                   )}
@@ -1340,9 +1396,9 @@ export default function CreativeActivityForm({
             {/* Footer */}
             <div className="px-3 sm:px-4 py-3 border-t border-border/60 bg-background flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0 max-w-full overflow-hidden safe-bottom">
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap min-w-0 max-w-full">
-                {selectedProject && (
+                {selectedLead && (
                   <Badge variant="secondary" className="rounded-full text-[10px] px-2 py-0 max-w-full min-w-0">
-                    <span className="min-w-0 truncate">{selectedProject.name}</span>
+                    <span className="min-w-0 truncate">{selectedLead.name}</span>
                   </Badge>
                 )}
                 {activityType && (

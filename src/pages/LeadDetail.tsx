@@ -15,7 +15,7 @@ import {
 } from "@/hooks/useLeadsEvents";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { ActivityForm } from "@/components/customers/ActivityForm";
-import { useCustomerActivities } from "@/hooks/useCustomers";
+import { useLeadActivities } from "@/hooks/useLeadActivities";
 import { Plus } from "lucide-react";
 import { LeadForm } from "@/components/leads/LeadForm";
 import { ConvertLeadDialog } from "@/components/leads/ConvertLeadDialog";
@@ -33,7 +33,7 @@ export default function LeadDetail() {
   const { data: audit = [] } = useLeadAuditLog(id);
   const save = useSaveLead();
   const del = useDeleteLead();
-  const { data: activities = [] } = useCustomerActivities({ leadId: id });
+  const { data: activities = [] } = useLeadActivities(id);
 
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
@@ -182,16 +182,16 @@ export default function LeadDetail() {
             {activities.map((a: any) => (
               <div key={a.id} className="border-l-2 border-primary/40 pl-3 py-2">
                 <div className="flex justify-between gap-2 text-sm">
-                  <span className="font-medium">{a.subject}</span>
+                  <span className="font-medium">{a.activity_name}</span>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {format(new Date(a.activity_date), "dd MMM yyyy")}
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap mt-0.5">
-                  <span>{a.type}</span>
+                  <span>{a.activity_type}</span>
                   {a.outcome && <Badge variant="outline" className="text-[10px]">{a.outcome}</Badge>}
                 </div>
-                {a.notes && <p className="text-sm mt-1 whitespace-pre-wrap">{a.notes}</p>}
+                {a.description && <p className="text-sm mt-1 whitespace-pre-wrap">{a.description}</p>}
               </div>
             ))}
             {activities.length === 0 && (
