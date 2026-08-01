@@ -1,8 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { BarChart3 } from "lucide-react";
 import { OverviewTab } from "@/components/analytics/OverviewTab";
 import { ReportProvider, useReportContext, ReportTabKey } from "@/components/analytics/ReportContext";
+import { useAppConfiguration } from "@/hooks/useAppConfiguration";
 
 const AttendanceReport = lazy(() => import("@/components/reports/AttendanceReport"));
 const ProcurementReport = lazy(() => import("@/components/reports/ProcurementReport"));
@@ -10,16 +11,21 @@ const ActivityReport = lazy(() => import("@/components/reports/ActivityReport"))
 const MilestoneReport = lazy(() => import("@/components/reports/MilestoneReport"));
 const ExpenseReport = lazy(() => import("@/components/reports/ExpenseReport"));
 const PaymentReport = lazy(() => import("@/components/reports/PaymentReport"));
+const LeaveReport = lazy(() => import("@/components/reports/LeaveReport"));
+const LeadReport = lazy(() => import("@/components/reports/LeadReport"));
 
-const TABS: { key: ReportTabKey; label: string }[] = [
+const TABS: { key: ReportTabKey; label: string; configKey?: string }[] = [
   { key: "overview", label: "Overview" },
-  { key: "attendance", label: "Attendance" },
-  { key: "procurement", label: "Procurement" },
-  { key: "activities", label: "Activities" },
-  { key: "milestones", label: "Milestones" },
-  { key: "expenses", label: "Expenses" },
-  { key: "payments", label: "Payments" },
+  { key: "attendance", label: "Attendance", configKey: "attendanceReport" },
+  { key: "procurement", label: "Procurement", configKey: "procurementReport" },
+  { key: "activities", label: "Activities", configKey: "activityReport" },
+  { key: "leads", label: "Leads", configKey: "leadReport" },
+  { key: "milestones", label: "Milestones", configKey: "milestoneReport" },
+  { key: "expenses", label: "Expenses", configKey: "expenseReport" },
+  { key: "leave", label: "Leave", configKey: "leaveReport" },
+  { key: "payments", label: "Payments", configKey: "paymentReport" },
 ];
+
 
 function Fallback() {
   return (
