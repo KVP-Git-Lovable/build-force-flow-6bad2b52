@@ -271,8 +271,12 @@ function LegacyModulePanel({ module, tab }: { module: string; tab: Tab }) {
           <ConfigToggleRow label="Attendance Report" checked={bool("attendanceReport")} onChange={(v) => s("attendanceReport", v)} />
           <ConfigToggleRow label="Expense Report" checked={bool("expenseReport")} onChange={(v) => s("expenseReport", v)} />
           <ConfigToggleRow label="Leave Report" checked={bool("leaveReport")} onChange={(v) => s("leaveReport", v)} />
+          <ConfigToggleRow label="Lead Report" checked={bool("leadReport")} onChange={(v) => s("leadReport", v)} />
+          <ConfigToggleRow label="Milestone Report" checked={bool("milestoneReport")} onChange={(v) => s("milestoneReport", v)} />
+          <ConfigToggleRow label="Payment Report" checked={bool("paymentReport")} onChange={(v) => s("paymentReport", v)} />
           <ConfigToggleRow label="Procurement Report" checked={bool("procurementReport")} onChange={(v) => s("procurementReport", v)} />
         </ConfigSection>
+
       );
     return <ConfigInfoMessage>No approval flow for this module</ConfigInfoMessage>;
   }
