@@ -261,8 +261,10 @@ export default function CreativeActivityForm({
       });
     } else {
       setCheckedIn(false);
+      if (defaultLeadId) setLeadId(defaultLeadId);
     }
-  }, [open, editActivity, clearRecording]);
+  }, [open, editActivity, clearRecording, defaultLeadId]);
+
 
   // Load leads for the picker
   useEffect(() => {
