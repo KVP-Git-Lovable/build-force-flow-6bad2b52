@@ -15,7 +15,7 @@ import {
 } from "@/hooks/useLeadsEvents";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { ActivityForm } from "@/components/customers/ActivityForm";
-import { useCustomerActivities } from "@/hooks/useCustomers";
+import { useLeadActivities } from "@/hooks/useLeadActivities";
 import { Plus } from "lucide-react";
 import { LeadForm } from "@/components/leads/LeadForm";
 import { ConvertLeadDialog } from "@/components/leads/ConvertLeadDialog";
