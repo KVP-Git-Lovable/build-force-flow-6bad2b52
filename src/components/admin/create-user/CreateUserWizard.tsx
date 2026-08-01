@@ -82,7 +82,10 @@ const CreateUserWizard: React.FC<CreateUserWizardProps> = ({ onSuccess }) => {
         }
         return true;
       case 'employment':
-        // Primary Manager is now optional
+        if (!formData.role_id) {
+          toast.error("Please select a role");
+          return false;
+        }
         return true;
       default:
         return true;
