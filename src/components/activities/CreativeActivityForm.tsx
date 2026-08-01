@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -154,7 +156,9 @@ export default function CreativeActivityForm({
   const isEdit = !!editActivity;
   const { profile: currentProfile, initials: currentInitials } = useUserProfile();
   const [projectId, setProjectId] = useState("");
+  const navigate = useNavigate();
   const [leadId, setLeadId] = useState("");
+
   const [leadSearch, setLeadSearch] = useState("");
   const [leadOptions, setLeadOptions] = useState<{ id: string; name: string; company: string | null }[]>([]);
   const [outcome, setOutcome] = useState("");
@@ -862,6 +866,16 @@ export default function CreativeActivityForm({
                     </button>
                   )}
                 </div>
+                {selectedLead && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/leads/${selectedLead.id}`)}
+                    className="mb-2 text-sm font-semibold text-primary underline underline-offset-2 text-left truncate max-w-full"
+                  >
+                    {selectedLead.name}{selectedLead.company ? ` · ${selectedLead.company}` : ""}
+                  </button>
+                )}
+
                 <div className="relative mb-3">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input

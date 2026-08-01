@@ -1826,6 +1826,8 @@ function GPSTrackView({
 // ---- Activity Card Component ----
 function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGoods, onStatusChanged, updateActivity, getStatusUpdateTargetId, selectedDateStr }: { a: ActivityType; isAdmin: boolean; onEdit: (a: ActivityType) => void; onDelete: (id: string) => void; onOpenDetails: (a: ActivityType) => void; onReceiveGoods: (poId: string) => void; onStatusChanged: () => void; updateActivity: (id: string, updates: Partial<ActivityType>) => Promise<void>; getStatusUpdateTargetId: (activity: ActivityType, targetDate: string) => Promise<string>; selectedDateStr: string }) {
   const [changingStatus, setChangingStatus] = useState(false);
+  const navigate = useNavigate();
+
 
   const handleStatusChange = async (newStatus: string) => {
     if (newStatus === a.status) return;
@@ -1885,83 +1887,96 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
     }
   };
 
+  const leadId = (a as any).lead_id as string | undefined;
+  const leadName = (a as any).lead_name as string | undefined;
+  const linkedName = leadName || a.site_name || a.project_name || "";
+  const audioUrls = (a.attachment_urls || []).filter((url: string) => url.includes("activity-audio"));
+
+  const Row = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
+    <div className="flex items-start gap-1.5 text-xs text-muted-foreground min-w-0">
+      <span className="shrink-0 mt-[1px]">{icon}</span>
+      <span className="min-w-0 break-words">{children}</span>
+    </div>
+  );
+
   return (
     <Card className="shadow-card">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpenDetails(a)}>
 
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="font-semibold text-sm truncate">{a.activity_name}</span>
+              <span className="font-semibold text-sm truncate">{a.activity_name || a.activity_type || "Activity"}</span>
               {(a as any)._pending && (
                 <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 text-amber-700 border-amber-300">
                   {(a as any)._sync_error ? "Sync failed" : "Pending sync"}
                 </Badge>
               )}
             </div>
-            <p className="text-xs text-muted-foreground ml-6">{a.activity_type}</p>
-            {a.location_address && (
-              <p className="text-xs text-muted-foreground ml-6 mt-0.5">
-                <MapPin className="h-3 w-3 inline mr-1" />{a.location_address}
-              </p>
-            )}
-            {a.start_time && (
-              <p className="text-xs text-muted-foreground ml-6 mt-0.5">
-                <Clock className="h-3 w-3 inline mr-1" />
-                {format(parseISO(a.start_time), "h:mm a")}
-                {a.end_time && ` - ${format(parseISO(a.end_time), "h:mm a")}`}
-                {a.total_hours ? ` (${a.total_hours}h)` : ""}
-              </p>
-            )}
-            {(a.site_name || a.project_name) && (
-              <div className="ml-6 mt-0.5 space-y-0.5">
-                <p className="text-xs text-primary">
-                  📍 {a.site_name || a.project_name}
-                  {a.site_flag && (
-                    <span className={`ml-1.5 inline-block h-2 w-2 rounded-full ${a.site_flag === "red" ? "bg-red-500" : a.site_flag === "orange" ? "bg-orange-500" : "bg-emerald-500"}`} />
-                  )}
+
+            <div className="ml-6 space-y-0.5">
+              <Row icon={<Activity className="h-3 w-3" />}>{a.activity_type || "—"}</Row>
+
+              <Row icon={<Clock className="h-3 w-3" />}>
+                {a.start_time
+                  ? `${format(parseISO(a.start_time), "h:mm a")}${a.end_time ? ` - ${format(parseISO(a.end_time), "h:mm a")}` : ""}${a.total_hours ? ` (${a.total_hours}h)` : ""}`
+                  : "—"}
+              </Row>
+
+              <Row icon={<span>📍</span>}>
+                {linkedName ? (
+                  leadId ? (
+                    <button
+                      type="button"
+                      className="text-primary underline underline-offset-2 text-left"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/leads/${leadId}`); }}
+                    >
+                      {linkedName}
+                    </button>
+                  ) : (
+                    <span className="text-primary">{linkedName}</span>
+                  )
+                ) : "—"}
+                {!leadId && a.site_flag && (
+                  <span className={`ml-1.5 inline-block h-2 w-2 rounded-full ${a.site_flag === "red" ? "bg-red-500" : a.site_flag === "orange" ? "bg-orange-500" : "bg-emerald-500"}`} />
+                )}
+              </Row>
+
+              <Row icon={<MapPin className="h-3 w-3" />}>{a.location_address || "—"}</Row>
+
+              <Row icon={<span>👤</span>}>{a.user_full_name || "—"}</Row>
+
+              {a.milestone_name && (
+                <Row icon={<span>🎯</span>}>
+                  {a.milestone_name}
+                  <span className="ml-1.5 text-[10px]">({milestoneStatusLabel(a.milestone_status)})</span>
+                </Row>
+              )}
+
+              <Row icon={<span>📝</span>}>
+                <span className="line-clamp-2">{a.description || "—"}</span>
+              </Row>
+
+              {audioUrls.length > 0 && (
+                <div className="pt-1">
+                  {audioUrls.map((url: string, idx: number) => (
+                    <audio key={idx} controls className="h-8 w-full max-w-[240px]" preload="metadata">
+                      <source src={url} type={url.endsWith('.m4a') ? 'audio/mp4' : url.endsWith('.ogg') ? 'audio/ogg' : 'audio/webm'} />
+                    </audio>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-1 text-[10px] text-muted-foreground space-y-0.5">
+                <p>📷 {a.photo_urls?.length || 0} photo{(a.photo_urls?.length || 0) === 1 ? "" : "s"}</p>
+                <p>
+                  🕘 {a.status_changed_at
+                    ? `Status updated ${format(parseISO(a.status_changed_at), "h:mm a, MMM d")}${a.status_change_lat && a.status_change_lng ? ` • ${Number(a.status_change_lat).toFixed(4)}, ${Number(a.status_change_lng).toFixed(4)}` : ""}`
+                    : "No status update yet"}
                 </p>
-                {a.milestone_name && (
-                  <p className="text-xs text-muted-foreground">
-                    🎯 {a.milestone_name}
-                    <span className="ml-1.5 text-[10px]">
-                      ({milestoneStatusLabel(a.milestone_status)})
-                    </span>
-                  </p>
-                )}
               </div>
-            )}
-            {a.user_full_name && (
-              <p className="text-xs text-muted-foreground ml-6 mt-0.5">👤 {a.user_full_name}</p>
-            )}
-            {a.description && (
-              <p className="text-xs text-muted-foreground ml-6 mt-1 line-clamp-2">{a.description}</p>
-            )}
-            {/* Audio attachments */}
-            {a.attachment_urls && a.attachment_urls.length > 0 && a.attachment_urls.some((url: string) => url.includes("activity-audio")) && (
-              <div className="ml-6 mt-1.5">
-                {a.attachment_urls.filter((url: string) => url.includes("activity-audio")).map((url: string, idx: number) => (
-                  <audio key={idx} controls className="h-8 w-full max-w-[240px]" preload="metadata">
-                    <source src={url} type={url.endsWith('.m4a') ? 'audio/mp4' : url.endsWith('.ogg') ? 'audio/ogg' : 'audio/webm'} />
-                  </audio>
-                ))}
-              </div>
-            )}
-            {/* Status change location & timestamp */}
-            {a.status_changed_at && (
-              <p className="text-[10px] text-muted-foreground ml-6 mt-1">
-                📍 Status updated {format(parseISO(a.status_changed_at), "h:mm a, MMM d")}
-                {a.status_change_lat && a.status_change_lng && (
-                  <span> • {Number(a.status_change_lat).toFixed(4)}, {Number(a.status_change_lng).toFixed(4)}</span>
-                )}
-              </p>
-            )}
-            {a.photo_urls && a.photo_urls.length > 0 && (
-              <p className="text-[10px] text-muted-foreground ml-6 mt-1">
-                📷 {a.photo_urls.length} photo{a.photo_urls.length > 1 ? "s" : ""}
-              </p>
-            )}
+            </div>
           </div>
 
           <div className="flex flex-col items-end gap-2 shrink-0">
@@ -2001,6 +2016,7 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
     </Card>
   );
 }
+
 
 // ---- Haversine distance calculation (km) ----
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
