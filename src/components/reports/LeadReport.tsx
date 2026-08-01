@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Star } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +18,17 @@ import { ReportShell, SummaryCards } from "./ReportShell";
 import { DateField, SelectField } from "./ReportFilters";
 import { useReportScope } from "./useReportScope";
 import { generateReportPdf } from "./reportPdf";
+import {
+  DATE_FIELD_OPTIONS,
+  PRESET_OPTIONS,
+  DateFieldKey,
+  PresetKey,
+  resolvePreset,
+  presetLabel,
+  dateFieldLabel,
+  loadFavouritePreset,
+  saveFavouritePreset,
+} from "./dateScope";
 
 interface Row {
   id: string;
@@ -24,8 +45,11 @@ interface Row {
 
 export default function LeadReport() {
   const scope = useReportScope();
-  const [from, setFrom] = useState(format(new Date(), "yyyy-MM-01"));
-  const [to, setTo] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [dateField, setDateField] = useState<DateFieldKey>("created_at");
+  const [favourite, setFavourite] = useState<PresetKey | null>(() => loadFavouritePreset());
+  const [preset, setPreset] = useState<PresetKey>(() => loadFavouritePreset() || "current_quarter");
+  const [customFrom, setCustomFrom] = useState(format(new Date(), "yyyy-MM-01"));
+  const [customTo, setCustomTo] = useState(format(new Date(), "yyyy-MM-dd"));
   const [owner, setOwner] = useState("all");
   const [status, setStatus] = useState("all");
   const [source, setSource] = useState("all");
@@ -35,6 +59,18 @@ export default function LeadReport() {
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [generated, setGenerated] = useState(false);
+
+  const { from, to } = useMemo(
+    () => resolvePreset(preset, { from: customFrom, to: customTo }),
+    [preset, customFrom, customTo]
+  );
+
+  const toggleFavourite = () => {
+    const next = favourite === preset ? null : preset;
+    setFavourite(next);
+    saveFavouritePreset(next);
+    toast.success(next ? `${presetLabel(next)} saved as favourite` : "Favourite cleared");
+  };
 
   useEffect(() => {
     supabase
@@ -57,9 +93,29 @@ export default function LeadReport() {
         .select(
           "id, name, company, phone, owner_id, lead_status_id, lead_source_id, opportunity_value, opportunity_close_date, created_at"
         )
-        .gte("created_at", `${from}T00:00:00`)
-        .lte("created_at", `${to}T23:59:59`)
         .order("created_at", { ascending: false });
+
+      if (dateField === "activity_date") {
+        const { data: evs, error: evErr } = await supabase
+          .from("activity_events")
+          .select("lead_id")
+          .not("lead_id", "is", null)
+          .gte("activity_date", from)
+          .lte("activity_date", to);
+        if (evErr) throw evErr;
+        const ids = Array.from(new Set((evs || []).map((e) => e.lead_id as string)));
+        if (!ids.length) {
+          setRows([]);
+          setGenerated(true);
+          return;
+        }
+        q = q.in("id", ids);
+      } else if (dateField === "opportunity_close_date") {
+        q = q.gte("opportunity_close_date", from).lte("opportunity_close_date", to);
+      } else {
+        q = q.gte(dateField, `${from}T00:00:00`).lte(dateField, `${to}T23:59:59`);
+      }
+
       if (owner !== "all") q = q.eq("owner_id", owner);
       else if (scope.userIds)
         q = q.in("owner_id", scope.userIds.length ? scope.userIds : ["00000000-0000-0000-0000-000000000000"]);
@@ -116,7 +172,7 @@ export default function LeadReport() {
         fileName: `lead-report-${from}-to-${to}.pdf`,
         generatedBy: scope.generatedBy,
         filters: [
-          `Period: ${from} to ${to}`,
+          `${dateFieldLabel(dateField)}: ${presetLabel(preset)} (${from} to ${to})`,
           `Owner: ${owner === "all" ? "All" : scope.users.find((u) => u.id === owner)?.full_name || "-"}`,
           `Status: ${status === "all" ? "All" : statuses.find((s) => s.value === status)?.label || "-"}`,
           `Source: ${source === "all" ? "All" : sources.find((s) => s.value === source)?.label || "-"}`,
@@ -149,6 +205,14 @@ export default function LeadReport() {
     }
   };
 
+  const sortedPresets = useMemo(() => {
+    if (!favourite) return PRESET_OPTIONS;
+    return [
+      ...PRESET_OPTIONS.filter((o) => o.value === favourite),
+      ...PRESET_OPTIONS.filter((o) => o.value !== favourite),
+    ];
+  }, [favourite]);
+
   return (
     <ReportShell
       title="Lead Report"
@@ -161,8 +225,62 @@ export default function LeadReport() {
       onDownload={download}
       filters={
         <>
-          <DateField label="From Date" value={from} onChange={setFrom} />
-          <DateField label="To Date" value={to} onChange={setTo} />
+          <div className="space-y-1.5">
+            <Label className="text-xs">Date Field</Label>
+            <Select value={dateField} onValueChange={(v) => setDateField(v as DateFieldKey)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_FIELD_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Date Range</Label>
+            <div className="flex items-center gap-1.5">
+              <Select value={preset} onValueChange={(v) => setPreset(v as PresetKey)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortedPresets.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {favourite === o.value ? `★ ${o.label}` : o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={toggleFavourite}
+                aria-label={favourite === preset ? "Remove favourite" : "Set as favourite"}
+                title={favourite === preset ? "Remove favourite" : "Set as favourite"}
+              >
+                <Star className={`h-4 w-4 ${favourite === preset ? "fill-current text-primary" : ""}`} />
+              </Button>
+            </div>
+            {preset !== "custom" && (
+              <p className="text-[11px] text-muted-foreground">
+                {format(new Date(from), "dd MMM yyyy")} – {format(new Date(to), "dd MMM yyyy")}
+              </p>
+            )}
+          </div>
+
+          {preset === "custom" && (
+            <>
+              <DateField label="From Date" value={customFrom} onChange={setCustomFrom} />
+              <DateField label="To Date" value={customTo} onChange={setCustomTo} />
+            </>
+          )}
+
           <SelectField
             label="Owner"
             value={owner}
