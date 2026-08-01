@@ -295,7 +295,12 @@ export default function Leads() {
           const ownerName = owner ? (userMap[owner] || "—") : "—";
           const ins = (insights as any)[l.id] ?? { activityCount: 0, documentCount: 0, sla: "Not Started" };
           const score = bantScore(
-            { statusName: st?.name, contactRole: l.contact_role, activityCount: ins.activityCount, createdAt: l.created_at },
+            {
+              statusName: st?.name, contactRole: l.contact_role,
+              activityCount: ins.activityCount, createdAt: l.created_at,
+              indicativeBudget: l.indicative_budget, opportunityValue: l.opportunity_value,
+              requirement: l.researched_information, closeDate: l.opportunity_close_date,
+            },
             scoringRules,
           );
           return (
