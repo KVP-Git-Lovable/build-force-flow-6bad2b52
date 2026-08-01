@@ -866,6 +866,16 @@ export default function CreativeActivityForm({
                     </button>
                   )}
                 </div>
+                {selectedLead && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/leads/${selectedLead.id}`)}
+                    className="mb-2 text-sm font-semibold text-primary underline underline-offset-2 text-left truncate max-w-full"
+                  >
+                    {selectedLead.name}{selectedLead.company ? ` · ${selectedLead.company}` : ""}
+                  </button>
+                )}
+
                 <div className="relative mb-3">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
