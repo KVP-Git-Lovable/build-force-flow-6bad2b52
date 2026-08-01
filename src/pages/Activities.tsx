@@ -228,6 +228,7 @@ export default function Activities() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editActivityObj, setEditActivityObj] = useState<ActivityType | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [customersList, setCustomersList] = useState<Array<{ id: string; name: string }>>([]);
   const [opportunitiesList, setOpportunitiesList] = useState<Array<{ id: string; name: string; customer_id: string }>>([]);
@@ -716,6 +717,7 @@ export default function Activities() {
       photos: a.photo_urls || [],
     });
     setEditingId(a.id);
+    setEditActivityObj(a);
     setShowForm(true);
   };
 
@@ -1026,7 +1028,7 @@ export default function Activities() {
       </motion.div>
 
       {/* Create/Edit Activity Dialog - creative composer for creation, legacy dialog for editing */}
-      {!editingId ? (
+      {!editingId || editActivityObj ? (
         <CreativeActivityForm
           open={showForm}
           onOpenChange={(open) => {
@@ -1036,6 +1038,8 @@ export default function Activities() {
               }
               clearRecording();
               setVoiceToTextMode(false);
+              setEditingId(null);
+              setEditActivityObj(null);
             }
             setShowForm(open);
           }}
@@ -1045,6 +1049,7 @@ export default function Activities() {
           currentUserId={currentUserId}
           createActivity={createActivity}
           updateActivity={updateActivity}
+          editActivity={editActivityObj}
           onCreated={() => fetchActivities()}
         />
 
