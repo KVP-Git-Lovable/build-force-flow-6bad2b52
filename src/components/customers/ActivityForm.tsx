@@ -8,21 +8,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateCustomerActivity, useOpportunities } from "@/hooks/useCustomers";
 
 const TYPES = ["Note", "Call", "Meeting", "Email", "Task"];
+export const OUTCOMES = ["Productive", "Unproductive", "Visited but not available", "Postponed", "Cancelled"];
 
 export function ActivityForm({
-  open, onOpenChange, opportunityId, lockOpportunity, customerId,
+  open, onOpenChange, opportunityId, lockOpportunity, customerId, leadId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   opportunityId?: string;
   lockOpportunity?: boolean;
   customerId?: string;
+  leadId?: string;
 }) {
   const create = useCreateCustomerActivity();
   const { data: opps = [] } = useOpportunities(customerId);
 
   const [form, setForm] = useState({
-    type: "Note", subject: "", notes: "", activity_date: new Date().toISOString().slice(0, 10),
+    type: "Note", subject: "", notes: "", outcome: OUTCOMES[0],
+    activity_date: new Date().toISOString().slice(0, 10),
     opportunity_id: opportunityId ?? "",
   });
 
@@ -35,13 +38,15 @@ export function ActivityForm({
     await create.mutateAsync({
       opportunity_id: form.opportunity_id || null,
       customer_id: customerId ?? null,
+      lead_id: leadId ?? null,
       type: form.type,
+      outcome: form.outcome,
       subject: form.subject.trim(),
       notes: form.notes || null,
       activity_date: new Date(form.activity_date).toISOString(),
     });
     onOpenChange(false);
-    setForm({ type: "Note", subject: "", notes: "", activity_date: new Date().toISOString().slice(0, 10), opportunity_id: opportunityId ?? "" });
+    setForm({ type: "Note", subject: "", notes: "", outcome: OUTCOMES[0], activity_date: new Date().toISOString().slice(0, 10), opportunity_id: opportunityId ?? "" });
   };
 
 
@@ -63,9 +68,16 @@ export function ActivityForm({
               <Input type="date" value={form.activity_date} onChange={(e) => setForm({ ...form, activity_date: e.target.value })} />
             </div>
           </div>
+          <div>
+            <Label>Outcome</Label>
+            <Select value={form.outcome} onValueChange={(v) => setForm({ ...form, outcome: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{OUTCOMES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
           <div><Label>Subject *</Label><Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></div>
           <div><Label>Notes</Label><Textarea rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-          {!lockOpportunity && (
+          {!lockOpportunity && !leadId && (
             <div>
               <Label>Link to Opportunity</Label>
               <Select value={form.opportunity_id || "none"}

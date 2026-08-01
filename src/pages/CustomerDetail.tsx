@@ -549,7 +549,7 @@ export default function CustomerDetail() {
                   <span className="text-xs text-muted-foreground">{format(new Date(a.activity_date), "dd MMM yyyy")}</span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {a.type}{a.opportunity_id ? ` · ${oppMap[a.opportunity_id]?.name ?? "Opportunity"}` : ""}
+                  {a.type}{a.outcome ? ` · ${a.outcome}` : ""}{a.opportunity_id ? ` · ${oppMap[a.opportunity_id]?.name ?? "Opportunity"}` : ""}
                 </div>
                 {a.notes && <p className="text-sm mt-1 whitespace-pre-wrap">{a.notes}</p>}
               </div>
