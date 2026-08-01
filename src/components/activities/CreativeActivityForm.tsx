@@ -307,11 +307,15 @@ export default function CreativeActivityForm({
     }
   }, [isGrnType]);
 
-  const filteredProjects = useMemo(() => {
-    const q = projectSearch.trim().toLowerCase();
-    if (!q) return projects;
-    return projects.filter((p) => p.name.toLowerCase().includes(q));
-  }, [projects, projectSearch]);
+  const filteredLeads = useMemo(() => {
+    const q = leadSearch.trim().toLowerCase();
+    if (!q) return leadOptions;
+    return leadOptions.filter(
+      (l) => l.name.toLowerCase().includes(q) || (l.company || "").toLowerCase().includes(q)
+    );
+  }, [leadOptions, leadSearch]);
+
+  const selectedLead = leadOptions.find((l) => l.id === leadId);
 
   const filteredUsers = useMemo(() => {
     const q = assignSearch.trim().toLowerCase();
