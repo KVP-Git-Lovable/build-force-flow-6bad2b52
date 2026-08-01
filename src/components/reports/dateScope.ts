@@ -11,6 +11,7 @@ import {
   subMonths,
   subQuarters,
 } from "date-fns";
+import { useMemo, useState } from "react";
 
 export type DateFieldKey =
   | "created_at"
@@ -24,6 +25,16 @@ export const DATE_FIELD_OPTIONS: { value: DateFieldKey; label: string }[] = [
   { value: "opportunity_close_date", label: "Opportunity Close Date" },
   { value: "activity_date", label: "Activity Date" },
 ];
+
+/** A selectable date field for a report module. */
+export interface DateFieldOption {
+  value: string;
+  label: string;
+  /** Database column the range is applied to. */
+  column?: string;
+  /** True when the column is a timestamp (needs time suffixes). */
+  timestamp?: boolean;
+}
 
 export type PresetKey =
   | "today"
@@ -105,20 +116,47 @@ export const dateFieldLabel = (f: DateFieldKey) =>
 
 const FAV_KEY = "reports.favouriteDatePreset";
 
-export function loadFavouritePreset(): PresetKey | null {
+export function loadFavouritePreset(module = ""): PresetKey | null {
   try {
-    const v = localStorage.getItem(FAV_KEY);
+    const v = localStorage.getItem(module ? `${FAV_KEY}.${module}` : FAV_KEY);
     return v && PRESET_OPTIONS.some((o) => o.value === v) ? (v as PresetKey) : null;
   } catch {
     return null;
   }
 }
 
-export function saveFavouritePreset(p: PresetKey | null) {
+export function saveFavouritePreset(p: PresetKey | null, module = "") {
+  const key = module ? `${FAV_KEY}.${module}` : FAV_KEY;
   try {
-    if (p) localStorage.setItem(FAV_KEY, p);
-    else localStorage.removeItem(FAV_KEY);
+    if (p) localStorage.setItem(key, p);
+    else localStorage.removeItem(key);
   } catch {
     /* ignore */
   }
+}
+
+export interface DateScopeState {
+  field: string;
+  preset: PresetKey;
+  customFrom: string;
+  customTo: string;
+}
+
+/** Shared date-field + preset-range state used by every report module. */
+export function useDateScope(module: string, defaultField: string) {
+  const [state, setState] = useState<DateScopeState>(() => ({
+    field: defaultField,
+    preset: loadFavouritePreset(module) || "current_quarter",
+    customFrom: format(new Date(), "yyyy-MM-01"),
+    customTo: format(new Date(), "yyyy-MM-dd"),
+  }));
+
+  const { from, to } = useMemo(
+    () => resolvePreset(state.preset, { from: state.customFrom, to: state.customTo }),
+    [state]
+  );
+
+  const patch = (p: Partial<DateScopeState>) => setState((s) => ({ ...s, ...p }));
+
+  return { state, setState, patch, from, to };
 }
