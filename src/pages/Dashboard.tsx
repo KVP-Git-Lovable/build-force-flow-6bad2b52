@@ -76,9 +76,25 @@ export default function Dashboard() {
     todayActivities,
   } = useDashboard(userId);
 
+  const { data: leads = [] } = useLeads();
+  const leadKpis = useMemo(() => {
+    const now = new Date();
+    const monthRange = { start: startOfMonth(now), end: endOfMonth(now) };
+    const pipeline = leads.reduce((s: number, l: any) => s + (Number(l.opportunity_value) || 0), 0);
+    const closingValue = leads.reduce((s: number, l: any) => {
+      const d = l.opportunity_close_date ? new Date(l.opportunity_close_date) : null;
+      if (!d || isNaN(d.getTime()) || !isWithinInterval(d, monthRange)) return s;
+      return s + (Number(l.opportunity_value) || 0);
+    }, 0);
+    return { pipeline, closingValue };
+  }, [leads]);
+  const money = (n: number) => formatCurrencyCompact(n, "INR");
+
   const handleStartDay = () => {
     navigate("/attendance");
   };
+
+
 
   const overviewCards = [
     { label: "My Activities", value: myActivities.total, icon: ListTodo, colorClass: "bg-info/5 text-info", path: "/activities", module: "module_activities" },
