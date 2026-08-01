@@ -109,11 +109,7 @@ function AnalyticsInner() {
   );
 }
 
-        </motion.div>
-      </div>
-    </div>
-  );
-}
+
 
 export default function Analytics() {
   return (
