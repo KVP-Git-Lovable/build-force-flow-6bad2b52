@@ -5,10 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, UserPlus, Phone, Mail, Globe, Building2, MapPin, Briefcase } from "lucide-react";
+import { ArrowLeft, Edit, UserPlus, Phone, Mail, Globe, Building2, MapPin, Briefcase, Copy, Trash2 } from "lucide-react";
 import {
-  useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, statusColorClasses,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
+import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { LeadForm } from "@/components/leads/LeadForm";
 import { ConvertLeadDialog } from "@/components/leads/ConvertLeadDialog";
 import { LeadScoreTab } from "@/components/leads/LeadScoreTab";
@@ -24,9 +29,12 @@ export default function LeadDetail() {
   const { data: events = [] } = useEvents();
   const { data: audit = [] } = useLeadAuditLog(id);
   const save = useSaveLead();
+  const del = useDeleteLead();
 
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [cloning, setCloning] = useState(false);
 
   if (isLoading || !lead) return <div className="p-6 text-muted-foreground">Loading…</div>;
 
@@ -39,6 +47,19 @@ export default function LeadDetail() {
 
   const changeStatus = (statusId: string) =>
     save.mutateAsync({ id: lead.id, lead_status_id: statusId });
+
+  const cloneLead = async () => {
+    setCloning(true);
+    try {
+      const {
+        id: _id, created_at, updated_at, converted_customer_id, converted_at, ...rest
+      } = lead as any;
+      const created = await save.mutateAsync({ ...rest, name: `${lead.name} (Copy)` } as any);
+      if ((created as any)?.id) nav(`/leads/${(created as any).id}`);
+    } finally {
+      setCloning(false);
+    }
+  };
 
   const Field = ({ icon: Icon, label, value }: any) =>
     value ? (
@@ -81,9 +102,12 @@ export default function LeadDetail() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Edit className="h-4 w-4 mr-1" />Edit</Button>
             {!isConverted && <Button size="sm" onClick={() => setConvertOpen(true)}><UserPlus className="h-4 w-4 mr-1" />Convert</Button>}
-            {isConverted && lead.converted_customer_id && (
-              <Button size="sm" variant="outline" onClick={() => nav(`/customers/${lead.converted_customer_id}`)}>Open Customer</Button>
-            )}
+            <Button variant="outline" size="sm" onClick={cloneLead} disabled={cloning}>
+              <Copy className="h-4 w-4 mr-1" />{cloning ? "Cloning…" : "Clone"}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="h-4 w-4 mr-1" />Delete
+            </Button>
           </div>
         </CardHeader>
       </Card>
@@ -93,6 +117,7 @@ export default function LeadDetail() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="score">Lead Score (BANT)</TabsTrigger>
           <TabsTrigger value="sla">Lead SLA</TabsTrigger>
+          <TabsTrigger value="attachments">Attachments</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
         </TabsList>
 
@@ -143,6 +168,10 @@ export default function LeadDetail() {
           <LeadSlaTab lead={lead as any} />
         </TabsContent>
 
+        <TabsContent value="attachments" className="mt-4">
+          <LeadAttachments leadId={lead.id} />
+        </TabsContent>
+
         <TabsContent value="audit" className="mt-4">
           <Card>
             <CardHeader><CardTitle className="text-base">Audit Log</CardTitle></CardHeader>
@@ -174,6 +203,25 @@ export default function LeadDetail() {
 
       <LeadForm open={editOpen} onOpenChange={setEditOpen} lead={lead} />
       <ConvertLeadDialog open={convertOpen} onOpenChange={setConvertOpen} lead={lead} />
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this lead?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes “{lead.name}” and its history. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => { await del.mutateAsync(lead.id); nav("/leads"); }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
