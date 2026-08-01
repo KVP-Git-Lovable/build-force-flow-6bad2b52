@@ -204,20 +204,24 @@ export default function GPSTracking() {
           .lte("activity_date", to),
       ]);
 
-      // Filter GPS points: remove poor accuracy and unrealistic jumps
+      // Filter GPS points: remove poor accuracy and unrealistic speeds
       let filteredPoints = (pointsRes.data || []) as GPSPoint[];
 
       // Remove points with poor accuracy (> 100m)
       filteredPoints = filteredPoints.filter(p => !p.accuracy || p.accuracy <= 100);
 
-      // Remove unrealistic jumps (> 50km between consecutive points)
+      // Remove points that represent impossible speeds (> 80 km/hr for field work)
+      const MAX_SPEED_KMH = 80;
       const cleanedPoints: GPSPoint[] = [];
+
       for (let i = 0; i < filteredPoints.length; i++) {
         if (i === 0) {
           cleanedPoints.push(filteredPoints[i]);
         } else {
           const prev = filteredPoints[i - 1];
           const curr = filteredPoints[i];
+
+          // Calculate distance using Haversine
           const R = 6371;
           const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180;
           const dLon = ((curr.longitude - prev.longitude) * Math.PI) / 180;
@@ -227,7 +231,16 @@ export default function GPSTracking() {
             Math.sin(dLon / 2) ** 2;
           const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-          if (distance < 50) { // Only include if jump is < 50km
+          // Calculate time difference in hours
+          const prevTime = new Date(prev.timestamp).getTime();
+          const currTime = new Date(curr.timestamp).getTime();
+          const timeHours = (currTime - prevTime) / (1000 * 60 * 60);
+
+          // Calculate speed
+          const speedKmh = timeHours > 0 ? distance / timeHours : 0;
+
+          // Only include if speed is realistic (< MAX_SPEED_KMH)
+          if (speedKmh <= MAX_SPEED_KMH) {
             cleanedPoints.push(curr);
           }
         }
