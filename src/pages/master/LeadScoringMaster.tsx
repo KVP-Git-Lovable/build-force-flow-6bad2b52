@@ -62,7 +62,75 @@ export default function LeadScoringMaster() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Contact Role Scores</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Budget Scores</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex items-center gap-2">
+            <Label className="flex-1">Budget shared</Label>
+            <Input type="number" className="w-24" value={draft.budget?.shared ?? 0}
+              onChange={(e) => setDraft({ ...draft, budget: { ...draft.budget, shared: Number(e.target.value) || 0 } })} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="flex-1">Budget aligned to opportunity value</Label>
+            <Input type="number" className="w-24" value={draft.budget?.aligned ?? 0}
+              onChange={(e) => setDraft({ ...draft, budget: { ...draft.budget, aligned: Number(e.target.value) || 0 } })} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="flex-1">No budget shared</Label>
+            <Input type="number" className="w-24" value={draft.budget?.none ?? 0}
+              onChange={(e) => setDraft({ ...draft, budget: { ...draft.budget, none: Number(e.target.value) || 0 } })} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="flex-1">Alignment tolerance (%)</Label>
+            <Input type="number" className="w-24" value={draft.budget?.tolerancePct ?? 10}
+              onChange={(e) => setDraft({ ...draft, budget: { ...draft.budget, tolerancePct: Number(e.target.value) || 0 } })} />
+          </div>
+          <p className="md:col-span-2 text-xs text-muted-foreground">
+            Indicative budget within the tolerance % of the opportunity value scores the "aligned" points; any other budget entered scores "shared".
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Timeline — Close Date Scores</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {([["thisMonth", "Closing this month"], ["nextMonth", "Closing next month"], ["later", "Closing later"], ["none", "No close date"]] as const).map(([k, label]) => (
+            <div key={k} className="flex items-center gap-2">
+              <Label className="flex-1">{label}</Label>
+              <Input type="number" className="w-24" value={draft.closeDate?.[k] ?? 0}
+                onChange={(e) => setDraft({ ...draft, closeDate: { ...draft.closeDate, [k]: Number(e.target.value) || 0 } })} />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Need — Requirement Overview Scores</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex items-center gap-2">
+            <Label className="flex-1">Requirement clear</Label>
+            <Input type="number" className="w-24" value={draft.need?.clear ?? 0}
+              onChange={(e) => setDraft({ ...draft, need: { ...draft.need, clear: Number(e.target.value) || 0 } })} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="flex-1">Requirement not clear (brief)</Label>
+            <Input type="number" className="w-24" value={draft.need?.vague ?? 0}
+              onChange={(e) => setDraft({ ...draft, need: { ...draft.need, vague: Number(e.target.value) || 0 } })} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="flex-1">Not entered</Label>
+            <Input type="number" className="w-24" value={draft.need?.none ?? 0}
+              onChange={(e) => setDraft({ ...draft, need: { ...draft.need, none: Number(e.target.value) || 0 } })} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="flex-1">Min characters to count as clear</Label>
+            <Input type="number" className="w-24" value={draft.need?.clearMinChars ?? 80}
+              onChange={(e) => setDraft({ ...draft, need: { ...draft.need, clearMinChars: Number(e.target.value) || 0 } })} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Authority — Contact Role Scores</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {(Object.keys(CONTACT_ROLE_LABELS) as ContactRole[]).map((r) => (
             <div key={r} className="flex items-center gap-2">
@@ -77,6 +145,7 @@ export default function LeadScoringMaster() {
           ))}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

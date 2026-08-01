@@ -28,6 +28,24 @@ export interface ScoringRules {
   contactRoleScores: Record<ContactRole, number>;
   activityThresholds: { min: number; score: number }[]; // sorted desc by min
   ageBuckets: { maxDays: number; score: number }[]; // sorted asc by maxDays
+  budget: {
+    shared: number;          // budget entered
+    aligned: number;         // budget close to opportunity value
+    none: number;            // no budget shared
+    tolerancePct: number;    // % variance allowed to count as "aligned"
+  };
+  closeDate: {
+    thisMonth: number;
+    nextMonth: number;
+    later: number;
+    none: number;
+  };
+  need: {
+    clear: number;
+    vague: number;
+    none: number;
+    clearMinChars: number;
+  };
   qualification: { high: number; medium: number };
 }
 
@@ -61,8 +79,12 @@ export const DEFAULT_SCORING_RULES: ScoringRules = {
     { maxDays: 30, score: 5 },
     { maxDays: 999999, score: 2 },
   ],
+  budget: { shared: 5, aligned: 10, none: 0, tolerancePct: 10 },
+  closeDate: { thisMonth: 10, nextMonth: 6, later: 3, none: 0 },
+  need: { clear: 10, vague: 4, none: 0, clearMinChars: 80 },
   qualification: { high: 30, medium: 15 },
 };
+
 
 const MODULE = "lead_scoring";
 const KEY = "rules";
@@ -79,8 +101,15 @@ export function useLeadScoringRules() {
         .eq("config_key", KEY)
         .maybeSingle();
       if (error) throw error;
-      if (!data) return DEFAULT_SCORING_RULES;
-      return { ...DEFAULT_SCORING_RULES, ...((data as any).config_value ?? {}) } as ScoringRules;
+      const cv = ((data as any)?.config_value ?? {}) as Partial<ScoringRules>;
+      return {
+        ...DEFAULT_SCORING_RULES,
+        ...cv,
+        budget: { ...DEFAULT_SCORING_RULES.budget, ...(cv.budget ?? {}) },
+        closeDate: { ...DEFAULT_SCORING_RULES.closeDate, ...(cv.closeDate ?? {}) },
+        need: { ...DEFAULT_SCORING_RULES.need, ...(cv.need ?? {}) },
+        qualification: { ...DEFAULT_SCORING_RULES.qualification, ...(cv.qualification ?? {}) },
+      } as ScoringRules;
     },
     staleTime: 60_000,
   });
@@ -119,6 +148,61 @@ export function statusScore(statusName: string | undefined | null, rules: Scorin
   if (!statusName) return 0;
   return rules.statusScores[statusName.toLowerCase()] ?? 0;
 }
+
+export type BudgetTier = "aligned" | "shared" | "none";
+
+export function budgetTier(
+  budget: number | null | undefined,
+  opportunityValue: number | null | undefined,
+  rules: ScoringRules,
+): BudgetTier {
+  if (budget == null || Number(budget) <= 0) return "none";
+  const opp = Number(opportunityValue ?? 0);
+  if (opp > 0) {
+    const variance = (Math.abs(Number(budget) - opp) / opp) * 100;
+    if (variance <= rules.budget.tolerancePct) return "aligned";
+  }
+  return "shared";
+}
+
+export function budgetScore(
+  budget: number | null | undefined,
+  opportunityValue: number | null | undefined,
+  rules: ScoringRules,
+): number {
+  const tier = budgetTier(budget, opportunityValue, rules);
+  return rules.budget[tier];
+}
+
+export type CloseDateTier = "thisMonth" | "nextMonth" | "later" | "none";
+
+export function closeDateTier(closeDate: string | null | undefined): CloseDateTier {
+  if (!closeDate) return "none";
+  const d = new Date(closeDate);
+  if (isNaN(d.getTime())) return "none";
+  const now = new Date();
+  const months = (d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth());
+  if (months <= 0) return "thisMonth";
+  if (months === 1) return "nextMonth";
+  return "later";
+}
+
+export function closeDateScore(closeDate: string | null | undefined, rules: ScoringRules): number {
+  return rules.closeDate[closeDateTier(closeDate)];
+}
+
+export type NeedTier = "clear" | "vague" | "none";
+
+export function needTier(requirement: string | null | undefined, rules: ScoringRules): NeedTier {
+  const text = (requirement ?? "").trim();
+  if (!text) return "none";
+  return text.length >= rules.need.clearMinChars ? "clear" : "vague";
+}
+
+export function needScore(requirement: string | null | undefined, rules: ScoringRules): number {
+  return rules.need[needTier(requirement, rules)];
+}
+
 
 export function qualificationLevel(total: number, rules: ScoringRules): "High" | "Medium" | "Low" {
   if (total >= rules.qualification.high) return "High";

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, UserPlus, Phone, Mail, Globe, Building2, MapPin, Briefcase, Copy, Trash2, User, Users, Tag, CalendarDays } from "lucide-react";
+import { ArrowLeft, Edit, Phone, Mail, Globe, Building2, MapPin, Briefcase, Copy, Trash2, User, Users, Tag, CalendarDays } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -124,7 +124,6 @@ export default function LeadDetail() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Edit className="h-4 w-4 mr-1" />Edit</Button>
-            {!isConverted && <Button size="sm" onClick={() => setConvertOpen(true)}><UserPlus className="h-4 w-4 mr-1" />Convert</Button>}
             <Button variant="outline" size="sm" onClick={cloneLead} disabled={cloning}>
               <Copy className="h-4 w-4 mr-1" />{cloning ? "Cloning…" : "Clone"}
             </Button>
@@ -206,6 +205,11 @@ export default function LeadDetail() {
                 value={event ? (
                   <button className="text-primary hover:underline" onClick={() => nav(`/events/${event.id}`)}>{event.name}</button>
                 ) : "—"}
+              />
+              <Field
+                icon={Tag}
+                label="Indicative Budget"
+                value={(lead as any).indicative_budget != null ? `₹${Number((lead as any).indicative_budget).toLocaleString("en-IN")}` : "—"}
               />
               <Field icon={MapPin} label="Address" value={lead.address} />
               <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
