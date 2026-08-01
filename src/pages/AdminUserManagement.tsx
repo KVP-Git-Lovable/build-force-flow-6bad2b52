@@ -278,26 +278,15 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
       }).eq("id", user.id);
       if (profileError) throw profileError;
 
-      // Update security profile assignment
+      // Update security profile assignment using upsert to handle conflicts
       if (roleId) {
         console.log("Saving role:", { userId: user.id, profileId: roleId });
-        const { data: existing, error: existingError } = await supabase
-          .from("user_security_profiles")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (existingError) throw existingError;
-        console.log("Existing assignment:", existing);
-
-        if (existing) {
-          const { error: updateError } = await supabase.from("user_security_profiles").update({ profile_id: roleId }).eq("id", existing.id);
-          if (updateError) throw updateError;
-          console.log("Role updated successfully");
-        } else {
-          const { error: insertError } = await supabase.from("user_security_profiles").insert({ user_id: user.id, profile_id: roleId });
-          if (insertError) throw insertError;
-          console.log("Role inserted successfully");
-        }
+        const { error: upsertError } = await supabase.from("user_security_profiles").upsert(
+          { user_id: user.id, profile_id: roleId },
+          { onConflict: "user_id" }
+        );
+        if (upsertError) throw upsertError;
+        console.log("Role saved successfully");
       }
 
       const { error: empError } = await supabase.from("employees").upsert({
