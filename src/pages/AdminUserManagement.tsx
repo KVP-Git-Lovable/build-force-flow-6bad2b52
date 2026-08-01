@@ -265,6 +265,7 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
         full_name: fullName || null,
         username: username || null,
         phone: phone || null,
+        role_id: roleId || null,
         reporting_manager_id: managerId === "none" ? null : managerId,
       }).eq("id", user.id);
       if (userError) throw userError;
