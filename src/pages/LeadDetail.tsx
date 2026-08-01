@@ -67,13 +67,15 @@ export default function LeadDetail() {
     }
   };
 
-  const Field = ({ icon: Icon, label, value }: any) =>
-    value ? (
-      <div className="flex items-start gap-2 text-sm">
-        <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-        <div><div className="text-xs text-muted-foreground">{label}</div><div>{value}</div></div>
+  const Field = ({ icon: Icon, label, value }: any) => (
+    <div className="flex items-start gap-2 text-sm">
+      <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="break-words">{value ?? "—"}</div>
       </div>
-    ) : null;
+    </div>
+  );
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto">
