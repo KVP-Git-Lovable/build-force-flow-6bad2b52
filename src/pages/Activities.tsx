@@ -66,7 +66,6 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import ActivityReportGenerator from "@/components/activities/ActivityReportGenerator";
 import ActivityPhotoManager from "@/components/activities/ActivityPhotoManager";
-import ActivityDetailsDialog from "@/components/activities/ActivityDetailsDialog";
 import { MultiUserPicker } from "@/components/pm/MultiUserPicker";
 import { milestoneStatusLabel } from "@/components/admin/SiteMilestonesDialog";
 import CreativeActivityForm from "@/components/activities/CreativeActivityForm";
@@ -232,7 +231,6 @@ export default function Activities() {
   const [form, setForm] = useState(defaultForm);
   const [customersList, setCustomersList] = useState<Array<{ id: string; name: string }>>([]);
   const [opportunitiesList, setOpportunitiesList] = useState<Array<{ id: string; name: string; customer_id: string }>>([]);
-  const [detailsActivity, setDetailsActivity] = useState<ActivityType | null>(null);
   const [formAttendance, setFormAttendance] = useState<{ check_in_time: string | null; check_out_time: string | null } | null>(null);
   const [checkingIn, setCheckingIn] = useState(false);
   const [receivePoId, setReceivePoId] = useState<string>("");
@@ -462,7 +460,7 @@ export default function Activities() {
     if (!id || loading || activities.length === 0) return;
     const found = activities.find((a) => a.id === id);
     if (found) {
-      setDetailsActivity(found);
+      handleOpenEdit(found);
       // Remove the id param so refreshing won't reopen it
       const next = new URLSearchParams(searchParams);
       next.delete("id");
@@ -652,7 +650,8 @@ export default function Activities() {
   const handleCheckIn = async () => {
     setCheckingIn(true);
     try {
-      const result = await checkInForDate(currentUserId, dateStr);
+      const targetDate = editActivityObj?.activity_date || dateStr;
+      const result = await checkInForDate(currentUserId, targetDate);
       setFormAttendance(result);
       toast.success("Checked in successfully");
     } catch (err: any) {
@@ -718,7 +717,11 @@ export default function Activities() {
     });
     setEditingId(a.id);
     setEditActivityObj(a);
+    setFormAttendance(null);
     setShowForm(true);
+    fetchAttendanceForDate(a.user_id || currentUserId, a.activity_date || dateStr)
+      .then(setFormAttendance)
+      .catch(() => {});
   };
 
   const handleSave = async () => {
@@ -1004,7 +1007,7 @@ export default function Activities() {
                   isAdmin={isAdmin}
                   onEdit={handleOpenEdit}
                   onDelete={handleDelete}
-                  onOpenDetails={setDetailsActivity}
+                  onOpenDetails={handleOpenEdit}
                   onReceiveGoods={(poId) => setReceivePoId(poId)}
                   onStatusChanged={() => fetchActivities()}
                   updateActivity={updateActivity}
@@ -1050,6 +1053,10 @@ export default function Activities() {
           createActivity={createActivity}
           updateActivity={updateActivity}
           editActivity={editActivityObj}
+          attendance={formAttendance}
+          onDayCheckIn={handleCheckIn}
+          dayCheckingIn={checkingIn}
+          onDelete={handleDelete}
           onCreated={() => fetchActivities()}
         />
 
@@ -1576,20 +1583,8 @@ export default function Activities() {
         </DialogContent>
       </Dialog>
 
-      {/* Activity Details Dialog */}
-      <ActivityDetailsDialog
-        activity={detailsActivity}
-        open={!!detailsActivity}
-        onClose={() => setDetailsActivity(null)}
-        onSavePhotos={async (photos) => {
-          if (!detailsActivity) return;
-          await updateActivity(detailsActivity.id, { photo_urls: photos });
-          setDetailsActivity({ ...detailsActivity, photo_urls: photos });
-          fetchActivities();
-        }}
-        onEdit={handleOpenEdit}
-        onDelete={handleDelete}
-      />
+      {/* Activity details open in the full composer view (see CreativeActivityForm above) */}
+
 
       {/* Receive Goods (GRN) Dialog */}
       {receivePoId && (

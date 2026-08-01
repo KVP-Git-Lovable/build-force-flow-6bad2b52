@@ -106,9 +106,6 @@ export default function ActivityDetailsDialog({ activity, open, onClose, onSaveP
             </div>
           )}
 
-
-
-
           {/* Times */}
           {(activity.start_time || activity.end_time) && (
             <div className="rounded-lg border p-3 space-y-1">

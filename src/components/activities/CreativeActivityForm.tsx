@@ -28,6 +28,10 @@ import {
   Calendar,
   Trash2,
   Paperclip,
+  ImagePlus,
+  LogIn,
+  CheckCircle2,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -82,6 +86,8 @@ interface Props {
   editActivity?: ActivityType | null;
   onDelete?: (id: string) => void | Promise<void>;
   attendance?: { check_in_time: string | null; check_out_time: string | null } | null;
+  onDayCheckIn?: () => void | Promise<void>;
+  dayCheckingIn?: boolean;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -142,6 +148,8 @@ export default function CreativeActivityForm({
   editActivity,
   onDelete,
   attendance,
+  onDayCheckIn,
+  dayCheckingIn = false,
 }: Props) {
   const isEdit = !!editActivity;
   const { profile: currentProfile, initials: currentInitials } = useUserProfile();
@@ -182,6 +190,7 @@ export default function CreativeActivityForm({
     formatDuration,
   } = useAudioRecorder();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [showCamera, setShowCamera] = useState(false);
 
   // ---- GRN inline state ----
@@ -364,6 +373,15 @@ export default function CreativeActivityForm({
     if (!file) return;
     await uploadPhotoBlob(file);
   };
+
+  const handleGalleryPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    for (const f of files) {
+      await uploadPhotoBlob(f);
+    }
+  };
+
 
   const handleOpenCamera = useCallback(async () => {
     // Native (Capacitor): use device camera plugin directly
@@ -689,6 +707,32 @@ export default function CreativeActivityForm({
             </div>
 
             <div className="overflow-y-auto overflow-x-hidden flex-1 bg-muted/40 p-3 sm:p-4 space-y-3 min-w-0 max-w-full">
+              {/* Day check-in — available in new, edit and saved records */}
+              {onDayCheckIn && (
+                <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm flex items-center justify-between gap-3 min-w-0">
+                  {attendance?.check_in_time ? (
+                    <p className="text-[11px] text-emerald-600 flex items-center gap-1.5 min-w-0">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Checked in at {format(parseISO(attendance.check_in_time), "h:mm a")}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 min-w-0">
+                      <Clock className="h-3.5 w-3.5 shrink-0" /> Not checked in yet
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={attendance?.check_in_time ? "outline" : "default"}
+                    className="rounded-full shrink-0"
+                    disabled={dayCheckingIn || !!attendance?.check_in_time}
+                    onClick={() => void onDayCheckIn()}
+                  >
+                    {dayCheckingIn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogIn className="h-3.5 w-3.5" />}
+                    <span className="ml-1.5">{attendance?.check_in_time ? "Checked in" : "Check in"}</span>
+                  </Button>
+                </div>
+              )}
               {/* Details panel — visible in edit/view */}
               {isEdit && editActivity && (
                 <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm space-y-3 overflow-hidden min-w-0 max-w-full">
@@ -725,8 +769,18 @@ export default function CreativeActivityForm({
                       <div className="flex items-center gap-1.5 text-muted-foreground min-w-0"><Clock className="h-3 w-3 shrink-0" /><span className="min-w-0 break-words">End {format(parseISO(editActivity.end_time), "h:mm a")}</span></div>
                     )}
                   </div>
-                  {editActivity.location_address && (
-                    <p className="text-[11px] flex items-start gap-1.5 text-muted-foreground min-w-0"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="min-w-0 max-w-full break-words [overflow-wrap:anywhere]">{editActivity.location_address}</span></p>
+                  {(editActivity.location_address || (editActivity.location_lat && editActivity.location_lng)) && (
+                    <div className="rounded-xl border border-border/60 bg-muted/40 px-2.5 py-2 space-y-0.5 min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3 w-3" /> Geo Stamp</p>
+                      {editActivity.location_address && (
+                        <p className="text-[11px] text-muted-foreground break-words [overflow-wrap:anywhere]">{editActivity.location_address}</p>
+                      )}
+                      {editActivity.location_lat && editActivity.location_lng && (
+                        <p className="text-[11px] font-mono text-muted-foreground">
+                          {Number(editActivity.location_lat).toFixed(5)}, {Number(editActivity.location_lng).toFixed(5)}
+                        </p>
+                      )}
+                    </div>
                   )}
                   {editActivity.milestone_name && (
                     <div className="text-[11px] text-muted-foreground break-words [overflow-wrap:anywhere]"><span className="font-medium text-foreground">Milestone:</span> {editActivity.milestone_name}</div>
@@ -1103,35 +1157,8 @@ export default function CreativeActivityForm({
                   )}
                 </div>
 
-                {/* Photos preview */}
-                {photos.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 min-w-0">
-                    {photos.map((ph) => (
-                      <div
-                        key={ph.url}
-                        className="relative aspect-square rounded-xl overflow-hidden bg-muted group"
-                      >
-                        {photoPreviews[ph.url] ? (
-                          <img
-                            src={photoPreviews[ph.url]}
-                            alt="upload"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          </div>
-                        )}
-                        <button
-                          onClick={() => setPhotos((p) => p.filter((x) => x.url !== ph.url))}
-                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Photos are managed in the Photos section below */}
+
 
                 {recording && !voiceToTextMode && !isRecording && (
                   <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-2 py-1.5 text-xs min-w-0">
@@ -1144,6 +1171,72 @@ export default function CreativeActivityForm({
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Photos section — available in new, edit and saved records */}
+              <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Photos ({photos.length})
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={uploadingPhoto}
+                    onClick={handleOpenCamera}
+                  >
+                    {uploadingPhoto ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Camera className="h-3.5 w-3.5 mr-1.5" />}
+                    Take Photo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={uploadingPhoto}
+                    onClick={() => galleryInputRef.current?.click()}
+                  >
+                    <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
+                    Upload
+                  </Button>
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleGalleryPick}
+                    className="hidden"
+                  />
+                </div>
+                {photos.length === 0 ? (
+                  <p className="text-[11px] text-muted-foreground mt-2">No photos uploaded</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2 mt-3 min-w-0">
+                    {photos.map((ph) => (
+                      <div key={ph.url} className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
+                        {photoPreviews[ph.url] ? (
+                          <img src={photoPreviews[ph.url]} alt="Activity photo" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setPhotos((p) => p.filter((x) => x.url !== ph.url))}
+                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-80 transition"
+                          aria-label="Remove photo"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
