@@ -57,6 +57,17 @@ export function LeadSlaTab({ lead }: { lead: LeadRow & LeadSlaFields }) {
     })();
   }, [lead.created_by]);
 
+  // Any status that means the lead has moved beyond enquiry into a productive stage
+  const PRODUCTIVE = [
+    "contacted",
+    "shown interest",
+    "shows interest",
+    "quote submitted",
+    "negotiation",
+    "close won",
+    "closed won",
+  ];
+
   // Actual stage dates derived from the lead audit log (first time the stage was reached)
   const actuals = useMemo(() => {
     const map: Record<string, string | null> = {};
@@ -68,6 +79,13 @@ export function LeadSlaTab({ lead }: { lead: LeadRow & LeadSlaFields }) {
         (r) => String(r.to_value || "").trim().toLowerCase() === s.match,
       );
       map[s.key] = hit ? String(hit.created_at).slice(0, 10) : null;
+    }
+    // Contact date = first move into ANY productive stage (handles skipped "Contacted")
+    const firstProductive = rows.find((r) =>
+      PRODUCTIVE.includes(String(r.to_value || "").trim().toLowerCase()),
+    );
+    if (firstProductive) {
+      map.contacted = String(firstProductive.created_at).slice(0, 10);
     }
     if (!map.contacted && lead.actual_first_contact_date) {
       map.contacted = String(lead.actual_first_contact_date).slice(0, 10);
