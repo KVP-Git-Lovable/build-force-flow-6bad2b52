@@ -218,7 +218,7 @@ export function LeadForm({
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <Label>Researched Information</Label>
+              <Label>Requirement Overview</Label>
               <Button type="button" variant="outline" size="sm" onClick={handleElaborate} disabled={isElaborating}>
                 {isElaborating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
                 AI Elaborate
@@ -226,7 +226,7 @@ export function LeadForm({
             </div>
             <Textarea
               rows={5}
-              placeholder="Background research on this lead/company — company size, recent news, pain points, competitor info… or leave blank and click AI Elaborate."
+              placeholder="What the customer needs — scope, products/services, quantities, timelines and budget. You can also add background research: company size, recent news, pain points and competition… or leave blank and click AI Elaborate."
               value={f.researched_information}
               onChange={(e) => setF({ ...f, researched_information: e.target.value })}
             />

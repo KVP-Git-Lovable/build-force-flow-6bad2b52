@@ -237,7 +237,7 @@ export default function LeadDetail() {
 
           {lead.researched_information && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Researched Information</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">Requirement Overview</CardTitle></CardHeader>
               <CardContent>
                 <div className="text-sm whitespace-pre-wrap leading-relaxed">{lead.researched_information}</div>
               </CardContent>
