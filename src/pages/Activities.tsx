@@ -718,7 +718,11 @@ export default function Activities() {
     });
     setEditingId(a.id);
     setEditActivityObj(a);
+    setFormAttendance(null);
     setShowForm(true);
+    fetchAttendanceForDate(a.user_id || currentUserId, a.activity_date || dateStr)
+      .then(setFormAttendance)
+      .catch(() => {});
   };
 
   const handleSave = async () => {
