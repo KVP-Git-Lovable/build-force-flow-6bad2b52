@@ -133,6 +133,7 @@ export function LeadForm({
       id: lead?.id,
       name: f.name.trim(),
       title: f.title || null,
+      contact_role: f.contact_role || "unknown",
       company: f.company || null,
       email: f.email || null,
       phone: f.phone || null,
