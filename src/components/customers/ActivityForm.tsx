@@ -108,7 +108,7 @@ export function ActivityForm({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader><DialogTitle>New Activity</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEdit ? "Edit Activity" : "New Activity"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -130,7 +130,7 @@ export function ActivityForm({
               <SelectContent>{OUTCOMES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>Subject *</Label><Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></div>
+          <div><Label>Subject</Label><Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></div>
           <div><Label>Notes</Label><Textarea rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
           {!lockOpportunity && !leadId && (
             <div>
@@ -148,7 +148,7 @@ export function ActivityForm({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={!form.subject.trim()}>Create</Button>
+          <Button onClick={submit}>{isEdit ? "Save" : "Create"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
