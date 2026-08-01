@@ -1,12 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { differenceInCalendarDays } from "date-fns";
 import { Link } from "react-router-dom";
 import { Settings2 } from "lucide-react";
-import { LeadRow, useLeadStatuses, useSaveLead, statusColorClasses } from "@/hooks/useLeadsEvents";
+import { LeadRow, useLeadStatuses, statusColorClasses } from "@/hooks/useLeadsEvents";
 import {
   useLeadScoringRules, useLeadActivityCount, activityScore, ageScore, statusScore,
   qualificationLevel, ContactRole, CONTACT_ROLE_LABELS,
@@ -16,7 +15,6 @@ export function LeadScoreTab({ lead }: { lead: LeadRow & { contact_role?: string
   const { rules } = useLeadScoringRules();
   const { data: statuses = [] } = useLeadStatuses(false);
   const { data: activityCount = 0 } = useLeadActivityCount(lead.id);
-  const save = useSaveLead();
 
   const status = statuses.find((s) => s.id === lead.lead_status_id);
   const ageDays = differenceInCalendarDays(new Date(), new Date(lead.created_at));
