@@ -32,6 +32,8 @@ interface Props<R> {
   /** Human readable filter lines for the PDF header. */
   filterSummary: string[];
   fileName: string;
+  /** Shown in the PDF header. */
+  generatedBy?: string;
   summary?: { label: string; value: string }[];
   defaultCharts?: ChartConfig[];
   loading: boolean;
@@ -53,6 +55,7 @@ export function ReportWorkspace<R>({
   onApplyFilterState,
   filterSummary,
   fileName,
+  generatedBy = "",
   summary,
   defaultCharts = [],
   loading,
@@ -106,7 +109,7 @@ export function ReportWorkspace<R>({
       await generateReportPdf({
         title,
         fileName,
-        generatedBy: "",
+        generatedBy,
         filters: filterSummary,
         columns: visibleColumns.map((c) => ({
           header: c.header,
