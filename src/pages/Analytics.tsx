@@ -97,10 +97,9 @@ function AnalyticsInner() {
             {tab === "procurement" && isOn("procurement") && <ProcurementReport />}
             {tab === "activities" && isOn("activities") && <ActivityReport />}
             {tab === "leads" && isOn("leads") && <LeadReport />}
-            {tab === "milestones" && isOn("milestones") && <MilestoneReport />}
             {tab === "expenses" && isOn("expenses") && <ExpenseReport />}
             {tab === "leave" && isOn("leave") && <LeaveReport />}
-            {tab === "payments" && isOn("payments") && <PaymentReport />}
+
           </Suspense>
         </motion.div>
       </div>
