@@ -13,7 +13,8 @@ import {
 import {
   useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, useIndustries, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
-import { CONTACT_ROLE_LABELS, ContactRole } from "@/hooks/useLeadScoring";
+import { CONTACT_ROLE_LABELS, ContactRole, useLeadScoringRules } from "@/hooks/useLeadScoring";
+import { useLeadInsight, bantScore, BANT_LEVEL_CLASSES, SLA_BADGE_CLASSES } from "@/hooks/useLeadInsights";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { LeadActivityComposer } from "@/components/leads/LeadActivityComposer";
 import { useLeadActivities } from "@/hooks/useLeadActivities";
@@ -36,6 +37,8 @@ export default function LeadDetail() {
   const save = useSaveLead();
   const del = useDeleteLead();
   const { data: activities = [] } = useLeadActivities(id);
+  const { rules } = useLeadScoringRules();
+  const insight = useLeadInsight(id);
 
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
@@ -47,6 +50,16 @@ export default function LeadDetail() {
   if (isLoading || !lead) return <div className="p-6 text-muted-foreground">Loading…</div>;
 
   const currentStatus = statuses.find((s) => s.id === lead.lead_status_id);
+  const bant = bantScore(
+    {
+      statusName: currentStatus?.name,
+      contactRole: (lead as any).contact_role,
+      activityCount: insight?.activityCount ?? 0,
+      createdAt: lead.created_at,
+    },
+    rules,
+  );
+  const slaStatus = insight?.sla ?? "Not Started";
   const source = sources.find((s) => s.id === lead.lead_source_id);
   const event = events.find((e) => e.id === lead.related_event_id);
   const isConverted = !!lead.converted_customer_id;
@@ -120,6 +133,43 @@ export default function LeadDetail() {
             </Button>
           </div>
         </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 rounded-lg border bg-muted/30 p-3">
+            <div>
+              <div className="text-[11px] text-muted-foreground">BANT Score</div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-lg font-bold leading-none">{bant.total}</span>
+                <Badge className={`${BANT_LEVEL_CLASSES[bant.level]} text-[10px]`}>{bant.level}</Badge>
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] text-muted-foreground">Lead SLA</div>
+              <Badge className={`${SLA_BADGE_CLASSES[slaStatus]} text-[10px] mt-1`}>{slaStatus}</Badge>
+            </div>
+            <div>
+              <div className="text-[11px] text-muted-foreground">Opportunity Value</div>
+              <div className="text-sm font-semibold mt-0.5">
+                {(lead as any).opportunity_value != null
+                  ? `₹${Number((lead as any).opportunity_value).toLocaleString("en-IN")}`
+                  : "—"}
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] text-muted-foreground">Close Date</div>
+              <div className="text-sm font-semibold mt-0.5">
+                {(lead as any).opportunity_close_date
+                  ? format(new Date((lead as any).opportunity_close_date), "dd MMM yyyy")
+                  : "—"}
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] text-muted-foreground">Probability of Win</div>
+              <div className="text-sm font-semibold mt-0.5">
+                {(lead as any).opportunity_probability != null ? `${(lead as any).opportunity_probability}%` : "—"}
+              </div>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       <Tabs defaultValue="overview">
@@ -128,7 +178,7 @@ export default function LeadDetail() {
           <TabsTrigger value="score">Lead Score (BANT)</TabsTrigger>
           <TabsTrigger value="sla">Lead SLA</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>
-          <TabsTrigger value="attachments">Attachments</TabsTrigger>
+          <TabsTrigger value="attachments">Attachments ({insight?.documentCount ?? 0})</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
         </TabsList>
 
