@@ -221,6 +221,8 @@ export default function CreativeActivityForm({
     // Prefill on edit
     if (editActivity) {
       setProjectId(editActivity.site_id || "");
+      setLeadId((editActivity as any).lead_id || "");
+      setOutcome((editActivity as any).outcome || "");
       setDescription(editActivity.description || "");
       setActivityType(editActivity.activity_type || "");
       setActivityDate(editActivity.activity_date || format(new Date(), "yyyy-MM-dd"));
