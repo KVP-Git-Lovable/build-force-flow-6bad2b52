@@ -189,7 +189,6 @@ export default function GPSTracking() {
           .eq("user_id", userId)
           .gte("date", from)
           .lte("date", to)
-          .or("accuracy.is.null,accuracy.lte.100")
           .order("timestamp", { ascending: true }),
         supabase
           .from("gps_tracking_stops")
@@ -205,7 +204,36 @@ export default function GPSTracking() {
           .lte("activity_date", to),
       ]);
 
-      setGpsPoints(pointsRes.data || []);
+      // Filter GPS points: remove poor accuracy and unrealistic jumps
+      let filteredPoints = (pointsRes.data || []) as GPSPoint[];
+
+      // Remove points with poor accuracy (> 100m)
+      filteredPoints = filteredPoints.filter(p => !p.accuracy || p.accuracy <= 100);
+
+      // Remove unrealistic jumps (> 50km between consecutive points)
+      const cleanedPoints: GPSPoint[] = [];
+      for (let i = 0; i < filteredPoints.length; i++) {
+        if (i === 0) {
+          cleanedPoints.push(filteredPoints[i]);
+        } else {
+          const prev = filteredPoints[i - 1];
+          const curr = filteredPoints[i];
+          const R = 6371;
+          const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180;
+          const dLon = ((curr.longitude - prev.longitude) * Math.PI) / 180;
+          const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos((prev.latitude * Math.PI) / 180) *
+            Math.cos((curr.latitude * Math.PI) / 180) *
+            Math.sin(dLon / 2) ** 2;
+          const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+          if (distance < 50) { // Only include if jump is < 50km
+            cleanedPoints.push(curr);
+          }
+        }
+      }
+
+      setGpsPoints(cleanedPoints);
       setGpsStops(stopsRes.data || []);
 
       const markers: ActivityAtLocation[] = [];
