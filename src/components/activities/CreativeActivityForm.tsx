@@ -491,11 +491,11 @@ export default function CreativeActivityForm({
     }
   }, [clearRecording, isFinalizing, isRecording, isStartingRecording, isTranscribing, startRecording, stopRecording]);
 
-  const canPost = !!description.trim() || !!activityType || !!projectId;
+  const canPost = !!description.trim() || !!activityType || !!leadId;
 
   const handlePost = async () => {
     if (!canPost) {
-      toast.error("Add a project, type, or description to post");
+      toast.error("Add a lead, type, or description to post");
       return;
     }
     if (isEdit && !editActivity) return;
@@ -556,6 +556,8 @@ export default function CreativeActivityForm({
         activity_date: activityDate,
         description: description || null,
         site_id: projectId || null,
+        lead_id: leadId || null,
+        outcome: outcome || null,
         photo_urls: photos,
         grn_po_id: isGrnType ? (grnPoId || null) : null,
         ...(canAssign ? { assigned_user_ids: assignedIds } : {}),
@@ -931,8 +933,8 @@ export default function CreativeActivityForm({
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder={
-                      selectedProject
-                        ? `What's happening at ${selectedProject.name}?`
+                      selectedLead
+                        ? `What's happening with ${selectedLead.name}?`
                         : "What's happening in your project?"
                     }
                     rows={3}
@@ -1185,7 +1187,7 @@ export default function CreativeActivityForm({
                   </div>
 
                   {!projectId ? (
-                    <p className="text-xs text-muted-foreground">Select a Project/Site above to see open Purchase Orders.</p>
+                    <p className="text-xs text-muted-foreground">Goods receipts are captured from the Procurement module for site-linked orders.</p>
                   ) : (
                     <OpenGRNPicker siteId={projectId} value={grnPoId} onChange={setGrnPoId} />
                   )}
@@ -1365,9 +1367,9 @@ export default function CreativeActivityForm({
             {/* Footer */}
             <div className="px-3 sm:px-4 py-3 border-t border-border/60 bg-background flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0 max-w-full overflow-hidden safe-bottom">
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap min-w-0 max-w-full">
-                {selectedProject && (
+                {selectedLead && (
                   <Badge variant="secondary" className="rounded-full text-[10px] px-2 py-0 max-w-full min-w-0">
-                    <span className="min-w-0 truncate">{selectedProject.name}</span>
+                    <span className="min-w-0 truncate">{selectedLead.name}</span>
                   </Badge>
                 )}
                 {activityType && (
