@@ -246,6 +246,23 @@ export default function CreativeActivityForm({
     }
   }, [open, editActivity, clearRecording]);
 
+  // Load leads for the picker
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("leads")
+        .select("id, name, company")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (!cancelled) setLeadOptions((data as any[]) || []);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+
+
   // Load PO items + already-received qty whenever a PO is selected for GRN
   useEffect(() => {
     if (!isGrnType || !grnPoId) {
