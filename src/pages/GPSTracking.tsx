@@ -204,11 +204,38 @@ export default function GPSTracking() {
           .lte("activity_date", to),
       ]);
 
-      // Use all GPS points with reasonable accuracy, calculate actual distance traveled
-      let cleanedPoints = (pointsRes.data || []) as GPSPoint[];
+      // Filter GPS points - remove noise/jitter while keeping real movement
+      let points = (pointsRes.data || []) as GPSPoint[];
 
-      // Only filter out obviously bad accuracy (> 200m is clearly wrong)
-      cleanedPoints = cleanedPoints.filter(p => !p.accuracy || p.accuracy <= 200);
+      // Step 1: Remove obviously bad accuracy
+      points = points.filter(p => !p.accuracy || p.accuracy <= 100);
+
+      // Step 2: Remove clustered points (GPS noise within ~100m of previous accepted point)
+      const NOISE_THRESHOLD_KM = 0.1; // 100 meters
+      const cleanedPoints: GPSPoint[] = [];
+
+      for (const curr of points) {
+        if (cleanedPoints.length === 0) {
+          cleanedPoints.push(curr);
+        } else {
+          const prev = cleanedPoints[cleanedPoints.length - 1];
+
+          // Calculate distance from last accepted point
+          const R = 6371;
+          const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180;
+          const dLon = ((curr.longitude - prev.longitude) * Math.PI) / 180;
+          const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos((prev.latitude * Math.PI) / 180) *
+            Math.cos((curr.latitude * Math.PI) / 180) *
+            Math.sin(dLon / 2) ** 2;
+          const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+          // Only add if distance > threshold (removes GPS jitter/noise)
+          if (distance >= NOISE_THRESHOLD_KM) {
+            cleanedPoints.push(curr);
+          }
+        }
+      }
 
       setGpsPoints(cleanedPoints);
       setGpsStops(stopsRes.data || []);
