@@ -1585,20 +1585,8 @@ export default function Activities() {
         </DialogContent>
       </Dialog>
 
-      {/* Activity Details Dialog */}
-      <ActivityDetailsDialog
-        activity={detailsActivity}
-        open={!!detailsActivity}
-        onClose={() => setDetailsActivity(null)}
-        onSavePhotos={async (photos) => {
-          if (!detailsActivity) return;
-          await updateActivity(detailsActivity.id, { photo_urls: photos });
-          setDetailsActivity({ ...detailsActivity, photo_urls: photos });
-          fetchActivities();
-        }}
-        onEdit={handleOpenEdit}
-        onDelete={handleDelete}
-      />
+      {/* Activity details open in the full composer view (see CreativeActivityForm above) */}
+
 
       {/* Receive Goods (GRN) Dialog */}
       {receivePoId && (
