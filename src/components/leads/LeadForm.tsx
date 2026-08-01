@@ -40,7 +40,7 @@ export function LeadForm({
     if (lead) {
       const l = lead as any;
       setF({
-        name: lead.name, title: lead.title ?? "", company: lead.company ?? "",
+        name: lead.name, title: lead.title ?? "", contact_role: l.contact_role ?? "unknown", company: lead.company ?? "",
         email: lead.email ?? "", phone: lead.phone ?? "", website: lead.website ?? "",
         address: lead.address ?? "", industry: lead.industry ?? "",
         lead_status_id: lead.lead_status_id ?? "",
