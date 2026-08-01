@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, UserPlus, Phone, Mail, Globe, Building2, MapPin, Briefcase, Copy, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, UserPlus, Phone, Mail, Globe, Building2, MapPin, Briefcase, Copy, Trash2, User, Users, Tag, CalendarDays } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, statusColorClasses,
+  useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, useIndustries, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
+import { CONTACT_ROLE_LABELS, ContactRole } from "@/hooks/useLeadScoring";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { LeadActivityComposer } from "@/components/leads/LeadActivityComposer";
 import { useLeadActivities } from "@/hooks/useLeadActivities";
@@ -30,6 +31,7 @@ export default function LeadDetail() {
   const { data: statuses = [] } = useLeadStatuses(false);
   const { data: sources = [] } = useLeadSources(false);
   const { data: events = [] } = useEvents();
+  const { data: industries = [] } = useIndustries();
   const { data: audit = [] } = useLeadAuditLog(id);
   const save = useSaveLead();
   const del = useDeleteLead();
