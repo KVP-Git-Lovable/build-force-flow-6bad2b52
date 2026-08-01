@@ -204,53 +204,11 @@ export default function GPSTracking() {
           .lte("activity_date", to),
       ]);
 
-      // Filter GPS points: remove poor accuracy and unrealistic speeds
-      let filteredPoints = (pointsRes.data || []) as GPSPoint[];
+      // Use all GPS points with reasonable accuracy, calculate actual distance traveled
+      let cleanedPoints = (pointsRes.data || []) as GPSPoint[];
 
-      // Remove points with poor accuracy (> 50m for stricter filtering)
-      filteredPoints = filteredPoints.filter(p => !p.accuracy || p.accuracy <= 50);
-
-      // Remove points that represent unrealistic speeds
-      // Field work max speed: 50 km/hr (more conservative)
-      const MAX_SPEED_KMH = 50;
-      const MIN_TIME_SECONDS = 5; // Ignore jumps < 5 seconds apart (likely noise)
-      const cleanedPoints: GPSPoint[] = [];
-
-      for (let i = 0; i < filteredPoints.length; i++) {
-        if (i === 0) {
-          cleanedPoints.push(filteredPoints[i]);
-        } else {
-          const prev = cleanedPoints[cleanedPoints.length - 1];
-          const curr = filteredPoints[i];
-
-          // Calculate distance using Haversine
-          const R = 6371;
-          const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180;
-          const dLon = ((curr.longitude - prev.longitude) * Math.PI) / 180;
-          const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos((prev.latitude * Math.PI) / 180) *
-            Math.cos((curr.latitude * Math.PI) / 180) *
-            Math.sin(dLon / 2) ** 2;
-          const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-          // Calculate time difference
-          const prevTime = new Date(prev.timestamp).getTime();
-          const currTime = new Date(curr.timestamp).getTime();
-          const timeSeconds = (currTime - prevTime) / 1000;
-          const timeHours = timeSeconds / 3600;
-
-          // Skip if too close in time (likely noise)
-          if (timeSeconds < MIN_TIME_SECONDS) continue;
-
-          // Calculate speed
-          const speedKmh = timeHours > 0 ? distance / timeHours : 0;
-
-          // Only include if speed is realistic (< MAX_SPEED_KMH) and distance > 50m
-          if (speedKmh <= MAX_SPEED_KMH && distance > 0.05) {
-            cleanedPoints.push(curr);
-          }
-        }
-      }
+      // Only filter out obviously bad accuracy (> 200m is clearly wrong)
+      cleanedPoints = cleanedPoints.filter(p => !p.accuracy || p.accuracy <= 200);
 
       setGpsPoints(cleanedPoints);
       setGpsStops(stopsRes.data || []);
