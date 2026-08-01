@@ -62,7 +62,7 @@ const allNavigationItems = [
   { icon: Target, label: "Opportunities", href: "/opportunities", color: "from-violet-500 to-violet-600", module: "module_opportunities" },
   { icon: Users2, label: "Leads", href: "/leads", color: "from-fuchsia-500 to-fuchsia-600", module: "module_leads" },
   { icon: Users2, label: "Events", href: "/events", color: "from-pink-500 to-pink-600", module: "module_events" },
-  { icon: FileBarChart, label: "Reports", href: "/reports", color: "from-teal-500 to-teal-600", module: null as string | null },
+  { icon: FileBarChart, label: "Reports", href: "/reports", color: "from-teal-500 to-teal-600", module: "module_reports" as string | null },
 ];
 
 const adminItems = [
