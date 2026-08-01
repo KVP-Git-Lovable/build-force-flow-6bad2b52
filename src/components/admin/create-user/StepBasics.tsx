@@ -142,7 +142,7 @@ const StepBasics: React.FC<StepBasicsProps> = ({ formData, onUpdate }) => {
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="phone_number">Phone Number *</Label>
+          <Label htmlFor="phone_number">Phone Number</Label>
           <Input
             id="phone_number"
             value={formData.phone_number}

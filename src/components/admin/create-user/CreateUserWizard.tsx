@@ -76,16 +76,13 @@ const CreateUserWizard: React.FC<CreateUserWizardProps> = ({ onSuccess }) => {
   const validateStep = (step: WizardStep): boolean => {
     switch (step) {
       case 'basics':
-        if (!formData.email || !formData.password || !formData.username || !formData.full_name || !formData.phone_number) {
-          toast.error("Please fill in all required fields (Email, Password, Username, Full Name, Phone Number)");
+        if (!formData.email || !formData.password || !formData.username || !formData.full_name) {
+          toast.error("Please fill in all required fields (Email, Password, Username, Full Name)");
           return false;
         }
         return true;
       case 'employment':
-        if (!formData.manager_id) {
-          toast.error("Primary Manager is required");
-          return false;
-        }
+        // Primary Manager is now optional
         return true;
       default:
         return true;

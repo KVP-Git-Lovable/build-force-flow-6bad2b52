@@ -94,7 +94,7 @@ const StepEmployment: React.FC<StepEmploymentProps> = ({ formData, onUpdate, man
         </div>
 
         <div className="space-y-2">
-          <Label>Primary Manager (Reports To) *</Label>
+          <Label>Primary Manager (Reports To)</Label>
           <Popover open={managerOpen} onOpenChange={setManagerOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" role="combobox" aria-expanded={managerOpen} className="w-full justify-between font-normal">
