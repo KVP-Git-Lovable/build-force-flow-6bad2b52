@@ -228,6 +228,7 @@ export default function Activities() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editActivityObj, setEditActivityObj] = useState<ActivityType | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [customersList, setCustomersList] = useState<Array<{ id: string; name: string }>>([]);
   const [opportunitiesList, setOpportunitiesList] = useState<Array<{ id: string; name: string; customer_id: string }>>([]);
