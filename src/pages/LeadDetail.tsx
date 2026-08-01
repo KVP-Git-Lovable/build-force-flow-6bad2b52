@@ -33,7 +33,7 @@ export default function LeadDetail() {
   const { data: audit = [] } = useLeadAuditLog(id);
   const save = useSaveLead();
   const del = useDeleteLead();
-  const { data: activities = [] } = useCustomerActivities({ leadId: id });
+  const { data: activities = [] } = useLeadActivities(id);
 
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
