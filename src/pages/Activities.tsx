@@ -66,7 +66,6 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import ActivityReportGenerator from "@/components/activities/ActivityReportGenerator";
 import ActivityPhotoManager from "@/components/activities/ActivityPhotoManager";
-import ActivityDetailsDialog from "@/components/activities/ActivityDetailsDialog";
 import { MultiUserPicker } from "@/components/pm/MultiUserPicker";
 import { milestoneStatusLabel } from "@/components/admin/SiteMilestonesDialog";
 import CreativeActivityForm from "@/components/activities/CreativeActivityForm";
@@ -1009,7 +1008,7 @@ export default function Activities() {
                   isAdmin={isAdmin}
                   onEdit={handleOpenEdit}
                   onDelete={handleDelete}
-                  onOpenDetails={setDetailsActivity}
+                  onOpenDetails={handleOpenEdit}
                   onReceiveGoods={(poId) => setReceivePoId(poId)}
                   onStatusChanged={() => fetchActivities()}
                   updateActivity={updateActivity}
