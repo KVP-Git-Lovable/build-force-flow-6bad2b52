@@ -1544,6 +1544,7 @@ export type Database = {
           created_by: string | null
           email: string | null
           id: string
+          indicative_budget: number | null
           industry: string | null
           lead_source_id: string | null
           lead_status_id: string | null
@@ -1573,6 +1574,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           id?: string
+          indicative_budget?: number | null
           industry?: string | null
           lead_source_id?: string | null
           lead_status_id?: string | null
@@ -1602,6 +1604,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           id?: string
+          indicative_budget?: number | null
           industry?: string | null
           lead_source_id?: string | null
           lead_status_id?: string | null
