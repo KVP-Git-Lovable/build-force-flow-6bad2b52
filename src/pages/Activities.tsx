@@ -717,6 +717,7 @@ export default function Activities() {
       photos: a.photo_urls || [],
     });
     setEditingId(a.id);
+    setEditActivityObj(a);
     setShowForm(true);
   };
 
