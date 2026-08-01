@@ -1,4 +1,5 @@
-import { format } from "date-fns";
+import { useMemo } from "react";
+import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { motion } from "framer-motion";
 import {
   Clock,
@@ -8,8 +9,9 @@ import {
   CalendarOff,
   Receipt,
   CheckSquare,
-  Loader,
   Activity,
+  TrendingUp,
+  CalendarClock,
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +23,10 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useLeads } from "@/hooks/useLeadsEvents";
+import { formatCurrencyCompact } from "@/lib/currency";
 import WorkforceOverviewSection from "@/components/dashboard/WorkforceOverviewSection";
+
 
 const container = {
   hidden: { opacity: 0 },
@@ -71,18 +76,36 @@ export default function Dashboard() {
     todayActivities,
   } = useDashboard(userId);
 
+  const { data: leads = [] } = useLeads();
+  const leadKpis = useMemo(() => {
+    const now = new Date();
+    const monthRange = { start: startOfMonth(now), end: endOfMonth(now) };
+    const pipeline = leads.reduce((s: number, l: any) => s + (Number(l.opportunity_value) || 0), 0);
+    const closingValue = leads.reduce((s: number, l: any) => {
+      const d = l.opportunity_close_date ? new Date(l.opportunity_close_date) : null;
+      if (!d || isNaN(d.getTime()) || !isWithinInterval(d, monthRange)) return s;
+      return s + (Number(l.opportunity_value) || 0);
+    }, 0);
+    return { pipeline, closingValue };
+  }, [leads]);
+  const money = (n: number) => formatCurrencyCompact(n, "INR");
+
   const handleStartDay = () => {
     navigate("/attendance");
   };
 
+
+
   const overviewCards = [
     { label: "My Activities", value: myActivities.total, icon: ListTodo, colorClass: "bg-info/5 text-info", path: "/activities", module: "module_activities" },
     { label: "Completed", value: myActivities.completed, icon: CheckSquare, colorClass: "bg-success/5 text-success", path: "/activities?status=completed", module: "module_activities" },
-    { label: "In Progress", value: myActivities.inProgress, icon: Loader, colorClass: "bg-warning/5 text-warning", path: "/activities?status=in_progress", module: "module_activities" },
     { label: "Today's Activities", value: todayActivities, icon: Activity, colorClass: "bg-primary/5 text-primary", path: "/activities", module: "module_activities" },
+    { label: "Total Pipeline", value: money(leadKpis.pipeline), icon: TrendingUp, colorClass: "bg-info/5 text-info", path: "/leads", module: "module_leads" },
+    { label: "Closing This Month", value: money(leadKpis.closingValue), icon: CalendarClock, colorClass: "bg-warning/5 text-warning", path: "/leads", module: "module_leads" },
     { label: "Pending Leaves", value: pendingLeaves, icon: CalendarOff, colorClass: "bg-accent/5 text-accent", path: "/attendance", module: "module_attendance" },
     { label: "Pending Expenses", value: pendingExpenses.count, icon: Receipt, colorClass: "bg-destructive/5 text-destructive", path: "/expenses", module: "module_expenses" },
   ];
+
 
   const visibleCards = overviewCards.filter((c) => !c.module || hasModuleAccess(c.module));
 
