@@ -1148,6 +1148,72 @@ export default function CreativeActivityForm({
                 )}
               </div>
 
+              {/* Photos section — available in new, edit and saved records */}
+              <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Photos ({photos.length})
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={uploadingPhoto}
+                    onClick={handleOpenCamera}
+                  >
+                    {uploadingPhoto ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Camera className="h-3.5 w-3.5 mr-1.5" />}
+                    Take Photo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    disabled={uploadingPhoto}
+                    onClick={() => galleryInputRef.current?.click()}
+                  >
+                    <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
+                    Upload
+                  </Button>
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleGalleryPick}
+                    className="hidden"
+                  />
+                </div>
+                {photos.length === 0 ? (
+                  <p className="text-[11px] text-muted-foreground mt-2">No photos uploaded</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2 mt-3 min-w-0">
+                    {photos.map((ph) => (
+                      <div key={ph.url} className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
+                        {photoPreviews[ph.url] ? (
+                          <img src={photoPreviews[ph.url]} alt="Activity photo" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setPhotos((p) => p.filter((x) => x.url !== ph.url))}
+                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-80 transition"
+                          aria-label="Remove photo"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Activity type chips */}
               <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-100 dark:border-amber-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
                 <p className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 mb-2">
