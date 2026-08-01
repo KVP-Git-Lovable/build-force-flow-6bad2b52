@@ -137,7 +137,7 @@ export function LeadSlaTab({ lead }: { lead: LeadRow & LeadSlaFields }) {
           <div className="text-right">
             <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
               Actual Contact Date
-              <Help text="Auto-captured on the date the lead status first moved to “Contacted”." />
+              <Help text="Auto-captured on the date the lead first moved into any productive stage — Contacted, Shown Interest, Quote Submitted, Negotiation or Close Won — even if Contacted was skipped." />
             </div>
             <div className="text-lg font-semibold">{fmt(contactDate)}</div>
           </div>
