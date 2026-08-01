@@ -263,13 +263,13 @@ export default function LeadDetail() {
       </Tabs>
 
       <LeadForm open={editOpen} onOpenChange={setEditOpen} lead={lead} />
-      <ActivityForm
+      <LeadActivityComposer
         open={newAct}
         onOpenChange={(v) => { setNewAct(v); if (!v) setEditAct(null); }}
         leadId={lead.id}
-        activity={editAct}
-        lockOpportunity
+        editActivity={editAct}
       />
+
       <ConvertLeadDialog open={convertOpen} onOpenChange={setConvertOpen} lead={lead} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
