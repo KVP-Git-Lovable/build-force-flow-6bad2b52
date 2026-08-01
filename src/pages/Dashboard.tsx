@@ -1,4 +1,5 @@
-import { format } from "date-fns";
+import { useMemo } from "react";
+import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { motion } from "framer-motion";
 import {
   Clock,
@@ -8,8 +9,9 @@ import {
   CalendarOff,
   Receipt,
   CheckSquare,
-  Loader,
   Activity,
+  TrendingUp,
+  CalendarClock,
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +23,10 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useLeads } from "@/hooks/useLeadsEvents";
+import { formatCurrencyCompact } from "@/lib/currency";
 import WorkforceOverviewSection from "@/components/dashboard/WorkforceOverviewSection";
+
 
 const container = {
   hidden: { opacity: 0 },
