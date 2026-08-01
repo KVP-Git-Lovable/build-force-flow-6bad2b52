@@ -284,7 +284,7 @@ export default function Leads() {
 
       {/* Mobile: card list */}
       <div className="space-y-2 md:hidden">
-        {filteredLeads.map((l: any) => {
+        {visibleLeads.map((l: any) => {
           const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
           const owner = ownerOf(l);
           const ownerName = owner ? (userMap[owner] || "—") : "—";
@@ -324,7 +324,7 @@ export default function Leads() {
             <TableHead>Owner</TableHead><TableHead>Created</TableHead><TableHead>Modified</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {filteredLeads.map((l: any) => {
+            {visibleLeads.map((l: any) => {
               const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
               const owner = ownerOf(l);
               const ownerName = owner ? (userMap[owner] || "—") : "—";
