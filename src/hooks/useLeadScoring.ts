@@ -2,12 +2,24 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export type ContactRole = "decision_maker" | "influencer" | "end_user" | "unknown";
+export type ContactRole =
+  | "decision_maker"
+  | "decision_support"
+  | "procurement"
+  | "technical_evaluator"
+  | "financial_evaluator"
+  | "gate_keeper"
+  | "user"
+  | "unknown";
 
 export const CONTACT_ROLE_LABELS: Record<ContactRole, string> = {
   decision_maker: "Decision Maker",
-  influencer: "Influencer",
-  end_user: "End User",
+  decision_support: "Decision Support",
+  procurement: "Procurement",
+  technical_evaluator: "Technical Evaluator",
+  financial_evaluator: "Financial Evaluator",
+  gate_keeper: "Gate Keeper",
+  user: "User",
   unknown: "Unknown",
 };
 
