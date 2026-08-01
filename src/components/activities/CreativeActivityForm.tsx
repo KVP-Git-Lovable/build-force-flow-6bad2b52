@@ -1103,35 +1103,8 @@ export default function CreativeActivityForm({
                   )}
                 </div>
 
-                {/* Photos preview */}
-                {photos.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 min-w-0">
-                    {photos.map((ph) => (
-                      <div
-                        key={ph.url}
-                        className="relative aspect-square rounded-xl overflow-hidden bg-muted group"
-                      >
-                        {photoPreviews[ph.url] ? (
-                          <img
-                            src={photoPreviews[ph.url]}
-                            alt="upload"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          </div>
-                        )}
-                        <button
-                          onClick={() => setPhotos((p) => p.filter((x) => x.url !== ph.url))}
-                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Photos are managed in the Photos section below */}
+
 
                 {recording && !voiceToTextMode && !isRecording && (
                   <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-2 py-1.5 text-xs min-w-0">
