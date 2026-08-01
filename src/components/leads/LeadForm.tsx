@@ -166,6 +166,17 @@ export function LeadForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Name *</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
             <div><Label>Designation</Label><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
+            <div>
+              <Label>Contact Role</Label>
+              <Select value={f.contact_role || "unknown"} onValueChange={(v) => setF({ ...f, contact_role: v })}>
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(CONTACT_ROLE_LABELS) as ContactRole[]).map((r) => (
+                    <SelectItem key={r} value={r}>{CONTACT_ROLE_LABELS[r]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div><Label>Company</Label><Input value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} /></div>
             <div>
               <Label>Industry</Label>
