@@ -1028,7 +1028,7 @@ export default function Activities() {
       </motion.div>
 
       {/* Create/Edit Activity Dialog - creative composer for creation, legacy dialog for editing */}
-      {!editingId ? (
+      {!editingId || editActivityObj ? (
         <CreativeActivityForm
           open={showForm}
           onOpenChange={(open) => {
@@ -1038,6 +1038,8 @@ export default function Activities() {
               }
               clearRecording();
               setVoiceToTextMode(false);
+              setEditingId(null);
+              setEditActivityObj(null);
             }
             setShowForm(open);
           }}
@@ -1047,6 +1049,7 @@ export default function Activities() {
           currentUserId={currentUserId}
           createActivity={createActivity}
           updateActivity={updateActivity}
+          editActivity={editActivityObj}
           onCreated={() => fetchActivities()}
         />
 
