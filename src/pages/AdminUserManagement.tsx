@@ -149,6 +149,7 @@ function useUserSecurityAssignments() {
         .from("user_security_profiles")
         .select("user_id, profile_id, security_profiles(name)");
       if (error) throw error;
+      console.log("User security assignments:", data);
       return (data || []) as { user_id: string; profile_id: string; security_profiles: { name: string } | null }[];
     },
   });
@@ -279,19 +280,23 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
 
       // Update security profile assignment
       if (roleId) {
+        console.log("Saving role:", { userId: user.id, profileId: roleId });
         const { data: existing, error: existingError } = await supabase
           .from("user_security_profiles")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle();
         if (existingError) throw existingError;
+        console.log("Existing assignment:", existing);
 
         if (existing) {
           const { error: updateError } = await supabase.from("user_security_profiles").update({ profile_id: roleId }).eq("id", existing.id);
           if (updateError) throw updateError;
+          console.log("Role updated successfully");
         } else {
           const { error: insertError } = await supabase.from("user_security_profiles").insert({ user_id: user.id, profile_id: roleId });
           if (insertError) throw insertError;
+          console.log("Role inserted successfully");
         }
       }
 
