@@ -527,6 +527,7 @@ export type Database = {
           lead_id: string | null
           notes: string | null
           opportunity_id: string | null
+          outcome: string | null
           subject: string
           type: string
           updated_at: string
@@ -540,6 +541,7 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           opportunity_id?: string | null
+          outcome?: string | null
           subject: string
           type?: string
           updated_at?: string
@@ -553,6 +555,7 @@ export type Database = {
           lead_id?: string | null
           notes?: string | null
           opportunity_id?: string | null
+          outcome?: string | null
           subject?: string
           type?: string
           updated_at?: string

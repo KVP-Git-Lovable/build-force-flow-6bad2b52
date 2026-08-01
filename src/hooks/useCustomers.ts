@@ -122,6 +122,8 @@ export interface CustomerActivity {
   subject: string;
   notes: string | null;
   activity_date: string;
+  outcome: string | null;
+  lead_id?: string | null;
   created_by: string | null;
   created_at: string;
 }
@@ -407,14 +409,15 @@ export function useSetPrimaryContact() {
 }
 
 // ---------- Activities ----------
-export function useCustomerActivities(scope?: { opportunityId?: string; customerId?: string } | string) {
+export function useCustomerActivities(scope?: { opportunityId?: string; customerId?: string; leadId?: string } | string) {
   const s = typeof scope === "string" ? { opportunityId: scope } : (scope || {});
   return useQuery({
-    queryKey: ["customer-activities", s.opportunityId ?? "all", s.customerId ?? "all"],
+    queryKey: ["customer-activities", s.opportunityId ?? "all", s.customerId ?? "all", (s as any).leadId ?? "all"],
     queryFn: async () => {
       let q = supabase.from("customer_activities").select("*").order("activity_date", { ascending: false });
       if (s.opportunityId) q = q.eq("opportunity_id", s.opportunityId);
       if (s.customerId) q = q.eq("customer_id", s.customerId);
+      if ((s as any).leadId) q = q.eq("lead_id", (s as any).leadId);
       const { data, error } = await q;
       if (error) throw error;
       return data as CustomerActivity[];
