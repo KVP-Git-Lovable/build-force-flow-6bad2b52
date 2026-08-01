@@ -6,13 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateCustomerActivity, useOpportunities } from "@/hooks/useCustomers";
-import { useActivityTypeOptions, useCreateLeadActivity, ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
+import { useActivityTypeOptions, useCreateLeadActivity, useUpdateLeadActivity, ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
 
 const TYPES = ["Note", "Call", "Meeting", "Email", "Task"];
 export const OUTCOMES = ACTIVITY_OUTCOMES;
 
 export function ActivityForm({
-  open, onOpenChange, opportunityId, lockOpportunity, customerId, leadId,
+  open, onOpenChange, opportunityId, lockOpportunity, customerId, leadId, activity,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -20,14 +20,17 @@ export function ActivityForm({
   lockOpportunity?: boolean;
   customerId?: string;
   leadId?: string;
+  activity?: any;
 }) {
   const create = useCreateCustomerActivity();
   const createLeadActivity = useCreateLeadActivity();
+  const updateLeadActivity = useUpdateLeadActivity();
   const { data: opps = [] } = useOpportunities(customerId);
   const { data: masterTypes = [] } = useActivityTypeOptions();
 
   // Leads use the same activity types as the calendar / Activities module
   const typeOptions = leadId ? masterTypes : TYPES;
+  const isEdit = !!activity?.id;
 
   const [form, setForm] = useState({
     type: "", subject: "", notes: "", outcome: OUTCOMES[0],
@@ -40,6 +43,20 @@ export function ActivityForm({
   }, [opportunityId, open]);
 
   useEffect(() => {
+    if (!open) return;
+    if (activity?.id) {
+      setForm({
+        type: activity.activity_type || "",
+        subject: activity.activity_name || "",
+        notes: activity.description || "",
+        outcome: activity.outcome || OUTCOMES[0],
+        activity_date: (activity.activity_date || new Date().toISOString()).slice(0, 10),
+        opportunity_id: opportunityId ?? "",
+      });
+    }
+  }, [activity, open, opportunityId]);
+
+  useEffect(() => {
     setForm((f) => (f.type || typeOptions.length === 0 ? f : { ...f, type: typeOptions[0] }));
   }, [typeOptions]);
 
@@ -49,24 +66,35 @@ export function ActivityForm({
   });
 
   const submit = async () => {
-    if (!form.subject.trim()) return;
+    const name = form.subject.trim() || form.type || "Activity";
 
     if (leadId) {
-      await createLeadActivity.mutateAsync({
-        lead_id: leadId,
-        activity_type: form.type || "General Activity",
-        activity_name: form.subject.trim(),
-        activity_date: form.activity_date,
-        description: form.notes || null,
-        outcome: form.outcome,
-      });
+      if (isEdit) {
+        await updateLeadActivity.mutateAsync({
+          id: activity.id,
+          activity_type: form.type || "General Activity",
+          activity_name: name,
+          activity_date: form.activity_date,
+          description: form.notes || null,
+          outcome: form.outcome,
+        });
+      } else {
+        await createLeadActivity.mutateAsync({
+          lead_id: leadId,
+          activity_type: form.type || "General Activity",
+          activity_name: name,
+          activity_date: form.activity_date,
+          description: form.notes || null,
+          outcome: form.outcome,
+        });
+      }
     } else {
       await create.mutateAsync({
         opportunity_id: form.opportunity_id || null,
         customer_id: customerId ?? null,
         type: form.type,
         outcome: form.outcome,
-        subject: form.subject.trim(),
+        subject: name,
         notes: form.notes || null,
         activity_date: new Date(form.activity_date).toISOString(),
       });
@@ -74,6 +102,7 @@ export function ActivityForm({
     onOpenChange(false);
     reset();
   };
+
 
 
   return (
