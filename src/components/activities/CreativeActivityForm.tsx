@@ -369,6 +369,15 @@ export default function CreativeActivityForm({
     await uploadPhotoBlob(file);
   };
 
+  const handleGalleryPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    for (const f of files) {
+      await uploadPhotoBlob(f);
+    }
+  };
+
+
   const handleOpenCamera = useCallback(async () => {
     // Native (Capacitor): use device camera plugin directly
     if (isNative()) {
