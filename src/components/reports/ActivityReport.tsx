@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ReportShell, SummaryCards } from "./ReportShell";
-import { ReportChartCard } from "./ReportChartCard";
-import { DateField, SelectField } from "./ReportFilters";
+import { SelectField, DateScopeFilter } from "./ReportFilters";
 import { useReportScope } from "./useReportScope";
-import { useReportContext, DateRangePill } from "@/components/analytics/ReportContext";
-import { generateReportPdf } from "./reportPdf";
+import { ReportWorkspace } from "./ReportWorkspace";
+import type { ReportColumn } from "./reportTypes";
+import { DateFieldOption, PresetKey, presetLabel, useDateScope } from "./dateScope";
+
+const DATE_FIELDS: DateFieldOption[] = [
+  { value: "activity_date", label: "Activity Date" },
+  { value: "created_at", label: "Created Date", timestamp: true },
+  { value: "updated_at", label: "Last Modified Date", timestamp: true },
+];
 
 interface Row {
   id: string;
@@ -23,12 +27,6 @@ interface Row {
   status: string;
 }
 
-const STATUS = [
-  { value: "planned", label: "Planned" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-];
-
 const statusBadge = (s: string) => {
   const map: Record<string, string> = {
     completed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
@@ -40,7 +38,7 @@ const statusBadge = (s: string) => {
 
 export default function ActivityReport() {
   const scope = useReportScope();
-  const { from, to, setFrom, setTo } = useReportContext();
+  const { state, patch, from, to } = useDateScope("activities", "activity_date");
   const [employee, setEmployee] = useState("all");
   const [site, setSite] = useState("all");
   const [milestone, setMilestone] = useState("all");
@@ -50,7 +48,6 @@ export default function ActivityReport() {
   const [actTypes, setActTypes] = useState<{ value: string; label: string }[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [generated, setGenerated] = useState(false);
 
   useEffect(() => {
@@ -86,14 +83,21 @@ export default function ActivityReport() {
       let q = supabase
         .from("activity_events")
         .select("id, user_id, activity_date, site_id, milestone_id, activity_type, description, total_hours, status")
-        .gte("activity_date", from)
-        .lte("activity_date", to)
         .order("activity_date", { ascending: false });
+
+      if (state.field === "activity_date") {
+        q = q.gte("activity_date", from).lte("activity_date", to);
+      } else {
+        q = q.gte(state.field, `${from}T00:00:00`).lte(state.field, `${to}T23:59:59`);
+      }
+
       if (employee !== "all") q = q.eq("user_id", employee);
-      else if (scope.userIds) q = q.in("user_id", scope.userIds.length ? scope.userIds : ["00000000-0000-0000-0000-000000000000"]);
+      else if (scope.userIds)
+        q = q.in("user_id", scope.userIds.length ? scope.userIds : ["00000000-0000-0000-0000-000000000000"]);
       if (site !== "all") q = q.eq("site_id", site);
       if (milestone !== "all") q = q.eq("milestone_id", milestone);
       if (actType !== "all") q = q.eq("activity_type", actType);
+
       const { data, error } = await q;
       if (error) throw error;
       const nameMap = new Map(scope.users.map((u) => [u.id, u.full_name]));
@@ -120,85 +124,117 @@ export default function ActivityReport() {
     }
   };
 
+  const columns: ReportColumn<Row>[] = useMemo(
+    () => [
+      {
+        key: "activity_date",
+        header: "Date",
+        value: (r) => format(new Date(r.activity_date), "dd MMM yyyy"),
+        pdfWidth: 1.6,
+      },
+      {
+        key: "full_name",
+        header: "Employee",
+        value: (r) => r.full_name,
+        render: (r) => <span className="font-medium">{r.full_name}</span>,
+        pdfWidth: 2,
+      },
+      { key: "site", header: "Site", value: (r) => r.site, pdfWidth: 2 },
+      { key: "milestone", header: "Milestone", value: (r) => r.milestone, pdfWidth: 2 },
+      { key: "activity_type", header: "Activity Type", value: (r) => r.activity_type, pdfWidth: 2 },
+      {
+        key: "description",
+        header: "Description",
+        value: (r) => r.description,
+        render: (r) => <span className="block max-w-[220px] truncate">{r.description}</span>,
+        pdfWidth: 3,
+      },
+      {
+        key: "total_hours",
+        header: "Hours",
+        value: (r) => r.total_hours ?? 0,
+        numeric: true,
+        align: "right",
+        render: (r) => r.total_hours?.toFixed(1) || "--",
+        pdfWidth: 1,
+      },
+      {
+        key: "status",
+        header: "Status",
+        value: (r) => r.status.replace(/_/g, " "),
+        render: (r) => statusBadge(r.status),
+        pdfWidth: 1.4,
+      },
+    ],
+    []
+  );
+
   const summary = useMemo(() => {
     const completed = rows.filter((r) => r.status === "completed").length;
-    const pending = rows.length - completed;
     return [
       { label: "Total Activities", value: String(rows.length) },
       { label: "Completed", value: String(completed) },
-      { label: "Pending", value: String(pending) },
-      {
-        label: "Total Hours",
-        value: rows.reduce((s, r) => s + (r.total_hours || 0), 0).toFixed(1),
-      },
+      { label: "Pending", value: String(rows.length - completed) },
+      { label: "Total Hours", value: rows.reduce((s, r) => s + (r.total_hours || 0), 0).toFixed(1) },
     ];
   }, [rows]);
 
-  const chartData = useMemo(() => {
-    const m = new Map<string, number>();
-    rows.forEach((r) => m.set(r.activity_type, (m.get(r.activity_type) || 0) + 1));
-    return Array.from(m.entries()).map(([name, value]) => ({ name, value }));
-  }, [rows]);
-
-  const download = async () => {
-    setDownloading(true);
-    try {
-      await generateReportPdf({
-        title: "Activity Report",
-        fileName: `activity-report-${from}-to-${to}.pdf`,
-        generatedBy: scope.generatedBy,
-        filters: [
-          `Period: ${from} to ${to}`,
-          `Employee: ${employee === "all" ? "All" : scope.users.find((u) => u.id === employee)?.full_name || "-"}`,
-          `Site: ${site === "all" ? "All" : sites.find((s) => s.value === site)?.label || "-"}`,
-          `Milestone: ${milestone === "all" ? "All" : milestones.find((m) => m.value === milestone)?.label || "-"}`,
-          `Activity Type: ${actType === "all" ? "All" : actType}`,
-        ],
-        columns: [
-          { header: "Date", width: 1.6 },
-          { header: "Employee", width: 2 },
-          { header: "Site", width: 2 },
-          { header: "Milestone", width: 2 },
-          { header: "Activity Type", width: 2 },
-          { header: "Description", width: 3 },
-          { header: "Hours", width: 1, align: "right" },
-          { header: "Status", width: 1.4 },
-        ],
-        rows: rows.map((r) => [
-          format(new Date(r.activity_date), "dd MMM yyyy"),
-          r.full_name,
-          r.site,
-          r.milestone,
-          r.activity_type,
-          r.description,
-          r.total_hours?.toFixed(1) || "--",
-          r.status.replace(/_/g, " "),
-        ]),
-        summary,
-      });
-      toast.success("PDF downloaded");
-    } catch {
-      toast.error("Failed to download PDF");
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const fieldLabel = DATE_FIELDS.find((f) => f.value === state.field)?.label || state.field;
 
   return (
-    <ReportShell
+    <ReportWorkspace
+      module="activities"
       title="Activity Report"
       description="Site activities, milestones, hours logged and status."
-      pill={<DateRangePill />}
+      columns={columns}
+      rows={rows}
+      rowKey={(r) => r.id}
+      rowLink={(r) => `/activities?id=${r.id}`}
       loading={loading || scope.loading}
-      downloading={downloading}
       generated={generated}
-      recordCount={rows.length}
       onGenerate={generate}
-      onDownload={download}
+      generatedBy={scope.generatedBy}
+      fileName={`activity-report-${from}-to-${to}.pdf`}
+      summary={summary}
+      defaultCharts={[
+        {
+          id: "default-type",
+          title: "Activities by Type",
+          type: "bar",
+          groupBy: "activity_type",
+          measure: "count",
+        },
+      ]}
+      filterState={{ ...state, employee, site, milestone, actType }}
+      onApplyFilterState={(s) => {
+        patch({
+          field: (s.field as string) || state.field,
+          preset: (s.preset as PresetKey) || state.preset,
+          customFrom: (s.customFrom as string) || state.customFrom,
+          customTo: (s.customTo as string) || state.customTo,
+        });
+        setEmployee((s.employee as string) || "all");
+        setSite((s.site as string) || "all");
+        setMilestone((s.milestone as string) || "all");
+        setActType((s.actType as string) || "all");
+      }}
+      filterSummary={[
+        `${fieldLabel}: ${presetLabel(state.preset)} (${from} to ${to})`,
+        `Employee: ${employee === "all" ? "All" : scope.users.find((u) => u.id === employee)?.full_name || "-"}`,
+        `Site: ${site === "all" ? "All" : sites.find((s) => s.value === site)?.label || "-"}`,
+        `Milestone: ${milestone === "all" ? "All" : milestones.find((m) => m.value === milestone)?.label || "-"}`,
+        `Activity Type: ${actType === "all" ? "All" : actType}`,
+      ]}
       filters={
         <>
-          <DateField label="From Date" value={from} onChange={setFrom} />
-          <DateField label="To Date" value={to} onChange={setTo} />
+          <DateScopeFilter
+            module="activities"
+            fields={DATE_FIELDS}
+            state={state}
+            onChange={patch}
+            from={from}
+            to={to}
+          />
           <SelectField
             label="Employee"
             value={employee}
@@ -216,48 +252,15 @@ export default function ActivityReport() {
             allLabel="All Sites"
             options={sites}
           />
-          <SelectField label="Milestone" value={milestone} onChange={setMilestone} allLabel="All Milestones" options={milestoneOptions} />
+          <SelectField
+            label="Milestone"
+            value={milestone}
+            onChange={setMilestone}
+            allLabel="All Milestones"
+            options={milestoneOptions}
+          />
           <SelectField label="Activity Type" value={actType} onChange={setActType} allLabel="All Types" options={actTypes} />
         </>
-      }
-      summary={<SummaryCards items={summary} />}
-      chart={
-        <ReportChartCard
-          title="Activities by Type"
-          description="Number of activities grouped by type"
-          type="bar"
-          data={chartData}
-        />
-      }
-      table={
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Employee</TableHead>
-              <TableHead>Site</TableHead>
-              <TableHead>Milestone</TableHead>
-              <TableHead>Activity Type</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="text-right">Hours</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell>{format(new Date(r.activity_date), "dd MMM yyyy")}</TableCell>
-                <TableCell className="font-medium">{r.full_name}</TableCell>
-                <TableCell>{r.site}</TableCell>
-                <TableCell>{r.milestone}</TableCell>
-                <TableCell>{r.activity_type}</TableCell>
-                <TableCell className="max-w-[220px] truncate">{r.description}</TableCell>
-                <TableCell className="text-right">{r.total_hours?.toFixed(1) || "--"}</TableCell>
-                <TableCell>{statusBadge(r.status)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
       }
     />
   );
