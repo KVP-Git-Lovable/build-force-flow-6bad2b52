@@ -1,42 +1,53 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Save, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
-import { format, addDays, differenceInCalendarDays } from "date-fns";
+import { CheckCircle2, AlertTriangle, Clock, HelpCircle, Hourglass } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { format, addDays, differenceInCalendarDays, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { LeadRow, useSaveLead } from "@/hooks/useLeadsEvents";
-import { useLeadFirstActivityDate } from "@/hooks/useLeadScoring";
+import { LeadRow, useLeadAuditLog } from "@/hooks/useLeadsEvents";
 
 type LeadSlaFields = {
-  target_first_contact_date?: string | null;
   actual_first_contact_date?: string | null;
-  target_conversion_date?: string | null;
   created_by?: string | null;
 };
 
+const STAGES = [
+  { key: "contacted", match: "contacted", label: "Contacted", offset: 0 },
+  { key: "interest", match: "shown interest", label: "Shows Interest", offset: 5 },
+  { key: "quote", match: "quote submitted", label: "Quote Submitted", offset: 10 },
+  { key: "won", match: "close won", label: "Close Won", offset: 25 },
+] as const;
+
+type FlagKind = "met" | "breached" | "pending" | "overdue" | "na";
+
+const FLAG_META: Record<FlagKind, { label: string; cls: string }> = {
+  met: { label: "Met", cls: "bg-emerald-100 text-emerald-700" },
+  breached: { label: "Breached", cls: "bg-rose-100 text-rose-700" },
+  pending: { label: "Pending", cls: "bg-blue-100 text-blue-700" },
+  overdue: { label: "Overdue", cls: "bg-amber-100 text-amber-800" },
+  na: { label: "Not started", cls: "bg-muted text-muted-foreground" },
+};
+
+function Help({ text }: { text: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" className="text-muted-foreground hover:text-foreground">
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-[240px] text-xs">{text}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 export function LeadSlaTab({ lead }: { lead: LeadRow & LeadSlaFields }) {
-  const save = useSaveLead();
-  const { data: firstActivityDate } = useLeadFirstActivityDate(lead.id);
+  const { data: audit = [] } = useLeadAuditLog(lead.id);
   const [creatorName, setCreatorName] = useState<string>("");
-
-  const [targetFirst, setTargetFirst] = useState<string>(
-    lead.target_first_contact_date || format(addDays(new Date(lead.created_at), 1), "yyyy-MM-dd"),
-  );
-  const [actualFirst, setActualFirst] = useState<string>(
-    lead.actual_first_contact_date || (firstActivityDate ? String(firstActivityDate).slice(0, 10) : ""),
-  );
-  const [targetConv, setTargetConv] = useState<string>(
-    lead.target_conversion_date || format(addDays(new Date(lead.created_at), 30), "yyyy-MM-dd"),
-  );
-
-  useEffect(() => {
-    if (!lead.actual_first_contact_date && firstActivityDate) {
-      setActualFirst(String(firstActivityDate).slice(0, 10));
-    }
-  }, [firstActivityDate, lead.actual_first_contact_date]);
 
   useEffect(() => {
     (async () => {
@@ -46,96 +57,140 @@ export function LeadSlaTab({ lead }: { lead: LeadRow & LeadSlaFields }) {
     })();
   }, [lead.created_by]);
 
-  const isConverted = !!lead.converted_customer_id;
-  const today = new Date();
-  const overdue =
-    !isConverted &&
-    ((targetFirst && !actualFirst && new Date(targetFirst) < today) ||
-      (targetConv && new Date(targetConv) < today));
+  // Actual stage dates derived from the lead audit log (first time the stage was reached)
+  const actuals = useMemo(() => {
+    const map: Record<string, string | null> = {};
+    const rows = [...(audit as any[])].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+    for (const s of STAGES) {
+      const hit = rows.find(
+        (r) => String(r.to_value || "").trim().toLowerCase() === s.match,
+      );
+      map[s.key] = hit ? String(hit.created_at).slice(0, 10) : null;
+    }
+    if (!map.contacted && lead.actual_first_contact_date) {
+      map.contacted = String(lead.actual_first_contact_date).slice(0, 10);
+    }
+    return map;
+  }, [audit, lead.actual_first_contact_date]);
 
-  const slaBadge = isConverted
-    ? { cls: "bg-emerald-100 text-emerald-700", icon: CheckCircle2, label: "Converted" }
-    : overdue
-    ? { cls: "bg-rose-100 text-rose-700", icon: AlertTriangle, label: "Overdue" }
-    : { cls: "bg-blue-100 text-blue-700", icon: Clock, label: "On Track" };
+  const contactDate = actuals.contacted;
 
-  const saveAll = () =>
-    save.mutateAsync({
-      id: lead.id,
-      target_first_contact_date: targetFirst || null,
-      actual_first_contact_date: actualFirst || null,
-      target_conversion_date: targetConv || null,
-    } as any);
-
-  const daysToConvert =
-    lead.converted_at
-      ? differenceInCalendarDays(new Date(lead.converted_at), new Date(lead.created_at))
+  const rows = STAGES.filter((s) => s.key !== "contacted").map((s) => {
+    const target = contactDate
+      ? format(addDays(parseISO(contactDate), s.offset), "yyyy-MM-dd")
       : null;
+    const actual = actuals[s.key];
+    let flag: FlagKind = "na";
+    let variance: number | null = null;
+    if (target && actual) {
+      variance = differenceInCalendarDays(parseISO(actual), parseISO(target));
+      flag = variance <= 0 ? "met" : "breached";
+    } else if (target) {
+      variance = differenceInCalendarDays(new Date(), parseISO(target));
+      flag = variance > 0 ? "overdue" : "pending";
+    }
+    return { ...s, target, actual, flag, variance };
+  });
 
-  const Icon = slaBadge.icon;
+  const overall: { label: string; cls: string; icon: any } = (() => {
+    if (!contactDate) return { label: "Not Started", cls: "bg-muted text-muted-foreground", icon: Hourglass };
+    if (rows.some((r) => r.flag === "breached" || r.flag === "overdue"))
+      return { label: "SLA Breached", cls: "bg-rose-100 text-rose-700", icon: AlertTriangle };
+    if (rows.every((r) => r.flag === "met"))
+      return { label: "SLA Met", cls: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 };
+    return { label: "On Track", cls: "bg-blue-100 text-blue-700", icon: Clock };
+  })();
+
+  const OverallIcon = overall.icon;
+  const fmt = (d?: string | null) => (d ? format(parseISO(d), "dd MMM yyyy") : "—");
 
   return (
     <div className="space-y-4">
       <Card>
         <CardContent className="pt-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-xs text-muted-foreground">SLA Status</div>
-            <Badge className={`${slaBadge.cls} text-base px-4 py-1.5 mt-1`}>
-              <Icon className="h-4 w-4 mr-1" />{slaBadge.label}
+            <div className="text-xs text-muted-foreground">Overall SLA Status</div>
+            <Badge className={`${overall.cls} text-base px-4 py-1.5 mt-1`}>
+              <OverallIcon className="h-4 w-4 mr-1" />{overall.label}
             </Badge>
           </div>
-          {daysToConvert !== null && (
-            <div className="text-right">
-              <div className="text-xs text-muted-foreground">Converted in</div>
-              <div className="text-2xl font-bold">{daysToConvert} day{daysToConvert === 1 ? "" : "s"}</div>
+          <div className="text-right">
+            <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+              Actual Contact Date
+              <Help text="Auto-captured on the date the lead status first moved to “Contacted”." />
             </div>
-          )}
-          <Button size="sm" onClick={saveAll} disabled={save.isPending}>
-            <Save className="h-4 w-4 mr-1" />Save
-          </Button>
+            <div className="text-lg font-semibold">{fmt(contactDate)}</div>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Timeline</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label className="text-xs text-muted-foreground">Created By</Label>
-            <div className="text-sm mt-1">
-              {creatorName || (lead.created_by ? "—" : "System")} · {format(new Date(lead.created_at), "dd MMM yyyy, HH:mm")}
-            </div>
+        <CardHeader><CardTitle className="text-base">SLA Tracking</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="hidden md:grid grid-cols-[1.2fr_1fr_1fr_0.8fr] gap-3 text-xs font-medium text-muted-foreground px-1">
+            <div>Milestone</div><div>Target SLA</div><div>Actual SLA</div><div>SLA Flag</div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs">Target First Contact Date</Label>
-              <Input type="date" value={targetFirst} onChange={(e) => setTargetFirst(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs">Actual First Contact Date</Label>
-              <Input type="date" value={actualFirst} onChange={(e) => setActualFirst(e.target.value)} />
-              {firstActivityDate && !lead.actual_first_contact_date && (
-                <p className="text-xs text-muted-foreground mt-1">Auto-suggested from first activity</p>
-              )}
-            </div>
-            <div>
-              <Label className="text-xs">Target Conversion Date</Label>
-              <Input type="date" value={targetConv} onChange={(e) => setTargetConv(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs">Actual Conversion Date</Label>
-              <Input
-                type="date"
-                value={lead.converted_at ? format(new Date(lead.converted_at), "yyyy-MM-dd") : ""}
-                readOnly
-                disabled
-              />
-            </div>
-          </div>
+          {rows.map((r) => (
+            <div
+              key={r.key}
+              className="grid grid-cols-2 md:grid-cols-[1.2fr_1fr_1fr_0.8fr] gap-2 md:gap-3 items-center border rounded-lg p-3"
+            >
+              <div className="col-span-2 md:col-span-1 text-sm font-medium">{r.label}</div>
 
-          <div className="flex items-center gap-2">
-            <Label className="text-xs">Is Converted</Label>
-            <Badge variant={isConverted ? "default" : "secondary"}>{isConverted ? "Yes" : "No"}</Badge>
+              <div>
+                <div className="md:hidden text-[11px] text-muted-foreground flex items-center gap-1">
+                  Target SLA
+                  <Help text={`Actual Contact Date + ${r.offset} days`} />
+                </div>
+                <div className="text-sm flex items-center gap-1">
+                  {fmt(r.target)}
+                  <span className="hidden md:inline"><Help text={`Target ${r.label} Date = Actual Contact Date + ${r.offset} days`} /></span>
+                </div>
+              </div>
+
+              <div>
+                <div className="md:hidden text-[11px] text-muted-foreground flex items-center gap-1">
+                  Actual SLA
+                  <Help text={`Date on which the lead stage moved to “${r.label}”`} />
+                </div>
+                <div className="text-sm flex items-center gap-1">
+                  {fmt(r.actual)}
+                  <span className="hidden md:inline"><Help text={`Auto-captured date on which the lead stage first moved to “${r.label}”`} /></span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start gap-1">
+                <Badge className={FLAG_META[r.flag].cls}>{FLAG_META[r.flag].label}</Badge>
+                {r.variance !== null && r.flag !== "na" && (
+                  <span className="text-[11px] text-muted-foreground">
+                    {r.variance === 0
+                      ? "On target date"
+                      : r.variance > 0
+                      ? `${r.variance} day${r.variance === 1 ? "" : "s"} late`
+                      : `${Math.abs(r.variance)} day${Math.abs(r.variance) === 1 ? "" : "s"} early`}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {!contactDate && (
+            <p className="text-xs text-muted-foreground">
+              Target SLA dates appear once the lead status moves to “Contacted”.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Lead Origin</CardTitle></CardHeader>
+        <CardContent>
+          <Label className="text-xs text-muted-foreground">Created By</Label>
+          <div className="text-sm mt-1">
+            {creatorName || (lead.created_by ? "—" : "System")} · {format(new Date(lead.created_at), "dd MMM yyyy, HH:mm")}
           </div>
         </CardContent>
       </Card>
