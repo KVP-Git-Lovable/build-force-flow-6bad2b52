@@ -40,6 +40,7 @@ export default function LeadDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [cloning, setCloning] = useState(false);
   const [newAct, setNewAct] = useState(false);
+  const [editAct, setEditAct] = useState<any>(null);
 
   if (isLoading || !lead) return <div className="p-6 text-muted-foreground">Loading…</div>;
 
