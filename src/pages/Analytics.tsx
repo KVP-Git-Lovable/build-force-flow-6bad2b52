@@ -1,8 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { BarChart3 } from "lucide-react";
 import { OverviewTab } from "@/components/analytics/OverviewTab";
 import { ReportProvider, useReportContext, ReportTabKey } from "@/components/analytics/ReportContext";
+import { useAppConfiguration } from "@/hooks/useAppConfiguration";
 
 const AttendanceReport = lazy(() => import("@/components/reports/AttendanceReport"));
 const ProcurementReport = lazy(() => import("@/components/reports/ProcurementReport"));
@@ -10,16 +11,21 @@ const ActivityReport = lazy(() => import("@/components/reports/ActivityReport"))
 const MilestoneReport = lazy(() => import("@/components/reports/MilestoneReport"));
 const ExpenseReport = lazy(() => import("@/components/reports/ExpenseReport"));
 const PaymentReport = lazy(() => import("@/components/reports/PaymentReport"));
+const LeaveReport = lazy(() => import("@/components/reports/LeaveReport"));
+const LeadReport = lazy(() => import("@/components/reports/LeadReport"));
 
-const TABS: { key: ReportTabKey; label: string }[] = [
+const TABS: { key: ReportTabKey; label: string; configKey?: string }[] = [
   { key: "overview", label: "Overview" },
-  { key: "attendance", label: "Attendance" },
-  { key: "procurement", label: "Procurement" },
-  { key: "activities", label: "Activities" },
-  { key: "milestones", label: "Milestones" },
-  { key: "expenses", label: "Expenses" },
-  { key: "payments", label: "Payments" },
+  { key: "attendance", label: "Attendance", configKey: "attendanceReport" },
+  { key: "procurement", label: "Procurement", configKey: "procurementReport" },
+  { key: "activities", label: "Activities", configKey: "activityReport" },
+  { key: "leads", label: "Leads", configKey: "leadReport" },
+  { key: "milestones", label: "Milestones", configKey: "milestoneReport" },
+  { key: "expenses", label: "Expenses", configKey: "expenseReport" },
+  { key: "leave", label: "Leave", configKey: "leaveReport" },
+  { key: "payments", label: "Payments", configKey: "paymentReport" },
 ];
+
 
 function Fallback() {
   return (
@@ -31,6 +37,18 @@ function Fallback() {
 
 function AnalyticsInner() {
   const { tab, setTab } = useReportContext();
+  const { getValue } = useAppConfiguration();
+
+  const visibleTabs = useMemo(
+    () => TABS.filter((t) => !t.configKey || getValue<boolean>("reports", t.configKey) !== false),
+    [getValue]
+  );
+
+  useEffect(() => {
+    if (!visibleTabs.some((t) => t.key === tab)) setTab("overview");
+  }, [visibleTabs, tab, setTab]);
+
+  const isOn = (key: ReportTabKey) => visibleTabs.some((t) => t.key === key);
 
   return (
     <div className="pb-24">
@@ -50,7 +68,7 @@ function AnalyticsInner() {
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto overflow-x-auto no-scrollbar">
           <div className="flex gap-1 px-3 py-2 min-w-max">
-            {TABS.map((t) => (
+            {visibleTabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
@@ -76,18 +94,22 @@ function AnalyticsInner() {
         >
           {tab === "overview" && <OverviewTab />}
           <Suspense fallback={<Fallback />}>
-            {tab === "attendance" && <AttendanceReport />}
-            {tab === "procurement" && <ProcurementReport />}
-            {tab === "activities" && <ActivityReport />}
-            {tab === "milestones" && <MilestoneReport />}
-            {tab === "expenses" && <ExpenseReport />}
-            {tab === "payments" && <PaymentReport />}
+            {tab === "attendance" && isOn("attendance") && <AttendanceReport />}
+            {tab === "procurement" && isOn("procurement") && <ProcurementReport />}
+            {tab === "activities" && isOn("activities") && <ActivityReport />}
+            {tab === "leads" && isOn("leads") && <LeadReport />}
+            {tab === "milestones" && isOn("milestones") && <MilestoneReport />}
+            {tab === "expenses" && isOn("expenses") && <ExpenseReport />}
+            {tab === "leave" && isOn("leave") && <LeaveReport />}
+            {tab === "payments" && isOn("payments") && <PaymentReport />}
           </Suspense>
         </motion.div>
       </div>
     </div>
   );
 }
+
+
 
 export default function Analytics() {
   return (

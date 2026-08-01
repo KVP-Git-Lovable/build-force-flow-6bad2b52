@@ -132,6 +132,9 @@ export const CONFIG_DEFAULTS: Record<string, Record<string, unknown>> = {
     expenseReport: true,
     leaveReport: true,
     procurementReport: true,
+    leadReport: true,
+    milestoneReport: true,
+    paymentReport: true,
   },
   customers: {
     requireContactOnCreate: true,
