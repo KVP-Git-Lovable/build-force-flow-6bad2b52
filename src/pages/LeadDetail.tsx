@@ -13,7 +13,8 @@ import {
 import {
   useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, useIndustries, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
-import { CONTACT_ROLE_LABELS, ContactRole } from "@/hooks/useLeadScoring";
+import { CONTACT_ROLE_LABELS, ContactRole, useLeadScoringRules } from "@/hooks/useLeadScoring";
+import { useLeadInsight, bantScore, BANT_LEVEL_CLASSES, SLA_BADGE_CLASSES } from "@/hooks/useLeadInsights";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { LeadActivityComposer } from "@/components/leads/LeadActivityComposer";
 import { useLeadActivities } from "@/hooks/useLeadActivities";
@@ -36,6 +37,8 @@ export default function LeadDetail() {
   const save = useSaveLead();
   const del = useDeleteLead();
   const { data: activities = [] } = useLeadActivities(id);
+  const { rules } = useLeadScoringRules();
+  const insight = useLeadInsight(id);
 
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
@@ -47,6 +50,16 @@ export default function LeadDetail() {
   if (isLoading || !lead) return <div className="p-6 text-muted-foreground">Loading…</div>;
 
   const currentStatus = statuses.find((s) => s.id === lead.lead_status_id);
+  const bant = bantScore(
+    {
+      statusName: currentStatus?.name,
+      contactRole: (lead as any).contact_role,
+      activityCount: insight?.activityCount ?? 0,
+      createdAt: lead.created_at,
+    },
+    rules,
+  );
+  const slaStatus = insight?.sla ?? "Not Started";
   const source = sources.find((s) => s.id === lead.lead_source_id);
   const event = events.find((e) => e.id === lead.related_event_id);
   const isConverted = !!lead.converted_customer_id;
