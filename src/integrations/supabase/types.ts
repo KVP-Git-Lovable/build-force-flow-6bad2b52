@@ -32,11 +32,13 @@ export type Database = {
           grn_po_id: string | null
           half_day_type: string | null
           id: string
+          lead_id: string | null
           location_address: string | null
           location_lat: number | null
           location_lng: number | null
           milestone_id: string | null
           opportunity_id: string | null
+          outcome: string | null
           photo_urls: Json
           project_id: string | null
           remarks: string | null
@@ -71,11 +73,13 @@ export type Database = {
           grn_po_id?: string | null
           half_day_type?: string | null
           id?: string
+          lead_id?: string | null
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
           milestone_id?: string | null
           opportunity_id?: string | null
+          outcome?: string | null
           photo_urls?: Json
           project_id?: string | null
           remarks?: string | null
@@ -110,11 +114,13 @@ export type Database = {
           grn_po_id?: string | null
           half_day_type?: string | null
           id?: string
+          lead_id?: string | null
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
           milestone_id?: string | null
           opportunity_id?: string | null
+          outcome?: string | null
           photo_urls?: Json
           project_id?: string | null
           remarks?: string | null
@@ -145,6 +151,13 @@ export type Database = {
             columns: ["grn_po_id"]
             isOneToOne: false
             referencedRelation: "procurement_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
           {
