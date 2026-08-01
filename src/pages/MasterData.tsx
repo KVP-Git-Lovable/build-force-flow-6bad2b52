@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass, Gauge, Coins, CreditCard, TrendingUp } from "lucide-react";
+import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass, Gauge, Coins, CreditCard, TrendingUp, Briefcase } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
 const allMasterModules = [
@@ -92,6 +92,14 @@ const allMasterModules = [
     icon: Compass,
     color: "bg-emerald-100 text-emerald-600",
     path: "/master-data/lead-sources",
+    module: "module_leads" as string | null,
+  },
+  {
+    title: "Industries",
+    description: "Lead industry classifications (IT, Manufacturing, Retail…)",
+    icon: Briefcase,
+    color: "bg-slate-100 text-slate-600",
+    path: "/master-data/industries",
     module: "module_leads" as string | null,
   },
   {
