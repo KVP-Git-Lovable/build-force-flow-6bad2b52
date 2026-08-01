@@ -1054,6 +1054,10 @@ export default function Activities() {
           createActivity={createActivity}
           updateActivity={updateActivity}
           editActivity={editActivityObj}
+          attendance={formAttendance}
+          onDayCheckIn={handleCheckIn}
+          dayCheckingIn={checkingIn}
+          onDelete={handleDelete}
           onCreated={() => fetchActivities()}
         />
 
