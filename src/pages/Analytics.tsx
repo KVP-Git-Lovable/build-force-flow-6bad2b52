@@ -8,9 +8,7 @@ import { useAppConfiguration } from "@/hooks/useAppConfiguration";
 const AttendanceReport = lazy(() => import("@/components/reports/AttendanceReport"));
 const ProcurementReport = lazy(() => import("@/components/reports/ProcurementReport"));
 const ActivityReport = lazy(() => import("@/components/reports/ActivityReport"));
-const MilestoneReport = lazy(() => import("@/components/reports/MilestoneReport"));
 const ExpenseReport = lazy(() => import("@/components/reports/ExpenseReport"));
-const PaymentReport = lazy(() => import("@/components/reports/PaymentReport"));
 const LeaveReport = lazy(() => import("@/components/reports/LeaveReport"));
 const LeadReport = lazy(() => import("@/components/reports/LeadReport"));
 
