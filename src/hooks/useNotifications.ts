@@ -34,6 +34,7 @@ export function useNotifications() {
         .select('*')
         .eq('user_id', userId)
         .eq('is_read', false)
+        .neq('type', 'device_offline')
         .order('created_at', { ascending: false })
         .limit(50);
       if (error) throw error;
