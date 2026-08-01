@@ -1,7 +1,7 @@
 // SBEE Cables PWA service worker: app-shell runtime cache + web push + offline support.
 // NOTE: registration is guarded in src/main.tsx (skipped in Lovable preview/dev).
 
-const RUNTIME_CACHE = "sbee-cables-runtime-v1";
+const RUNTIME_CACHE = "sbee-cables-runtime-v2";
 const OFFLINE_URL = "/";
 
 self.addEventListener("install", (event) => {
