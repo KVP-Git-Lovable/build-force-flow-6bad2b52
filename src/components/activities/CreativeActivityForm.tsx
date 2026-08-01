@@ -764,14 +764,14 @@ export default function CreativeActivityForm({
                 </div>
               )}
 
-              {/* Project picker */}
+              {/* Lead picker */}
               <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-fuchsia-50 dark:from-indigo-950/30 dark:to-fuchsia-950/30 border border-indigo-100 dark:border-indigo-900/50 px-3 sm:px-4 pt-4 pb-3 shadow-sm min-w-0 max-w-full overflow-hidden">
                 <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
-                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Project</p>
-                  {selectedProject && (
+                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Lead</p>
+                  {selectedLead && (
                     <button
                       className="text-[11px] text-muted-foreground hover:text-foreground shrink-0"
-                      onClick={() => setProjectId("")}
+                      onClick={() => setLeadId("")}
                     >
                       Clear
                     </button>
@@ -780,22 +780,22 @@ export default function CreativeActivityForm({
                 <div className="relative mb-3">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Search projects..."
-                    value={projectSearch}
-                    onChange={(e) => setProjectSearch(e.target.value)}
+                    placeholder="Search leads..."
+                    value={leadSearch}
+                    onChange={(e) => setLeadSearch(e.target.value)}
                     className="pl-9 h-9 rounded-full bg-background/80 border-0"
                   />
                 </div>
                 <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1 scrollbar-none max-w-full">
-                  {filteredProjects.length === 0 && (
-                    <p className="text-xs text-muted-foreground py-4">No projects found</p>
+                  {filteredLeads.length === 0 && (
+                    <p className="text-xs text-muted-foreground py-4">No leads found</p>
                   )}
-                  {filteredProjects.map((p) => {
-                    const active = p.id === projectId;
+                  {filteredLeads.map((p) => {
+                    const active = p.id === leadId;
                     return (
                       <button
                         key={p.id}
-                        onClick={() => setProjectId(p.id)}
+                        onClick={() => setLeadId(active ? "" : p.id)}
                         className="shrink-0 flex flex-col items-center gap-1.5 w-16 focus:outline-none group"
                       >
                         <div
@@ -808,15 +808,11 @@ export default function CreativeActivityForm({
                         >
                           <div
                             className={cn(
-                              "h-full w-full rounded-full overflow-hidden bg-gradient-to-br flex items-center justify-center text-white font-semibold text-sm border-2 border-background",
-                              !p.image_url && gradientFor(p.id)
+                              "h-full w-full rounded-full overflow-hidden flex items-center justify-center text-white font-semibold text-sm border-2 border-background bg-gradient-to-br",
+                              gradientFor(p.id)
                             )}
                           >
-                            {p.image_url ? (
-                              <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" />
-                            ) : (
-                              initials(p.name)
-                            )}
+                            {initials(p.name)}
                           </div>
                           {active && (
                             <div className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-emerald-500 border-2 border-background flex items-center justify-center">
@@ -829,7 +825,7 @@ export default function CreativeActivityForm({
                             "text-[10px] w-full text-center truncate leading-tight",
                             active ? "font-semibold text-foreground" : "text-muted-foreground"
                           )}
-                          title={p.name}
+                          title={p.company ? `${p.name} · ${p.company}` : p.name}
                         >
                           {p.name}
                         </p>
@@ -838,6 +834,7 @@ export default function CreativeActivityForm({
                   })}
                 </div>
               </div>
+
 
               {/* Activity date */}
               <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-2.5 shadow-sm flex items-center gap-2 min-w-0">
