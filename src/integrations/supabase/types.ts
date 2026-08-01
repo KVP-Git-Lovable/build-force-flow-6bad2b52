@@ -4963,6 +4963,39 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_reports: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          is_favourite: boolean
+          module: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_favourite?: boolean
+          module: string
+          name: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_favourite?: boolean
+          module?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       security_profiles: {
         Row: {
           created_at: string
