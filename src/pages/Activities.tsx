@@ -460,7 +460,7 @@ export default function Activities() {
     if (!id || loading || activities.length === 0) return;
     const found = activities.find((a) => a.id === id);
     if (found) {
-      setDetailsActivity(found);
+      handleOpenEdit(found);
       // Remove the id param so refreshing won't reopen it
       const next = new URLSearchParams(searchParams);
       next.delete("id");
