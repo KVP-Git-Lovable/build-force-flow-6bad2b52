@@ -1176,6 +1176,34 @@ export default function CreativeActivityForm({
                 </div>
               </div>
 
+              {/* Outcome */}
+              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-100 dark:border-emerald-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 mb-2">
+                  Outcome
+                </p>
+                <div className="flex flex-wrap gap-2 min-w-0">
+                  {ACTIVITY_OUTCOMES.map((o) => {
+                    const active = o === outcome;
+                    return (
+                      <button
+                        key={o}
+                        onClick={() => setOutcome(active ? "" : o)}
+                        className={cn(
+                          "max-w-full px-3.5 min-h-8 h-auto py-1.5 rounded-full text-xs font-medium border transition-all whitespace-normal break-words [overflow-wrap:anywhere]",
+                          active
+                            ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-transparent shadow-md"
+                            : "bg-white dark:bg-background border-emerald-200 dark:border-emerald-900/60 text-foreground hover:border-emerald-400 hover:text-emerald-600"
+                        )}
+                      >
+                        {o}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+
+
               {/* GRN — Goods Receipt (only when Activity Type contains "GRN") */}
               {isGrnType && (
                 <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/30 border border-sky-100 dark:border-sky-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden space-y-3">
