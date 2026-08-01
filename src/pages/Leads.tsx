@@ -14,9 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 function KpiCard({ icon: Icon, label, value, color }: any) {
   return (
-    <Card><CardContent className="p-4 flex items-center gap-3">
-      <div className={`p-2 rounded-lg ${color}`}><Icon className="h-5 w-5" /></div>
-      <div><div className="text-xs text-muted-foreground">{label}</div><div className="text-xl font-bold">{value}</div></div>
+    <Card><CardContent className="p-3 md:p-4 flex items-center gap-2 md:gap-3">
+      <div className={`p-2 rounded-lg shrink-0 ${color}`}><Icon className="h-4 w-4 md:h-5 md:w-5" /></div>
+      <div><div className="text-[11px] md:text-xs text-muted-foreground leading-tight">{label}</div><div className="text-lg md:text-xl font-bold">{value}</div></div>
     </CardContent></Card>
   );
 }
