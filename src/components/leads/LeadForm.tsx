@@ -27,7 +27,7 @@ export function LeadForm({
   const { userId } = useCurrentUser();
 
   const emptyForm = {
-    name: "", title: "", company: "", email: "", phone: "", website: "", address: "", industry: "",
+    name: "", title: "", contact_role: "unknown", company: "", email: "", phone: "", website: "", address: "", industry: "",
     lead_status_id: "", lead_source_id: "", related_event_id: defaultEventId ?? "",
     business_card_url: "", researched_information: "",
     opportunity_value: "", opportunity_close_date: "", opportunity_probability: "",
