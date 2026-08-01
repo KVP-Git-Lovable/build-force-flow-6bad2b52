@@ -156,7 +156,9 @@ export default function CreativeActivityForm({
   const isEdit = !!editActivity;
   const { profile: currentProfile, initials: currentInitials } = useUserProfile();
   const [projectId, setProjectId] = useState("");
+  const navigate = useNavigate();
   const [leadId, setLeadId] = useState("");
+
   const [leadSearch, setLeadSearch] = useState("");
   const [leadOptions, setLeadOptions] = useState<{ id: string; name: string; company: string | null }[]>([]);
   const [outcome, setOutcome] = useState("");
