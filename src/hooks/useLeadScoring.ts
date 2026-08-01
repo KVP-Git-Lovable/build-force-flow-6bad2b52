@@ -215,7 +215,7 @@ export function useLeadActivityCount(leadId?: string) {
     queryKey: ["lead-activity-count", leadId],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("customer_activities" as any)
+        .from("activity_events" as any)
         .select("*", { count: "exact", head: true })
         .eq("lead_id", leadId!);
       if (error) throw error;

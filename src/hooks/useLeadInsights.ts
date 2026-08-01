@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { addDays, differenceInCalendarDays, parseISO } from "date-fns";
 import {
   ContactRole, ScoringRules, activityScore, ageScore, statusScore, qualificationLevel,
+  budgetScore, needScore, closeDateScore,
 } from "@/hooks/useLeadScoring";
 
 export type SlaLabel = "Not Started" | "SLA Met" | "On Track" | "SLA Breached";
@@ -27,6 +28,10 @@ const SLA_STAGES = [
   { key: "won", match: "close won", offset: 25 },
 ] as const;
 
+const PRODUCTIVE_STAGES = [
+  "contacted", "shown interest", "quote submitted", "negotiation", "close won",
+];
+
 /** Derives the overall SLA status from a lead's audit trail (status transitions). */
 export function slaStatusFromAudit(
   auditRows: { to_value?: string | null; created_at: string }[],
@@ -39,6 +44,14 @@ export function slaStatusFromAudit(
   for (const s of SLA_STAGES) {
     const hit = rows.find((r) => String(r.to_value || "").trim().toLowerCase() === s.match);
     actuals[s.key] = hit ? String(hit.created_at).slice(0, 10) : null;
+  }
+  // Contact date = first move into ANY productive stage (contacted may be skipped)
+  const firstProductive = rows.find((r) =>
+    PRODUCTIVE_STAGES.includes(String(r.to_value || "").trim().toLowerCase()),
+  );
+  if (firstProductive) {
+    const d = String(firstProductive.created_at).slice(0, 10);
+    if (!actuals.contacted || d < actuals.contacted) actuals.contacted = d;
   }
   if (!actuals.contacted && fallbackContactDate) {
     actuals.contacted = String(fallbackContactDate).slice(0, 10);
@@ -59,14 +72,26 @@ export function slaStatusFromAudit(
 }
 
 export function bantScore(
-  args: { statusName?: string | null; contactRole?: string | null; activityCount: number; createdAt: string },
+  args: {
+    statusName?: string | null;
+    contactRole?: string | null;
+    activityCount: number;
+    createdAt: string;
+    indicativeBudget?: number | null;
+    opportunityValue?: number | null;
+    requirement?: string | null;
+    closeDate?: string | null;
+  },
   rules: ScoringRules,
 ) {
   const role = (args.contactRole || "unknown") as ContactRole;
   const ageDays = differenceInCalendarDays(new Date(), new Date(args.createdAt));
   const total =
-    statusScore(args.statusName, rules) +
+    budgetScore(args.indicativeBudget, args.opportunityValue, rules) +
     (rules.contactRoleScores[role] ?? 0) +
+    needScore(args.requirement, rules) +
+    closeDateScore(args.closeDate, rules) +
+    statusScore(args.statusName, rules) +
     activityScore(args.activityCount, rules) +
     ageScore(ageDays, rules);
   return { total, level: qualificationLevel(total, rules) };
@@ -87,7 +112,7 @@ export function useLeadsInsights(leadIds: string[]) {
     staleTime: 60_000,
     queryFn: async (): Promise<Record<string, LeadInsight>> => {
       const [acts, docs, audit] = await Promise.all([
-        supabase.from("customer_activities" as any).select("lead_id").in("lead_id", leadIds),
+        supabase.from("activity_events" as any).select("lead_id").in("lead_id", leadIds),
         supabase.from("customer_documents" as any).select("lead_id").in("lead_id", leadIds),
         supabase.from("lead_audit_log" as any).select("lead_id, to_value, created_at").in("lead_id", leadIds),
       ]);
