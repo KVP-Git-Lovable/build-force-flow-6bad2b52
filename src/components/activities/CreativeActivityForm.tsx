@@ -42,6 +42,7 @@ import CameraCapture from "@/components/CameraCapture";
 import { isNative, takeNativePhoto } from "@/utils/nativePermissions";
 import OpenGRNPicker from "@/components/procurement/OpenGRNPicker";
 import { receiptDrivenStatus } from "@/lib/procurement";
+import { ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
 
 interface GrnLineItem {
   id: string;
