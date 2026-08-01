@@ -83,14 +83,23 @@ export default function LeadDetail() {
   };
 
   const Field = ({ icon: Icon, label, value }: any) => (
-    <div className="flex items-start gap-2 text-sm">
+    <div className="group flex items-start gap-2 text-sm">
       <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="break-words">{value ?? "—"}</div>
       </div>
+      <button
+        type="button"
+        aria-label={`Edit ${label}`}
+        onClick={() => setEditOpen(true)}
+        className="shrink-0 p-1 rounded text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+      >
+        <Edit className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
+
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto">
