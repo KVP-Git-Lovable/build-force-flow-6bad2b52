@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateCustomerActivity, useOpportunities } from "@/hooks/useCustomers";
+import { useActivityTypeOptions, useCreateLeadActivity, ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
 
 const TYPES = ["Note", "Call", "Meeting", "Email", "Task"];
-export const OUTCOMES = ["Productive", "Unproductive", "Visited but not available", "Postponed", "Cancelled"];
+export const OUTCOMES = ACTIVITY_OUTCOMES;
 
 export function ActivityForm({
   open, onOpenChange, opportunityId, lockOpportunity, customerId, leadId,
@@ -21,10 +22,15 @@ export function ActivityForm({
   leadId?: string;
 }) {
   const create = useCreateCustomerActivity();
+  const createLeadActivity = useCreateLeadActivity();
   const { data: opps = [] } = useOpportunities(customerId);
+  const { data: masterTypes = [] } = useActivityTypeOptions();
+
+  // Leads use the same activity types as the calendar / Activities module
+  const typeOptions = leadId ? masterTypes : TYPES;
 
   const [form, setForm] = useState({
-    type: "Note", subject: "", notes: "", outcome: OUTCOMES[0],
+    type: "", subject: "", notes: "", outcome: OUTCOMES[0],
     activity_date: new Date().toISOString().slice(0, 10),
     opportunity_id: opportunityId ?? "",
   });
@@ -33,20 +39,40 @@ export function ActivityForm({
     setForm((f) => ({ ...f, opportunity_id: opportunityId ?? "" }));
   }, [opportunityId, open]);
 
+  useEffect(() => {
+    setForm((f) => (f.type || typeOptions.length === 0 ? f : { ...f, type: typeOptions[0] }));
+  }, [typeOptions]);
+
+  const reset = () => setForm({
+    type: typeOptions[0] ?? "", subject: "", notes: "", outcome: OUTCOMES[0],
+    activity_date: new Date().toISOString().slice(0, 10), opportunity_id: opportunityId ?? "",
+  });
+
   const submit = async () => {
     if (!form.subject.trim()) return;
-    await create.mutateAsync({
-      opportunity_id: form.opportunity_id || null,
-      customer_id: customerId ?? null,
-      lead_id: leadId ?? null,
-      type: form.type,
-      outcome: form.outcome,
-      subject: form.subject.trim(),
-      notes: form.notes || null,
-      activity_date: new Date(form.activity_date).toISOString(),
-    });
+
+    if (leadId) {
+      await createLeadActivity.mutateAsync({
+        lead_id: leadId,
+        activity_type: form.type || "General Activity",
+        activity_name: form.subject.trim(),
+        activity_date: form.activity_date,
+        description: form.notes || null,
+        outcome: form.outcome,
+      });
+    } else {
+      await create.mutateAsync({
+        opportunity_id: form.opportunity_id || null,
+        customer_id: customerId ?? null,
+        type: form.type,
+        outcome: form.outcome,
+        subject: form.subject.trim(),
+        notes: form.notes || null,
+        activity_date: new Date(form.activity_date).toISOString(),
+      });
+    }
     onOpenChange(false);
-    setForm({ type: "Note", subject: "", notes: "", outcome: OUTCOMES[0], activity_date: new Date().toISOString().slice(0, 10), opportunity_id: opportunityId ?? "" });
+    reset();
   };
 
 
@@ -57,10 +83,10 @@ export function ActivityForm({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Type</Label>
+              <Label>Activity Type</Label>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                <SelectContent>{typeOptions.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
