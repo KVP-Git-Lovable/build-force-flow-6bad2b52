@@ -225,15 +225,30 @@ export default function Leads() {
             </Select>
           </div>
           {activeFilters > 0 && (
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">{activeFilters} filter{activeFilters > 1 ? "s" : ""} applied · {filteredLeads.length} result{filteredLeads.length !== 1 ? "s" : ""}</span>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setCreatedPreset("all"); setModifiedPreset("all"); setOwnerFilter("all"); setStatusFilter("all"); }}>
-                <X className="h-3 w-3 mr-1" />Clear
-              </Button>
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-1.5">
+                {filterChips.map((c) => (
+                  <button
+                    key={c.key}
+                    onClick={c.clear}
+                    className="inline-flex items-center gap-1 rounded-full border bg-secondary/60 px-2.5 py-1 text-[11px] font-medium text-secondary-foreground active:opacity-70"
+                  >
+                    <span className="max-w-[160px] truncate">{c.label}</span>
+                    <X className="h-3 w-3 opacity-70" />
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">{filteredLeads.length} result{filteredLeads.length !== 1 ? "s" : ""}</span>
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearAllFilters}>
+                  <X className="h-3 w-3 mr-1" />Clear all
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
+
 
       {/* Mobile: card list */}
       <div className="space-y-2 md:hidden">
