@@ -176,11 +176,17 @@ export default function LeadDetail() {
 
         <TabsContent value="activities" className="mt-4 space-y-3">
           <div className="flex justify-end">
-            <Button size="sm" onClick={() => setNewAct(true)}><Plus className="h-4 w-4 mr-1" />New Activity</Button>
+            <Button size="sm" onClick={() => { setEditAct(null); setNewAct(true); }}><Plus className="h-4 w-4 mr-1" />New Activity</Button>
           </div>
           <Card><CardContent className="p-4 space-y-3">
             {activities.map((a: any) => (
-              <div key={a.id} className="border-l-2 border-primary/40 pl-3 py-2">
+              <div
+                key={a.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => { setEditAct(a); setNewAct(true); }}
+                className="border-l-2 border-primary/40 pl-3 py-2 cursor-pointer rounded-r hover:bg-muted/50 transition-colors"
+              >
                 <div className="flex justify-between gap-2 text-sm">
                   <span className="font-medium">{a.activity_name}</span>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
