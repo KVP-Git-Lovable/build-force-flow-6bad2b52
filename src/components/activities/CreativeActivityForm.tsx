@@ -707,6 +707,32 @@ export default function CreativeActivityForm({
             </div>
 
             <div className="overflow-y-auto overflow-x-hidden flex-1 bg-muted/40 p-3 sm:p-4 space-y-3 min-w-0 max-w-full">
+              {/* Day check-in — available in new, edit and saved records */}
+              {onDayCheckIn && (
+                <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm flex items-center justify-between gap-3 min-w-0">
+                  {attendance?.check_in_time ? (
+                    <p className="text-[11px] text-emerald-600 flex items-center gap-1.5 min-w-0">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Checked in at {format(parseISO(attendance.check_in_time), "h:mm a")}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 min-w-0">
+                      <Clock className="h-3.5 w-3.5 shrink-0" /> Not checked in yet
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={attendance?.check_in_time ? "outline" : "default"}
+                    className="rounded-full shrink-0"
+                    disabled={dayCheckingIn || !!attendance?.check_in_time}
+                    onClick={() => void onDayCheckIn()}
+                  >
+                    {dayCheckingIn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogIn className="h-3.5 w-3.5" />}
+                    <span className="ml-1.5">{attendance?.check_in_time ? "Checked in" : "Check in"}</span>
+                  </Button>
+                </div>
+              )}
               {/* Details panel — visible in edit/view */}
               {isEdit && editActivity && (
                 <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm space-y-3 overflow-hidden min-w-0 max-w-full">
