@@ -8,23 +8,20 @@ import { useAppConfiguration } from "@/hooks/useAppConfiguration";
 const AttendanceReport = lazy(() => import("@/components/reports/AttendanceReport"));
 const ProcurementReport = lazy(() => import("@/components/reports/ProcurementReport"));
 const ActivityReport = lazy(() => import("@/components/reports/ActivityReport"));
-const MilestoneReport = lazy(() => import("@/components/reports/MilestoneReport"));
 const ExpenseReport = lazy(() => import("@/components/reports/ExpenseReport"));
-const PaymentReport = lazy(() => import("@/components/reports/PaymentReport"));
 const LeaveReport = lazy(() => import("@/components/reports/LeaveReport"));
 const LeadReport = lazy(() => import("@/components/reports/LeadReport"));
 
 const TABS: { key: ReportTabKey; label: string; configKey?: string }[] = [
   { key: "overview", label: "Overview" },
-  { key: "attendance", label: "Attendance", configKey: "attendanceReport" },
-  { key: "procurement", label: "Procurement", configKey: "procurementReport" },
-  { key: "activities", label: "Activities", configKey: "activityReport" },
   { key: "leads", label: "Leads", configKey: "leadReport" },
-  { key: "milestones", label: "Milestones", configKey: "milestoneReport" },
-  { key: "expenses", label: "Expenses", configKey: "expenseReport" },
+  { key: "activities", label: "Activities", configKey: "activityReport" },
+  { key: "attendance", label: "Attendance", configKey: "attendanceReport" },
   { key: "leave", label: "Leave", configKey: "leaveReport" },
-  { key: "payments", label: "Payments", configKey: "paymentReport" },
+  { key: "procurement", label: "Procurement", configKey: "procurementReport" },
+  { key: "expenses", label: "Expenses", configKey: "expenseReport" },
 ];
+
 
 
 function Fallback() {
@@ -98,10 +95,9 @@ function AnalyticsInner() {
             {tab === "procurement" && isOn("procurement") && <ProcurementReport />}
             {tab === "activities" && isOn("activities") && <ActivityReport />}
             {tab === "leads" && isOn("leads") && <LeadReport />}
-            {tab === "milestones" && isOn("milestones") && <MilestoneReport />}
             {tab === "expenses" && isOn("expenses") && <ExpenseReport />}
             {tab === "leave" && isOn("leave") && <LeaveReport />}
-            {tab === "payments" && isOn("payments") && <PaymentReport />}
+
           </Suspense>
         </motion.div>
       </div>
