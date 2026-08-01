@@ -72,10 +72,20 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const msg = String(createError.message || "");
+      const isDuplicate = /already been registered|already registered|already exists/i.test(msg);
+      return new Response(
+        JSON.stringify({
+          error: isDuplicate
+            ? `An account with the email ${email} already exists. Use a different email or edit the existing user.`
+            : msg,
+          code: isDuplicate ? "email_exists" : "create_failed",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const userId = newUserData.user.id;
