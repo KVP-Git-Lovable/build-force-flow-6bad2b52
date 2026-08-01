@@ -41,7 +41,16 @@ export const DEFAULT_SCORING_RULES: ScoringRules = {
     converted: 20,
     lost: 0,
   },
-  contactRoleScores: { decision_maker: 10, influencer: 5, end_user: 2, unknown: 0 },
+  contactRoleScores: {
+    decision_maker: 10,
+    decision_support: 7,
+    procurement: 6,
+    technical_evaluator: 6,
+    financial_evaluator: 6,
+    gate_keeper: 3,
+    user: 2,
+    unknown: 0,
+  },
   activityThresholds: [
     { min: 3, score: 10 },
     { min: 1, score: 5 },
