@@ -743,8 +743,18 @@ export default function CreativeActivityForm({
                       <div className="flex items-center gap-1.5 text-muted-foreground min-w-0"><Clock className="h-3 w-3 shrink-0" /><span className="min-w-0 break-words">End {format(parseISO(editActivity.end_time), "h:mm a")}</span></div>
                     )}
                   </div>
-                  {editActivity.location_address && (
-                    <p className="text-[11px] flex items-start gap-1.5 text-muted-foreground min-w-0"><MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="min-w-0 max-w-full break-words [overflow-wrap:anywhere]">{editActivity.location_address}</span></p>
+                  {(editActivity.location_address || (editActivity.location_lat && editActivity.location_lng)) && (
+                    <div className="rounded-xl border border-border/60 bg-muted/40 px-2.5 py-2 space-y-0.5 min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3 w-3" /> Geo Stamp</p>
+                      {editActivity.location_address && (
+                        <p className="text-[11px] text-muted-foreground break-words [overflow-wrap:anywhere]">{editActivity.location_address}</p>
+                      )}
+                      {editActivity.location_lat && editActivity.location_lng && (
+                        <p className="text-[11px] font-mono text-muted-foreground">
+                          {Number(editActivity.location_lat).toFixed(5)}, {Number(editActivity.location_lng).toFixed(5)}
+                        </p>
+                      )}
+                    </div>
                   )}
                   {editActivity.milestone_name && (
                     <div className="text-[11px] text-muted-foreground break-words [overflow-wrap:anywhere]"><span className="font-medium text-foreground">Milestone:</span> {editActivity.milestone_name}</div>
