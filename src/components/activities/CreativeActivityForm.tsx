@@ -28,6 +28,10 @@ import {
   Calendar,
   Trash2,
   Paperclip,
+  ImagePlus,
+  LogIn,
+  CheckCircle2,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
