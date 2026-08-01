@@ -285,6 +285,8 @@ export function useActivities() {
       grn_po_id: (activity as any).grn_po_id || null,
       customer_id: (activity as any).customer_id || null,
       opportunity_id: (activity as any).opportunity_id || null,
+      lead_id: (activity as any).lead_id || null,
+      outcome: (activity as any).outcome || null,
       location_lat: activity.location_lat || null,
       location_lng: activity.location_lng || null,
       location_address: activity.location_address || null,
