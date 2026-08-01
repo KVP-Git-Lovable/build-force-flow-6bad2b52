@@ -54,8 +54,12 @@ export default function LeadDetail() {
     {
       statusName: currentStatus?.name,
       contactRole: (lead as any).contact_role,
-      activityCount: insight?.activityCount ?? 0,
+      activityCount: activities.length,
       createdAt: lead.created_at,
+      indicativeBudget: (lead as any).indicative_budget,
+      opportunityValue: (lead as any).opportunity_value,
+      requirement: (lead as any).researched_information,
+      closeDate: (lead as any).opportunity_close_date,
     },
     rules,
   );
@@ -176,7 +180,7 @@ export default function LeadDetail() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="score">Lead Score (BANT)</TabsTrigger>
           <TabsTrigger value="sla">Lead SLA</TabsTrigger>
-          <TabsTrigger value="activities">Activities</TabsTrigger>
+          <TabsTrigger value="activities">Activities ({activities.length})</TabsTrigger>
           <TabsTrigger value="attachments">Attachments ({insight?.documentCount ?? 0})</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
         </TabsList>
