@@ -345,7 +345,20 @@ export default function Leads() {
         </Table>
       </CardContent></Card>
 
+      {/* Infinite scroll sentinel */}
+      {hasMore && (
+        <div ref={sentinelRef} className="flex flex-col items-center gap-2 py-3">
+          <span className="text-[11px] text-muted-foreground">
+            Showing {visibleLeads.length} of {filteredLeads.length}
+          </span>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}>
+            Load more
+          </Button>
+        </div>
+      )}
+
       <LeadForm open={leadOpen} onOpenChange={setLeadOpen} />
+
     </motion.div>
   );
 }
