@@ -133,7 +133,7 @@ export default function LeadDetail() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Edit className="h-4 w-4 mr-1" />Edit</Button>
-            {!isConverted && <Button size="sm" onClick={() => setConvertOpen(true)}><UserPlus className="h-4 w-4 mr-1" />Convert</Button>}
+            
             <Button variant="outline" size="sm" onClick={cloneLead} disabled={cloning}>
               <Copy className="h-4 w-4 mr-1" />{cloning ? "Cloning…" : "Clone"}
             </Button>
