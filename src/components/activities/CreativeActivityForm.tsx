@@ -145,7 +145,10 @@ export default function CreativeActivityForm({
   const isEdit = !!editActivity;
   const { profile: currentProfile, initials: currentInitials } = useUserProfile();
   const [projectId, setProjectId] = useState("");
-  const [projectSearch, setProjectSearch] = useState("");
+  const [leadId, setLeadId] = useState("");
+  const [leadSearch, setLeadSearch] = useState("");
+  const [leadOptions, setLeadOptions] = useState<{ id: string; name: string; company: string | null }[]>([]);
+  const [outcome, setOutcome] = useState("");
   const [description, setDescription] = useState("");
   const [activityType, setActivityType] = useState("");
   const [activityDate, setActivityDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
