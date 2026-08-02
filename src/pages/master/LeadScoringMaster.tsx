@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Pencil, X } from "lucide-react";
 import {
   useLeadScoringRules,
   DEFAULT_SCORING_RULES,
@@ -14,16 +14,20 @@ import {
 } from "@/hooks/useLeadScoring";
 import { useLeadStatuses } from "@/hooks/useLeadsEvents";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 export default function LeadScoringMaster() {
   const nav = useNavigate();
   const { rules, save, saving } = useLeadScoringRules();
   const { isAdmin } = useUserProfile();
-  const ro = !isAdmin;
+  const { hasAdminAccess } = useAdminAccess();
+  const canEdit = isAdmin || hasAdminAccess;
+  const [editing, setEditing] = useState(false);
+  const ro = !editing;
   const { data: statuses = [] } = useLeadStatuses(false);
   const [draft, setDraft] = useState<ScoringRules>(rules);
 
-  useEffect(() => { setDraft(rules); }, [rules]);
+  useEffect(() => { if (!editing) setDraft(rules); }, [rules, editing]);
 
   const updateStatus = (name: string, v: string) =>
     setDraft((d) => ({ ...d, statusScores: { ...d.statusScores, [name.toLowerCase()]: Number(v) || 0 } }));
@@ -37,19 +41,35 @@ export default function LeadScoringMaster() {
         <Button variant="ghost" size="sm" onClick={() => nav("/master-data")} className="-ml-2">
           <ArrowLeft className="h-4 w-4 mr-1" />Back
         </Button>
-        {!ro && (
-          <Button size="sm" onClick={() => save(draft)} disabled={saving}>
-            <Save className="h-4 w-4 mr-1" />Save
-          </Button>
+        {canEdit && (
+          editing ? (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => { setDraft(rules); setEditing(false); }}>
+                <X className="h-4 w-4 mr-1" />Cancel
+              </Button>
+              <Button size="sm" onClick={() => { save(draft); setEditing(false); }} disabled={saving}>
+                <Save className="h-4 w-4 mr-1" />Save
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" onClick={() => setEditing(true)}>
+              <Pencil className="h-4 w-4 mr-1" />Edit
+            </Button>
+          )
         )}
       </div>
 
       <div>
         <h1 className="text-2xl font-bold">Lead Scoring Rules</h1>
         <p className="text-sm text-muted-foreground">
-          {ro ? "View-only — BANT scoring rules are managed by an administrator in Admin Controls." : "Configure BANT scoring for leads"}
+          {!canEdit
+            ? "View-only — BANT scoring rules are managed by an administrator in Admin Controls."
+            : editing
+              ? "Configure BANT scoring for leads"
+              : "Tap Edit to change the BANT scoring rules"}
         </p>
       </div>
+
 
       <Card>
         <CardHeader><CardTitle className="text-base">Lead Status Scores</CardTitle></CardHeader>
