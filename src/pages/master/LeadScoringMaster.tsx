@@ -13,10 +13,13 @@ import {
   ContactRole,
 } from "@/hooks/useLeadScoring";
 import { useLeadStatuses } from "@/hooks/useLeadsEvents";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 export default function LeadScoringMaster() {
   const nav = useNavigate();
   const { rules, save, saving } = useLeadScoringRules();
+  const { isAdmin } = useUserProfile();
+  const ro = !isAdmin;
   const { data: statuses = [] } = useLeadStatuses(false);
   const [draft, setDraft] = useState<ScoringRules>(rules);
 
@@ -34,14 +37,18 @@ export default function LeadScoringMaster() {
         <Button variant="ghost" size="sm" onClick={() => nav("/master-data")} className="-ml-2">
           <ArrowLeft className="h-4 w-4 mr-1" />Back
         </Button>
-        <Button size="sm" onClick={() => save(draft)} disabled={saving}>
-          <Save className="h-4 w-4 mr-1" />Save
-        </Button>
+        {!ro && (
+          <Button size="sm" onClick={() => save(draft)} disabled={saving}>
+            <Save className="h-4 w-4 mr-1" />Save
+          </Button>
+        )}
       </div>
 
       <div>
         <h1 className="text-2xl font-bold">Lead Scoring Rules</h1>
-        <p className="text-sm text-muted-foreground">Configure BANT scoring for leads</p>
+        <p className="text-sm text-muted-foreground">
+          {ro ? "View-only — BANT scoring rules are managed by an administrator in Admin Controls." : "Configure BANT scoring for leads"}
+        </p>
       </div>
 
       <Card>
@@ -148,9 +155,11 @@ export default function LeadScoringMaster() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Activity Count Thresholds</CardTitle>
-          <Button size="sm" variant="outline" onClick={() =>
-            setDraft((d) => ({ ...d, activityThresholds: [...d.activityThresholds, { min: 0, score: 0 }] }))
-          }><Plus className="h-4 w-4" /></Button>
+          {!ro && (
+            <Button size="sm" variant="outline" onClick={() =>
+              setDraft((d) => ({ ...d, activityThresholds: [...d.activityThresholds, { min: 0, score: 0 }] }))
+            }><Plus className="h-4 w-4" /></Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-2">
           {draft.activityThresholds.map((t, i) => (
@@ -165,9 +174,11 @@ export default function LeadScoringMaster() {
                 const arr = [...draft.activityThresholds]; arr[i] = { ...arr[i], score: Number(e.target.value) || 0 };
                 setDraft({ ...draft, activityThresholds: arr });
               }} />
-              <Button size="icon" variant="ghost" onClick={() => {
-                setDraft({ ...draft, activityThresholds: draft.activityThresholds.filter((_, j) => j !== i) });
-              }}><Trash2 className="h-4 w-4" /></Button>
+              {!ro && (
+                <Button size="icon" variant="ghost" onClick={() => {
+                  setDraft({ ...draft, activityThresholds: draft.activityThresholds.filter((_, j) => j !== i) });
+                }}><Trash2 className="h-4 w-4" /></Button>
+              )}
             </div>
           ))}
         </CardContent>
@@ -176,9 +187,11 @@ export default function LeadScoringMaster() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Lead Age Buckets (days)</CardTitle>
-          <Button size="sm" variant="outline" onClick={() =>
-            setDraft((d) => ({ ...d, ageBuckets: [...d.ageBuckets, { maxDays: 30, score: 0 }] }))
-          }><Plus className="h-4 w-4" /></Button>
+          {!ro && (
+            <Button size="sm" variant="outline" onClick={() =>
+              setDraft((d) => ({ ...d, ageBuckets: [...d.ageBuckets, { maxDays: 30, score: 0 }] }))
+            }><Plus className="h-4 w-4" /></Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-2">
           {draft.ageBuckets.map((b, i) => (
@@ -193,9 +206,11 @@ export default function LeadScoringMaster() {
                 const arr = [...draft.ageBuckets]; arr[i] = { ...arr[i], score: Number(e.target.value) || 0 };
                 setDraft({ ...draft, ageBuckets: arr });
               }} />
-              <Button size="icon" variant="ghost" onClick={() => {
-                setDraft({ ...draft, ageBuckets: draft.ageBuckets.filter((_, j) => j !== i) });
-              }}><Trash2 className="h-4 w-4" /></Button>
+              {!ro && (
+                <Button size="icon" variant="ghost" onClick={() => {
+                  setDraft({ ...draft, ageBuckets: draft.ageBuckets.filter((_, j) => j !== i) });
+                }}><Trash2 className="h-4 w-4" /></Button>
+              )}
             </div>
           ))}
         </CardContent>
