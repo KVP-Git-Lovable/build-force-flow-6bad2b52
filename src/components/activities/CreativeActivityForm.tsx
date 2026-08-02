@@ -949,7 +949,6 @@ export default function CreativeActivityForm({
                   type="date"
                   value={activityDate}
                   onChange={(e) => setActivityDate(e.target.value)}
-                  max={format(new Date(), "yyyy-MM-dd")}
                   className="flex-1 min-w-0 bg-transparent text-sm outline-none text-right"
                 />
               </div>
