@@ -206,16 +206,19 @@ export default function GPSTracking() {
 
       // Filter GPS points - remove noise/jitter while keeping real movement
       let points = (pointsRes.data || []) as GPSPoint[];
+      console.log("Total raw points:", points.length);
 
       // Step 1: Keep only high-accuracy points (exclude null accuracy and low confidence)
-      points = points.filter(p => p.accuracy && p.accuracy <= 50);
+      const accuracyFiltered = points.filter(p => p.accuracy && p.accuracy <= 50);
+      console.log("After accuracy filter (<=50m):", accuracyFiltered.length);
 
       // Step 2: Remove unrealistic speed jumps (field work max ~15 km/h)
       const MAX_SPEED_KMH = 15;
-      const cleanedPoints: GPSPoint[] = [];
       const NOISE_THRESHOLD_KM = 0.15; // 150 meters minimum between points
+      const cleanedPoints: GPSPoint[] = [];
+      let rejectedCount = 0;
 
-      for (const curr of points) {
+      for (const curr of accuracyFiltered) {
         if (cleanedPoints.length === 0) {
           cleanedPoints.push(curr);
         } else {
@@ -242,10 +245,14 @@ export default function GPSTracking() {
           // Only add if: distance >= threshold AND speed is realistic
           if (distance >= NOISE_THRESHOLD_KM && calculatedSpeed <= MAX_SPEED_KMH) {
             cleanedPoints.push(curr);
+          } else if (calculatedSpeed > MAX_SPEED_KMH) {
+            rejectedCount++;
+            console.log("Rejected high-speed point:", { distance: distance.toFixed(2) + " km", speed: calculatedSpeed.toFixed(1) + " km/h" });
           }
         }
       }
 
+      console.log("Final points after filtering:", cleanedPoints.length, "Rejected:", rejectedCount);
       setGpsPoints(cleanedPoints);
       setGpsStops(stopsRes.data || []);
 
