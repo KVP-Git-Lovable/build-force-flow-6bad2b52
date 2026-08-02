@@ -78,8 +78,9 @@ export function LeadScoreTab({ lead }: { lead: LeadRow & { contact_role?: string
           </div>
           <Badge className={`${levelClass} text-base px-4 py-1.5`}>{level} Qualification</Badge>
           <Button size="sm" variant="ghost" asChild>
-            <Link to="/master-data/lead-scoring"><Settings2 className="h-4 w-4 mr-1" />Configure rules</Link>
+            <Link to="/master-data/lead-scoring"><Settings2 className="h-4 w-4 mr-1" />View scoring rules</Link>
           </Button>
+
         </CardContent>
       </Card>
 
