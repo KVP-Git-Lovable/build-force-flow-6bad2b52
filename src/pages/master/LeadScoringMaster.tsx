@@ -50,8 +50,7 @@ export default function LeadScoringMaster() {
           {statuses.map((s) => (
             <div key={s.id} className="flex items-center gap-2">
               <Label className="flex-1">{s.name}</Label>
-              <Input
-                type="number"
+              <Input disabled={ro} type="number"
                 className="w-24"
                 value={draft.statusScores[s.name.toLowerCase()] ?? 0}
                 onChange={(e) => updateStatus(s.name, e.target.value)}
@@ -66,22 +65,22 @@ export default function LeadScoringMaster() {
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="flex items-center gap-2">
             <Label className="flex-1">Budget shared</Label>
-            <Input type="number" className="w-24" value={draft.budget?.shared ?? 0}
+            <Input disabled={ro} type="number" className="w-24" value={draft.budget?.shared ?? 0}
               onChange={(e) => setDraft({ ...draft, budget: { ...draft.budget, shared: Number(e.target.value) || 0 } })} />
           </div>
           <div className="flex items-center gap-2">
             <Label className="flex-1">Budget aligned to opportunity value</Label>
-            <Input type="number" className="w-24" value={draft.budget?.aligned ?? 0}
+            <Input disabled={ro} type="number" className="w-24" value={draft.budget?.aligned ?? 0}
               onChange={(e) => setDraft({ ...draft, budget: { ...draft.budget, aligned: Number(e.target.value) || 0 } })} />
           </div>
           <div className="flex items-center gap-2">
             <Label className="flex-1">No budget shared</Label>
-            <Input type="number" className="w-24" value={draft.budget?.none ?? 0}
+            <Input disabled={ro} type="number" className="w-24" value={draft.budget?.none ?? 0}
               onChange={(e) => setDraft({ ...draft, budget: { ...draft.budget, none: Number(e.target.value) || 0 } })} />
           </div>
           <div className="flex items-center gap-2">
             <Label className="flex-1">Alignment tolerance (%)</Label>
-            <Input type="number" className="w-24" value={draft.budget?.tolerancePct ?? 10}
+            <Input disabled={ro} type="number" className="w-24" value={draft.budget?.tolerancePct ?? 10}
               onChange={(e) => setDraft({ ...draft, budget: { ...draft.budget, tolerancePct: Number(e.target.value) || 0 } })} />
           </div>
           <p className="md:col-span-2 text-xs text-muted-foreground">
@@ -96,7 +95,7 @@ export default function LeadScoringMaster() {
           {([["thisMonth", "Closing this month"], ["nextMonth", "Closing next month"], ["later", "Closing later"], ["none", "No close date"]] as const).map(([k, label]) => (
             <div key={k} className="flex items-center gap-2">
               <Label className="flex-1">{label}</Label>
-              <Input type="number" className="w-24" value={draft.closeDate?.[k] ?? 0}
+              <Input disabled={ro} type="number" className="w-24" value={draft.closeDate?.[k] ?? 0}
                 onChange={(e) => setDraft({ ...draft, closeDate: { ...draft.closeDate, [k]: Number(e.target.value) || 0 } })} />
             </div>
           ))}
@@ -108,22 +107,22 @@ export default function LeadScoringMaster() {
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="flex items-center gap-2">
             <Label className="flex-1">Requirement clear</Label>
-            <Input type="number" className="w-24" value={draft.need?.clear ?? 0}
+            <Input disabled={ro} type="number" className="w-24" value={draft.need?.clear ?? 0}
               onChange={(e) => setDraft({ ...draft, need: { ...draft.need, clear: Number(e.target.value) || 0 } })} />
           </div>
           <div className="flex items-center gap-2">
             <Label className="flex-1">Requirement not clear (brief)</Label>
-            <Input type="number" className="w-24" value={draft.need?.vague ?? 0}
+            <Input disabled={ro} type="number" className="w-24" value={draft.need?.vague ?? 0}
               onChange={(e) => setDraft({ ...draft, need: { ...draft.need, vague: Number(e.target.value) || 0 } })} />
           </div>
           <div className="flex items-center gap-2">
             <Label className="flex-1">Not entered</Label>
-            <Input type="number" className="w-24" value={draft.need?.none ?? 0}
+            <Input disabled={ro} type="number" className="w-24" value={draft.need?.none ?? 0}
               onChange={(e) => setDraft({ ...draft, need: { ...draft.need, none: Number(e.target.value) || 0 } })} />
           </div>
           <div className="flex items-center gap-2">
             <Label className="flex-1">Min characters to count as clear</Label>
-            <Input type="number" className="w-24" value={draft.need?.clearMinChars ?? 80}
+            <Input disabled={ro} type="number" className="w-24" value={draft.need?.clearMinChars ?? 80}
               onChange={(e) => setDraft({ ...draft, need: { ...draft.need, clearMinChars: Number(e.target.value) || 0 } })} />
           </div>
         </CardContent>
@@ -135,8 +134,7 @@ export default function LeadScoringMaster() {
           {(Object.keys(CONTACT_ROLE_LABELS) as ContactRole[]).map((r) => (
             <div key={r} className="flex items-center gap-2">
               <Label className="flex-1">{CONTACT_ROLE_LABELS[r]}</Label>
-              <Input
-                type="number"
+              <Input disabled={ro} type="number"
                 className="w-24"
                 value={draft.contactRoleScores[r] ?? 0}
                 onChange={(e) => updateRole(r, e.target.value)}
@@ -158,12 +156,12 @@ export default function LeadScoringMaster() {
           {draft.activityThresholds.map((t, i) => (
             <div key={i} className="flex items-center gap-2">
               <Label className="text-xs">Min activities</Label>
-              <Input type="number" className="w-20" value={t.min} onChange={(e) => {
+              <Input disabled={ro} type="number" className="w-20" value={t.min} onChange={(e) => {
                 const arr = [...draft.activityThresholds]; arr[i] = { ...arr[i], min: Number(e.target.value) || 0 };
                 setDraft({ ...draft, activityThresholds: arr });
               }} />
               <Label className="text-xs">Score</Label>
-              <Input type="number" className="w-20" value={t.score} onChange={(e) => {
+              <Input disabled={ro} type="number" className="w-20" value={t.score} onChange={(e) => {
                 const arr = [...draft.activityThresholds]; arr[i] = { ...arr[i], score: Number(e.target.value) || 0 };
                 setDraft({ ...draft, activityThresholds: arr });
               }} />
@@ -186,12 +184,12 @@ export default function LeadScoringMaster() {
           {draft.ageBuckets.map((b, i) => (
             <div key={i} className="flex items-center gap-2">
               <Label className="text-xs">Up to (days)</Label>
-              <Input type="number" className="w-24" value={b.maxDays} onChange={(e) => {
+              <Input disabled={ro} type="number" className="w-24" value={b.maxDays} onChange={(e) => {
                 const arr = [...draft.ageBuckets]; arr[i] = { ...arr[i], maxDays: Number(e.target.value) || 0 };
                 setDraft({ ...draft, ageBuckets: arr });
               }} />
               <Label className="text-xs">Score</Label>
-              <Input type="number" className="w-20" value={b.score} onChange={(e) => {
+              <Input disabled={ro} type="number" className="w-20" value={b.score} onChange={(e) => {
                 const arr = [...draft.ageBuckets]; arr[i] = { ...arr[i], score: Number(e.target.value) || 0 };
                 setDraft({ ...draft, ageBuckets: arr });
               }} />
@@ -208,13 +206,13 @@ export default function LeadScoringMaster() {
         <CardContent className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-xs">High (≥)</Label>
-            <Input type="number" value={draft.qualification.high} onChange={(e) =>
+            <Input disabled={ro} type="number" value={draft.qualification.high} onChange={(e) =>
               setDraft({ ...draft, qualification: { ...draft.qualification, high: Number(e.target.value) || 0 } })
             } />
           </div>
           <div>
             <Label className="text-xs">Medium (≥)</Label>
-            <Input type="number" value={draft.qualification.medium} onChange={(e) =>
+            <Input disabled={ro} type="number" value={draft.qualification.medium} onChange={(e) =>
               setDraft({ ...draft, qualification: { ...draft.qualification, medium: Number(e.target.value) || 0 } })
             } />
           </div>
