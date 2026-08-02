@@ -207,12 +207,13 @@ export default function GPSTracking() {
       // Filter GPS points - remove noise/jitter while keeping real movement
       let points = (pointsRes.data || []) as GPSPoint[];
 
-      // Step 1: Remove obviously bad accuracy
-      points = points.filter(p => !p.accuracy || p.accuracy <= 100);
+      // Step 1: Keep only high-accuracy points (exclude null accuracy and low confidence)
+      points = points.filter(p => p.accuracy && p.accuracy <= 50);
 
-      // Step 2: Remove clustered points (GPS noise within ~100m of previous accepted point)
-      const NOISE_THRESHOLD_KM = 0.1; // 100 meters
+      // Step 2: Remove unrealistic speed jumps (field work max ~15 km/h)
+      const MAX_SPEED_KMH = 15;
       const cleanedPoints: GPSPoint[] = [];
+      const NOISE_THRESHOLD_KM = 0.15; // 150 meters minimum between points
 
       for (const curr of points) {
         if (cleanedPoints.length === 0) {
@@ -230,8 +231,16 @@ export default function GPSTracking() {
             Math.sin(dLon / 2) ** 2;
           const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-          // Only add if distance > threshold (removes GPS jitter/noise)
-          if (distance >= NOISE_THRESHOLD_KM) {
+          // Calculate time difference in hours
+          const prevTime = new Date(prev.timestamp).getTime();
+          const currTime = new Date(curr.timestamp).getTime();
+          const timeDiffHours = (currTime - prevTime) / (1000 * 60 * 60);
+
+          // Check if distance is realistic for the time interval
+          const calculatedSpeed = timeDiffHours > 0 ? distance / timeDiffHours : 0;
+
+          // Only add if: distance >= threshold AND speed is realistic
+          if (distance >= NOISE_THRESHOLD_KM && calculatedSpeed <= MAX_SPEED_KMH) {
             cleanedPoints.push(curr);
           }
         }
