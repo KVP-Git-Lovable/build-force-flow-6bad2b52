@@ -19,16 +19,9 @@ import { ModulePanel } from "@/components/config/panels";
 // is always visible (no permission gate), so it should always show.
 const MODULES = [
   { id: "activities", label: "Activities", icon: Activity, permission: "module_activities" as string | null },
-  { id: "projects", label: "Projects / Sites", icon: Building2, permission: null },
-  { id: "procurement", label: "Procurement", icon: ShoppingCart, permission: "module_procurement" },
-  { id: "goods_receipt", label: "Goods Receipt", icon: PackageCheck, permission: "module_procurement" },
-  { id: "expenses", label: "Expenses", icon: Wallet, permission: "module_expenses" },
-  { id: "leave", label: "Leave", icon: CalendarDays, permission: "module_attendance" },
   { id: "attendance", label: "Attendance", icon: Clock, permission: "module_attendance" },
-  { id: "customers", label: "Customers / CRM", icon: Users, permission: "module_customers" },
-  { id: "opportunities", label: "Opportunities", icon: Store, permission: "module_opportunities" },
+  { id: "gps_track", label: "GPS Track", icon: Activity, permission: "module_gps_tracking" },
   { id: "leads", label: "Leads", icon: Users, permission: "module_leads" },
-  { id: "events", label: "Events", icon: CalendarDays, permission: "module_events" },
   { id: "reports", label: "Reports", icon: FileBarChart, permission: null },
 ] as const;
 
