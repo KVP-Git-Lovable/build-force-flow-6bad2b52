@@ -208,13 +208,13 @@ export default function GPSTracking() {
       let points = (pointsRes.data || []) as GPSPoint[];
       console.log("Total raw points:", points.length);
 
-      // Step 1: Keep only high-accuracy points (exclude null accuracy and low confidence)
-      const accuracyFiltered = points.filter(p => p.accuracy && p.accuracy <= 50);
-      console.log("After accuracy filter (<=50m):", accuracyFiltered.length);
+      // Step 1: Keep only high-accuracy points (exclude null accuracy and very low confidence)
+      const accuracyFiltered = points.filter(p => p.accuracy && p.accuracy <= 30);
+      console.log("After accuracy filter (<=30m):", accuracyFiltered.length);
 
-      // Step 2: Remove unrealistic speed jumps (field work max ~40 km/h includes vehicle movement)
-      const MAX_SPEED_KMH = 40;
-      const NOISE_THRESHOLD_KM = 0.05; // 50 meters minimum between points (allows intermediate waypoints)
+      // Step 2: Remove unrealistic speed jumps (field work max ~20 km/h to catch errors)
+      const MAX_SPEED_KMH = 20;
+      const NOISE_THRESHOLD_KM = 0.1; // 100 meters minimum between points (allows intermediate waypoints)
       const cleanedPoints: GPSPoint[] = [];
       let rejectedCount = 0;
 
