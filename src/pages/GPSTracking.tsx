@@ -214,7 +214,7 @@ export default function GPSTracking() {
 
       // Step 2: Remove unrealistic speed jumps (field work max ~15 km/h)
       const MAX_SPEED_KMH = 15;
-      const NOISE_THRESHOLD_KM = 0.15; // 150 meters minimum between points
+      const NOISE_THRESHOLD_KM = 0.05; // 50 meters minimum between points (allows intermediate waypoints)
       const cleanedPoints: GPSPoint[] = [];
       let rejectedCount = 0;
 
