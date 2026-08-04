@@ -208,8 +208,8 @@ export default function GPSTracking() {
       let points = (pointsRes.data || []) as GPSPoint[];
       console.log("Total raw points:", points.length);
 
-      // Simple distance-based filtering: reject GPS jumps > 2 km (obvious errors)
-      const MAX_JUMP_KM = 2;
+      // Conservative distance-based filtering: only accept points within 100m of previous point
+      const MAX_JUMP_KM = 0.1;
       const cleanedPoints: GPSPoint[] = [];
 
       for (const curr of points) {
@@ -230,11 +230,11 @@ export default function GPSTracking() {
           Math.sin(dLon / 2) ** 2;
         const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        // Reject if jump > 2 km (GPS error), otherwise accept
+        // Only accept if within 100m (0.1km) - eliminates GPS noise
         if (distance <= MAX_JUMP_KM) {
           cleanedPoints.push(curr);
         } else {
-          console.log("Rejected outlier jump:", distance.toFixed(2) + " km");
+          console.log("Rejected jump >100m:", distance.toFixed(3) + " km");
         }
       }
 
