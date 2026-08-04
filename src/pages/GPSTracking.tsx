@@ -208,51 +208,37 @@ export default function GPSTracking() {
       let points = (pointsRes.data || []) as GPSPoint[];
       console.log("Total raw points:", points.length);
 
-      // Step 1: Keep only high-accuracy points (exclude null accuracy and very low confidence)
-      const accuracyFiltered = points.filter(p => p.accuracy && p.accuracy <= 30);
-      console.log("After accuracy filter (<=30m):", accuracyFiltered.length);
-
-      // Step 2: Remove unrealistic speed jumps (field work max ~20 km/h to catch errors)
-      const MAX_SPEED_KMH = 20;
-      const NOISE_THRESHOLD_KM = 0.1; // 100 meters minimum between points (allows intermediate waypoints)
+      // Simple distance-based filtering: reject GPS jumps > 2 km (obvious errors)
+      const MAX_JUMP_KM = 2;
       const cleanedPoints: GPSPoint[] = [];
-      let rejectedCount = 0;
 
-      for (const curr of accuracyFiltered) {
+      for (const curr of points) {
         if (cleanedPoints.length === 0) {
           cleanedPoints.push(curr);
+          continue;
+        }
+
+        const prev = cleanedPoints[cleanedPoints.length - 1];
+
+        // Calculate distance from last accepted point
+        const R = 6371;
+        const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180;
+        const dLon = ((curr.longitude - prev.longitude) * Math.PI) / 180;
+        const a = Math.sin(dLat / 2) ** 2 +
+          Math.cos((prev.latitude * Math.PI) / 180) *
+          Math.cos((curr.latitude * Math.PI) / 180) *
+          Math.sin(dLon / 2) ** 2;
+        const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        // Reject if jump > 2 km (GPS error), otherwise accept
+        if (distance <= MAX_JUMP_KM) {
+          cleanedPoints.push(curr);
         } else {
-          const prev = cleanedPoints[cleanedPoints.length - 1];
-
-          // Calculate distance from last accepted point
-          const R = 6371;
-          const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180;
-          const dLon = ((curr.longitude - prev.longitude) * Math.PI) / 180;
-          const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos((prev.latitude * Math.PI) / 180) *
-            Math.cos((curr.latitude * Math.PI) / 180) *
-            Math.sin(dLon / 2) ** 2;
-          const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-          // Calculate time difference in hours
-          const prevTime = new Date(prev.timestamp).getTime();
-          const currTime = new Date(curr.timestamp).getTime();
-          const timeDiffHours = (currTime - prevTime) / (1000 * 60 * 60);
-
-          // Check if distance is realistic for the time interval
-          const calculatedSpeed = timeDiffHours > 0 ? distance / timeDiffHours : 0;
-
-          // Only add if: distance >= threshold AND speed is realistic
-          if (distance >= NOISE_THRESHOLD_KM && calculatedSpeed <= MAX_SPEED_KMH) {
-            cleanedPoints.push(curr);
-          } else if (calculatedSpeed > MAX_SPEED_KMH) {
-            rejectedCount++;
-            console.log("Rejected high-speed point:", { distance: distance.toFixed(2) + " km", speed: calculatedSpeed.toFixed(1) + " km/h" });
-          }
+          console.log("Rejected outlier jump:", distance.toFixed(2) + " km");
         }
       }
 
-      console.log("Final points after filtering:", cleanedPoints.length, "Rejected:", rejectedCount);
+      console.log("Final points after filtering:", cleanedPoints.length);
       setGpsPoints(cleanedPoints);
       setGpsStops(stopsRes.data || []);
 
