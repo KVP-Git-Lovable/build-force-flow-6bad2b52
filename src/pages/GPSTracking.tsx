@@ -212,8 +212,8 @@ export default function GPSTracking() {
       const accuracyFiltered = points.filter(p => p.accuracy && p.accuracy <= 50);
       console.log("After accuracy filter (<=50m):", accuracyFiltered.length);
 
-      // Step 2: Remove unrealistic speed jumps (field work max ~15 km/h)
-      const MAX_SPEED_KMH = 15;
+      // Step 2: Remove unrealistic speed jumps (field work max ~40 km/h includes vehicle movement)
+      const MAX_SPEED_KMH = 40;
       const NOISE_THRESHOLD_KM = 0.05; // 50 meters minimum between points (allows intermediate waypoints)
       const cleanedPoints: GPSPoint[] = [];
       let rejectedCount = 0;
