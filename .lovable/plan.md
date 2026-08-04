@@ -1,26 +1,31 @@
-## Goal
+## Diagnosis (verified)
 
-Replace the current New Activity modal with the same UI Bharath Builders uses — the gradient "New Post" sheet with project avatar picker, inline date row, rich description box with camera/location/metrics/mic actions, activity-type chips, and status pill + Post button.
+- The role assignments **are** persisting. `user_security_profiles` currently holds 8 rows correctly linked to `security_profiles` (4 × Administrator, 4 × Sales Executive). The save path is not broken.
+- The only SELECT policy on `user_security_profiles` is `Users can view own security profile` with `user_id = auth.uid()`.
+- Result: the Users & Roles table query (`select user_id, profile_id, security_profiles(name)`) returns at most **one row** — the logged-in admin's own. Every other user falls through to `"—"`.
+- `security_profiles` itself is readable by all authenticated users, so the embedded join is not the problem.
 
-## What exists today
+## Fix
 
-- `src/components/NewActivityModal.tsx` — a simplified lookalike: hardcoded Unsplash site images, hardcoded 4 activity-type chips, non-functional camera/location/metrics/mic buttons, no photos, no assignees, no edit mode.
-- `src/pages/Activities.tsx` uses it only for creation (line ~1030) and falls back to the old plain dialog for editing.
-- Bharath Builders uses `src/components/activities/CreativeActivityForm.tsx` (~1400 lines) for both create and edit.
+**1. Database migration — add a read policy**
 
-## Plan
+Add a SELECT policy on `public.user_security_profiles` allowing users who can manage security or edit users to read all assignments, reusing the existing helper functions already used by the INSERT/UPDATE/DELETE policies:
 
-1. **Port the component** — create `src/components/activities/CreativeActivityForm.tsx` here, copied from Bharath Builders. Its dependencies already exist in this project: `useAudioRecorder`, `useUserProfile`, `useActivities` types, `CameraCapture`, `OpenGRNPicker`, `lib/procurement`, `utils/activityPhotos`, `utils/nativePermissions`.
+```
+has_security_management_access(auth.uid(), 'view')
+OR can_access_object(auth.uid(), 'users', 'view')
+```
 
-2. **Adapt to this project's hook API** — `useActivities()` here exposes `createActivity`, `updateActivity`, `deleteActivity`, `fetchAttendanceForDate`, `checkInForDate`, but not `checkInActivity` / `checkOutActivity`. Those two props will be made optional, and the per-activity check-in/check-out button hidden when they aren't supplied. Everything else (real project list with images, real activity types from master, photo upload with GPS tagging, voice-to-text and audio note, assignee picker, risk/status pill, GRN inline receipt) is wired to existing hooks.
+The existing self-view policy stays (policies are OR-ed), so ordinary users keep reading their own row for permission bootstrapping.
 
-3. **Wire into Activities page** — replace the `NewActivityModal` block with `CreativeActivityForm`, using it for both create and edit (passing the activity being edited), and drop the legacy edit dialog path so both flows share one UI.
+**2. Harden the save path in `src/pages/AdminUserManagement.tsx`**
 
-4. **Delete** `src/components/NewActivityModal.tsx` once unused, removing the hardcoded Unsplash image map and hardcoded chip list.
+The existing/insert branch silently swallowed errors and, because the `existing` lookup was blocked by RLS, always took the INSERT branch — which would have thrown a unique-constraint error on re-save if the errors weren't discarded. Replace lines 280–292 with a single upsert on `user_id` and throw on error so failures surface as a toast instead of a false success.
 
-5. **Verify** — typecheck, then open `/activities` in a headless browser, launch the form, and screenshot it to confirm it matches the reference.
+**3. Refresh behaviour**
 
-## Notes
+Keep the existing invalidation of `admin-user-security-assignments`; with the read policy in place the refetch will return all rows.
 
-- Site images will come from the real site records instead of stub Unsplash URLs, so sites without a photo show an initials/gradient avatar rather than a random building.
-- No database changes needed.
+## Note
+
+No change is needed to `useProfilePermissions`, `SecurityProfilesList`, or `UserProfileAssignments` logic itself, but they read the same table — the Security Management screens were also under-reporting assignments for the same reason and will be corrected by the same policy.

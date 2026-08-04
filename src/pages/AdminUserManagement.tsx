@@ -289,6 +289,7 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
         console.log("Role saved successfully");
       }
 
+
       const { error: empError } = await supabase.from("employees").upsert({
         user_id: user.id,
         manager_id: managerId === "none" ? null : managerId,
