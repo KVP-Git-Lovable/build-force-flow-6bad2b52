@@ -136,3 +136,104 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+
+// ---------- Background Location Tracking ----------
+// Capture location periodically even when app is closed via Background Sync API
+self.addEventListener("sync", (event) => {
+  if (event.tag === "sync-location") {
+    event.waitUntil(captureLocationInBackground());
+  }
+});
+
+async function captureLocationInBackground() {
+  try {
+    // Get auth token from IndexedDB (set by main app during foreground activity)
+    const token = await getAuthTokenFromStorage();
+    if (!token) {
+      console.log("No auth token in background, skipping location capture");
+      return;
+    }
+
+    // Get current position with geolocation API
+    let position;
+    try {
+      position = await new Promise((resolve, reject) => {
+        // Note: geolocation in background is limited on some browsers
+        if ("geolocation" in navigator) {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+        } else {
+          reject(new Error("Geolocation not available"));
+        }
+      });
+    } catch (geoError) {
+      console.warn("Geolocation unavailable in background:", geoError.message);
+      // Still need to retry or handle gracefully
+      throw geoError;
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    const locationData = {
+      date: today,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracy: position.coords.accuracy,
+      speed: position.coords.speed,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Call Supabase edge function to save location
+    const supabaseUrl = self.location.origin; // Will be used to construct edge function URL
+    const response = await fetch(`${supabaseUrl}/functions/v1/capture-gps-location`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(locationData),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to save location: ${response.statusText} - ${error}`);
+    }
+
+    console.log("Location captured in background");
+  } catch (error) {
+    console.error("Error capturing location in background:", error);
+    throw error; // Retry by browser
+  }
+}
+
+async function getAuthTokenFromStorage() {
+  try {
+    const db = await openIndexedDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(["auth"], "readonly");
+      const store = tx.objectStore("auth");
+      const req = store.get("token");
+      req.onsuccess = () => resolve(req.result?.value);
+      req.onerror = () => resolve(null);
+    });
+  } catch (error) {
+    console.warn("Error reading auth from IndexedDB:", error);
+    return null;
+  }
+}
+
+function openIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("sbee-cables");
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("auth")) {
+        db.createObjectStore("auth", { keyPath: "key" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
