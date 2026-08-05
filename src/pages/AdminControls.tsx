@@ -37,14 +37,6 @@ const allAdminModules = [
     permission: "field_admin_attendance_mgmt",
   },
   {
-    title: "Expense Management",
-    description: "Track team productivity and expense analytics",
-    icon: DollarSign,
-    color: "bg-yellow-100 text-yellow-600",
-    path: "/admin/expenses",
-    permission: "field_admin_expense_mgmt",
-  },
-  {
     title: "Security & Access",
     description: "Manage user profiles, permissions, and data access control",
     icon: Lock,
