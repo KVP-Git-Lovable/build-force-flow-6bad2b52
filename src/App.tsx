@@ -62,6 +62,7 @@ const EventDetail = lazy(() => import("./pages/EventDetail"));
 const EventTypesMaster = lazy(() => import("./pages/master/EventTypesMaster"));
 const LeadStatusesMaster = lazy(() => import("./pages/master/LeadStatusesMaster"));
 const LeadSourcesMaster = lazy(() => import("./pages/master/LeadSourcesMaster"));
+const OutcomeMaster = lazy(() => import("./pages/master/OutcomeMaster"));
 const IndustriesMaster = lazy(() => import("./pages/master/IndustriesMaster"));
 const LeadScoringMaster = lazy(() => import("./pages/master/LeadScoringMaster"));
 const CurrencyMaster = lazy(() => import("./pages/master/CurrencyMaster"));
@@ -147,6 +148,7 @@ const App = () => (
             <Route path="/master-data/event-types" element={<Suspense fallback={<PageFallback />}><EventTypesMaster /></Suspense>} />
             <Route path="/master-data/lead-statuses" element={<Suspense fallback={<PageFallback />}><LeadStatusesMaster /></Suspense>} />
             <Route path="/master-data/lead-sources" element={<Suspense fallback={<PageFallback />}><LeadSourcesMaster /></Suspense>} />
+            <Route path="/master-data/activity-outcomes" element={<Suspense fallback={<PageFallback />}><OutcomeMaster /></Suspense>} />
             <Route path="/master-data/industries" element={<Suspense fallback={<PageFallback />}><IndustriesMaster /></Suspense>} />
             <Route path="/master-data/lead-scoring" element={<Suspense fallback={<PageFallback />}><LeadScoringMaster /></Suspense>} />
             <Route path="/master-data/currencies" element={<Suspense fallback={<PageFallback />}><CurrencyMaster /></Suspense>} />

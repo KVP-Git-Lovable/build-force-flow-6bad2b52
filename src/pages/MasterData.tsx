@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ListChecks, Flag, Compass, Gauge, Briefcase } from "lucide-react";
+import { ListChecks, Flag, Compass, Gauge, Briefcase, CheckCircle } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
 const allMasterModules = [
@@ -12,6 +12,14 @@ const allMasterModules = [
     icon: ListChecks,
     color: "bg-green-100 text-green-600",
     path: "/activity-types",
+    module: "module_activities" as string | null,
+  },
+  {
+    title: "Activity Outcomes",
+    description: "Manage activity outcomes (Productive, Not started…)",
+    icon: CheckCircle,
+    color: "bg-teal-100 text-teal-600",
+    path: "/master-data/activity-outcomes",
     module: "module_activities" as string | null,
   },
   {
