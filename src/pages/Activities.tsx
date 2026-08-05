@@ -953,8 +953,8 @@ export default function Activities() {
               <span className="hidden sm:inline">Filters</span>
             </Button>
           )}
-          <Button className="gradient-hero text-primary-foreground shrink-0 px-2.5 sm:px-3" onClick={handleOpenCreate}>
-            <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">New</span>
+          <Button className="gradient-hero text-primary-foreground shrink-0 px-3 sm:px-4" onClick={handleOpenCreate}>
+            <Plus className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">New</span>
           </Button>
         </div>
       </motion.div>
