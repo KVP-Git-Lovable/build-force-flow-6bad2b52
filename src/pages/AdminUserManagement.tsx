@@ -75,6 +75,7 @@ interface AppUser {
   reporting_manager_id: string | null;
   is_active: boolean;
   created_at: string;
+  roles?: { id: string; name: string } | null;
 }
 
 interface Employee {
@@ -112,7 +113,7 @@ function useAppUsers() {
   return useQuery({
     queryKey: ["admin-app-users"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("users").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("users").select("*, roles(id, name)").order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as AppUser[];
     },
@@ -519,7 +520,7 @@ function UserHierarchy({ users, roles, profiles, userRoleMap }: { users: AppUser
   // Org chart tree node
   const renderOrgNode = (user: AppUser): React.ReactNode => {
     const children = getChildren(user.id);
-    const roleName = userRoleMap.get(user.id) || (user.role_id ? roleMap.get(user.role_id) || "—" : "—");
+    const roleName = getRoleDisplayName(user);
     const profile = profiles.find((p) => p.id === user.id);
     const colors = getRoleColor(roleName);
     // Compact node width for mobile: 64px mobile, 96px desktop
@@ -576,7 +577,7 @@ function UserHierarchy({ users, roles, profiles, userRoleMap }: { users: AppUser
     const [isOpen, setIsOpen] = useState(level < 1);
     const children = getChildren(user.id);
     const hasReports = children.length > 0;
-    const roleName = userRoleMap.get(user.id) || (user.role_id ? roleMap.get(user.role_id) || "—" : "—");
+    const roleName = getRoleDisplayName(user);
     const colors = getRoleColor(roleName);
     const profile = profiles.find(p => p.id === user.id);
 
@@ -784,6 +785,19 @@ export default function AdminUserManagement() {
     sampleAssignments: secAssignments.slice(0, 3),
     sampleRoleMap: Array.from(userRoleMap.entries()).slice(0, 3),
   });
+
+  // Helper function to get role display name for a user
+  const getRoleDisplayName = (user: AppUser): string => {
+    // 1. Check security profile assignment
+    const secProfileRole = userRoleMap.get(user.id);
+    if (secProfileRole) return secProfileRole;
+
+    // 2. Check users.roles relationship (from join)
+    if (user.roles?.name) return user.roles.name;
+
+    // 3. Default to dash
+    return "—";
+  };
 
   // Fallback: old roleMap from roles table for users not yet assigned a security profile
   const roleMap = new Map(roles.map((r) => [r.id, r.name]));
@@ -998,7 +1012,7 @@ export default function AdminUserManagement() {
                       <TableBody>
                         {paginatedUsers.map((user) => {
                           const employee = employees.find((e) => e.user_id === user.id);
-                          const roleName = userRoleMap.get(user.id) || (user.role_id ? roleMap.get(user.role_id) || "—" : "—");
+                          const roleName = getRoleDisplayName(user);
                           const manager = user.reporting_manager_id ? appUsers.find((u) => u.id === user.reporting_manager_id) : null;
                           const profile = profiles.find((p) => p.id === user.id);
                           const colors = getRoleColor(roleName);
@@ -1087,7 +1101,7 @@ export default function AdminUserManagement() {
                   <div className="md:hidden divide-y">
                     {paginatedUsers.map((user) => {
                       const employee = employees.find((e) => e.user_id === user.id);
-                      const roleName = userRoleMap.get(user.id) || (user.role_id ? roleMap.get(user.role_id) || "—" : "—");
+                      const roleName = getRoleDisplayName(user);
                       const manager = user.reporting_manager_id ? appUsers.find((u) => u.id === user.reporting_manager_id) : null;
                       const profile = profiles.find((p) => p.id === user.id);
                       const colors = getRoleColor(roleName);

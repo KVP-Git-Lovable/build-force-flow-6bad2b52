@@ -17,6 +17,7 @@ interface UserProfileState {
   isAdmin: boolean;
   loading: boolean;
   initials: string;
+  displayRole: string | null;
 }
 
 const PROFILE_CACHE_KEY = "user_profile_cache_v2";
@@ -90,8 +91,12 @@ export function useUserProfile(): UserProfileState {
 
         // Determine role - check multiple sources
         let role = "user";
+        let displayRole: string | null = null;
         const roleData = userRes.data as { roles?: { name?: string } | null } | null;
         const secProfileData = secProfileRes.data as { security_profiles?: { name?: string } | null } | null;
+
+        // Get display role from roles table
+        displayRole = roleData?.roles?.name ?? null;
 
         // Check if user is admin through any method
         if (
@@ -106,11 +111,12 @@ export function useUserProfile(): UserProfileState {
           console.log("User profile loaded:", {
             userId: user.id,
             role,
+            displayRole,
             roleName: roleData?.roles?.name,
             secProfileName: secProfileData?.security_profiles?.name,
           });
         }
-        return { profile, role };
+        return { profile, role, displayRole };
       } catch (err) {
         console.error("Error loading user profile:", err);
         return { profile: { id: user.id, full_name: null, username: null, profile_picture_url: null, phone_number: null }, role: "user" };
@@ -150,6 +156,7 @@ export function useUserProfile(): UserProfileState {
 
   const profile = data?.profile ?? null;
   const role = data?.role ?? null;
+  const displayRole = data?.displayRole ?? null;
   const secProfileName = roleNameData?.secProfileName ?? null;
 
   const displayName = profile?.full_name || profile?.username || "";
@@ -167,12 +174,24 @@ export function useUserProfile(): UserProfileState {
   // 2. Security profile name as fallback
   const isAdmin = role === "admin" || isAdminProfileName(secProfileName);
 
+  if (import.meta.env.DEV) {
+    console.log("User profile state:", {
+      userId: user?.id,
+      role,
+      displayRole,
+      secProfileName,
+      isAdmin,
+      loading: isLoading
+    });
+  }
+
   return {
     profile,
     role,
-    roleName: null, // Deprecated - using role directly now
+    roleName: displayRole,
     isAdmin,
     loading: isLoading,
     initials,
+    displayRole,
   };
 }
