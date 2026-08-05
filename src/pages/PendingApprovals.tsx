@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import RejectionReasonDialog from "@/components/RejectionReasonDialog";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface LeaveRequest {
   id: string;
@@ -46,6 +47,7 @@ export default function PendingApprovals() {
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("id");
   const highlightType = searchParams.get("type");
+  const { isAdmin } = useUserProfile();
 
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [regRequests, setRegRequests] = useState<RegRequest[]>([]);
@@ -67,15 +69,29 @@ export default function PendingApprovals() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: subordinates } = await supabase
-        .from("users")
-        .select("id, full_name")
-        .eq("reporting_manager_id", user.id);
+      // For admins: fetch ALL pending requests
+      // For managers: fetch only from subordinates
+      let userIds: string[] = [];
+      let allUsers: { id: string; full_name: string | null }[] = [];
 
-      const subIds = subordinates?.map((s) => s.id) || [];
-      const nameMap = new Map<string, string>(subordinates?.map((s) => [s.id, s.full_name || "Unknown"]) || []);
+      if (isAdmin) {
+        // Admin sees all users' requests
+        const { data: allUsersRes } = await supabase.from("users").select("id, full_name");
+        allUsers = allUsersRes || [];
+        userIds = allUsers.map((u) => u.id);
+      } else {
+        // Manager sees only subordinates' requests
+        const { data: subordinates } = await supabase
+          .from("users")
+          .select("id, full_name")
+          .eq("reporting_manager_id", user.id);
+        allUsers = subordinates || [];
+        userIds = allUsers.map((s) => s.id);
+      }
 
-      if (subIds.length === 0) {
+      const nameMap = new Map<string, string>(allUsers.map((u) => [u.id, u.full_name || "Unknown"]) || []);
+
+      if (userIds.length === 0) {
         setLeaveRequests([]);
         setRegRequests([]);
         setLoading(false);
@@ -83,8 +99,8 @@ export default function PendingApprovals() {
       }
 
       const [leavesRes, regsRes] = await Promise.all([
-        supabase.from("leave_applications").select("*").in("user_id", subIds).eq("status", "pending").order("applied_date", { ascending: false }),
-        supabase.from("regularization_requests").select("*").in("user_id", subIds).eq("status", "pending").order("created_at", { ascending: false }),
+        supabase.from("leave_applications").select("*").in("user_id", userIds).eq("status", "pending").order("applied_date", { ascending: false }),
+        supabase.from("regularization_requests").select("*").in("user_id", userIds).eq("status", "pending").order("created_at", { ascending: false }),
       ]);
 
       const leaveTypeIds = [...new Set(leavesRes.data?.map((l) => l.leave_type_id) || [])];
