@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCallback, useMemo, useEffect } from "react";
 import { ADMIN_MODULE_PATH_MAP } from "@/components/security/permissionModules";
+import { useUserProfile } from "./useUserProfile";
 
 interface ProfilePermission {
   object_name: string;
@@ -16,6 +17,7 @@ interface ProfilePermission {
 
 export function useProfilePermissions() {
   const queryClient = useQueryClient();
+  const { isAdmin } = useUserProfile();
 
   // Get current user's security profile
   const { data: userProfile } = useQuery({
@@ -88,8 +90,12 @@ export function useProfilePermissions() {
   );
 
   const hasModuleAccess = useCallback(
-    (moduleName: string) => hasPermission(moduleName, "read"),
-    [hasPermission]
+    (moduleName: string) => {
+      // Admin users automatically have access to all modules
+      if (isAdmin && moduleName === "module_admin_panel") return true;
+      return hasPermission(moduleName, "read");
+    },
+    [hasPermission, isAdmin]
   );
 
   const hasFieldPermission = useCallback(

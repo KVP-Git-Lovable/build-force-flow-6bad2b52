@@ -17,6 +17,7 @@ import {
   Database,
 } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const allAdminModules = [
   {
@@ -90,16 +91,18 @@ export default function AdminControls() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const { hasModuleAccess, hasFieldPermission } = useProfilePermissions();
+  const { isAdmin } = useUserProfile();
 
   const visibleModules = useMemo(() => {
-    // If user has full admin panel access, show all
-    const hasFullAdmin = hasModuleAccess("module_admin_panel");
+    // Admin users (isAdmin = true) automatically get full access to all admin modules
+    // Non-admins require explicit permission checks
+    const hasFullAdmin = isAdmin || hasModuleAccess("module_admin_panel");
     return allAdminModules.filter((m) => {
       if (m.module) return hasFullAdmin || hasModuleAccess(m.module);
       if (!m.permission) return hasFullAdmin;
       return hasFullAdmin || hasFieldPermission(m.permission, "read");
     });
-  }, [hasModuleAccess, hasFieldPermission]);
+  }, [hasModuleAccess, hasFieldPermission, isAdmin]);
 
   const filteredModules = visibleModules.filter(
     (m) =>
