@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { forwardRef, useMemo, useState } from "react";
 import {
   startOfWeek,
   endOfWeek,
@@ -74,7 +74,10 @@ function StatCard({ icon: Icon, label, value, accent }: StatCardProps) {
   );
 }
 
-export default function WorkforceOverviewSection() {
+function WorkforceOverviewSectionInner(
+  _props: Record<string, never>,
+  ref: React.ForwardedRef<HTMLDivElement>,
+) {
   const { hasWidgetPermission, isLoading: permsLoading } = useProfilePermissions();
   const { isAdmin } = useUserProfile();
   const canView = isAdmin || hasWidgetPermission("widget_admin_attendance_overview");

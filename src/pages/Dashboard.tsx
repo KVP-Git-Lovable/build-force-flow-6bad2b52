@@ -7,7 +7,6 @@ import {
   LogIn,
   ListTodo,
   CalendarOff,
-  Receipt,
   CheckSquare,
   Activity,
   TrendingUp,
@@ -72,7 +71,6 @@ export default function Dashboard() {
     isSummaryLoading,
     myActivities,
     pendingLeaves,
-    pendingExpenses,
     todayActivities,
   } = useDashboard(userId);
 
