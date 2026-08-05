@@ -13,6 +13,7 @@ import { useNativeStartup } from "@/hooks/useNativeStartup";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useDeviceStatusReporter } from "@/hooks/useDeviceStatusReporter";
 import { useGPSTracker } from "@/hooks/useGPSTracker";
+import { useAutoAssignRoles } from "@/hooks/useAutoAssignRoles";
 
 // Keys of caches scoped to the signed-in user. Must be cleared on user change.
 const USER_SCOPED_CACHE_KEYS = [
@@ -35,6 +36,7 @@ export function AppLayout() {
   const queryClient = useQueryClient();
   const lastUserIdRef = useRef<string | null>(null);
   useNativeStartup();
+  useAutoAssignRoles(); // Auto-assign roles on app load
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null | undefined>(undefined);
