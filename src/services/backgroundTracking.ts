@@ -82,14 +82,18 @@ export async function captureLocation(): Promise<LocationData | null> {
   try {
     // Get current user
     const {
-      data: { user, session },
+      data: { user },
     } = await supabase.auth.getUser();
     if (!user) return null;
 
     // Store auth for service worker if we have session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (session) {
       await storeAuthForServiceWorker(session.access_token);
     }
+
 
     // Get current position with high accuracy
     const position = await new Promise<GeolocationPosition>((resolve, reject) => {
