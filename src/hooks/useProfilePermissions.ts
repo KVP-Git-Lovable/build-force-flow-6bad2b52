@@ -91,11 +91,13 @@ export function useProfilePermissions() {
 
   const hasModuleAccess = useCallback(
     (moduleName: string) => {
-      // Admin users automatically have access to all modules
-      if (isAdmin) return true;
+      // No profile = legacy full access; otherwise check permissions
+      if (hasNoProfile) return true;
+      // For admins with a profile, check if they have the permission
+      // (they should have permissions for all SBEE modules in their profile)
       return hasPermission(moduleName, "read");
     },
-    [hasPermission, isAdmin]
+    [hasPermission, hasNoProfile]
   );
 
   const hasFieldPermission = useCallback(
