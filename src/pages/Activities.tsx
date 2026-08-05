@@ -215,7 +215,7 @@ const defaultForm = {
 };
 
 export default function Activities() {
-  const { activities, loading, users, projects, sites, fetchActivities, fetchDropdowns, createActivity, updateActivity, deleteActivity, fetchAttendanceForDate, checkInForDate, fetchGPSTrackingForDate } = useActivities();
+  const { activities, loading, users, projects, sites, fetchActivities, fetchDropdowns, createActivity, updateActivity, deleteActivity, fetchAttendanceForDate, fetchGPSTrackingForDate } = useActivities();
   const { isAdmin, role } = useUserProfile();
   const navigate = useNavigate();
   const isManagerOrAdmin = isAdmin || role === "sales_manager";
@@ -231,8 +231,6 @@ export default function Activities() {
   const [form, setForm] = useState(defaultForm);
   const [customersList, setCustomersList] = useState<Array<{ id: string; name: string }>>([]);
   const [opportunitiesList, setOpportunitiesList] = useState<Array<{ id: string; name: string; customer_id: string }>>([]);
-  const [formAttendance, setFormAttendance] = useState<{ check_in_time: string | null; check_out_time: string | null } | null>(null);
-  const [checkingIn, setCheckingIn] = useState(false);
   const [receivePoId, setReceivePoId] = useState<string>("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [saving, setSaving] = useState(false);
@@ -647,20 +645,6 @@ export default function Activities() {
     fetchAttendanceForDate(currentUserId, dateStr).then(setFormAttendance).catch(() => {});
   };
 
-  const handleCheckIn = async () => {
-    setCheckingIn(true);
-    try {
-      const targetDate = editActivityObj?.activity_date || dateStr;
-      const result = await checkInForDate(currentUserId, targetDate);
-      setFormAttendance(result);
-      toast.success("Checked in successfully");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to check in");
-    } finally {
-      setCheckingIn(false);
-    }
-  };
-
   const handleAddNewSite = async () => {
     const trimmed = newSiteName.trim();
     if (!trimmed) return;
@@ -1053,9 +1037,6 @@ export default function Activities() {
           createActivity={createActivity}
           updateActivity={updateActivity}
           editActivity={editActivityObj}
-          attendance={formAttendance}
-          onDayCheckIn={handleCheckIn}
-          dayCheckingIn={checkingIn}
           onDelete={handleDelete}
           onCreated={() => fetchActivities()}
         />
@@ -1067,31 +1048,6 @@ export default function Activities() {
             <DialogTitle>{editingId ? "Edit Activity" : "Log New Activity"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 mt-2">
-            {/* Check-in for the record's date */}
-            {!editingId && (
-              <div className="rounded-lg border p-3 flex items-center justify-between gap-3">
-                {formAttendance?.check_in_time ? (
-                  <p className="text-xs text-success flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Checked in at {format(parseISO(formAttendance.check_in_time), "h:mm a")}
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" /> Not checked in yet
-                  </p>
-                )}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={formAttendance?.check_in_time ? "outline" : "default"}
-                  disabled={checkingIn || !!formAttendance?.check_in_time}
-                  onClick={handleCheckIn}
-                >
-                  {checkingIn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogIn className="h-3.5 w-3.5" />}
-                  <span className="ml-1.5">{formAttendance?.check_in_time ? "Checked in" : "Check in"}</span>
-                </Button>
-              </div>
-            )}
             {/* Activity Owner - only for managers/admins */}
             {isManagerOrAdmin && !editingId && (
               <div>
