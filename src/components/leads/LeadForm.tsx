@@ -206,49 +206,24 @@ export function LeadForm({
                 <SelectContent>{sources.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Related Event</Label>
-              <Select value={f.related_event_id || "__none"} onValueChange={(v) => setF({ ...f, related_event_id: v === "__none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">None</SelectItem>
-                  {events.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Indicative Budget (₹)</Label>
-              <Input
-                inputMode="decimal"
-                placeholder="Budget shared by the customer"
-                value={f.indicative_budget}
-                onChange={(e) => setF({ ...f, indicative_budget: e.target.value.replace(/[^0-9.]/g, "") })}
-              />
-            </div>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <Label>Requirement Overview</Label>
-              <Button type="button" variant="outline" size="sm" onClick={handleElaborate} disabled={isElaborating}>
-                {isElaborating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-                AI Elaborate
-              </Button>
-            </div>
-            <Textarea
-              rows={5}
-              placeholder="What the customer needs — scope, products/services, quantities, timelines and budget. You can also add background research: company size, recent news, pain points and competition… or leave blank and click AI Elaborate."
-              value={f.researched_information}
-              onChange={(e) => setF({ ...f, researched_information: e.target.value })}
-            />
-          </div>
 
           <div className="rounded-lg border p-3 space-y-3">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
               <Label className="text-sm font-semibold">Opportunity Highlight</Label>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Indicative Budget (₹)</Label>
+                <Input
+                  inputMode="decimal"
+                  placeholder="Budget shared by the customer"
+                  value={f.indicative_budget}
+                  onChange={(e) => setF({ ...f, indicative_budget: e.target.value.replace(/[^0-9.]/g, "") })}
+                />
+              </div>
               <div>
                 <Label className="text-xs">Opportunity Value (₹)</Label>
                 <Input
@@ -279,7 +254,23 @@ export function LeadForm({
                 />
               </div>
             </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <Label className="text-xs">Requirement Overview</Label>
+                <Button type="button" variant="outline" size="sm" onClick={handleElaborate} disabled={isElaborating}>
+                  {isElaborating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+                  AI Elaborate
+                </Button>
+              </div>
+              <Textarea
+                rows={5}
+                placeholder="What the customer needs — scope, products/services, quantities, timelines and budget. You can also add background research: company size, recent news, pain points and competition… or leave blank and click AI Elaborate."
+                value={f.researched_information}
+                onChange={(e) => setF({ ...f, researched_information: e.target.value })}
+              />
+            </div>
           </div>
+
 
           <div>
             <div className="flex items-center justify-between mb-1">

@@ -193,9 +193,34 @@ export default function LeadDetail() {
               <Field icon={Briefcase} label="Designation" value={lead.title} />
               <Field icon={Users} label="Contact Role" value={CONTACT_ROLE_LABELS[((lead as any).contact_role || "unknown") as ContactRole] ?? "Unknown"} />
               <Field icon={Building2} label="Company" value={lead.company} />
-              <Field icon={Mail} label="Email" value={lead.email} />
-              <Field icon={Phone} label="Phone" value={lead.phone} />
-              <Field icon={Globe} label="Website" value={lead.website} />
+              <Field
+                icon={Mail}
+                label="Email"
+                value={lead.email ? (
+                  <a href={`mailto:${lead.email}`} className="text-primary hover:underline break-all">{lead.email}</a>
+                ) : "—"}
+              />
+              <Field
+                icon={Phone}
+                label="Phone"
+                value={lead.phone ? (
+                  <a href={`tel:${String(lead.phone).replace(/[^\d+]/g, "")}`} className="text-primary hover:underline">{lead.phone}</a>
+                ) : "—"}
+              />
+              <Field
+                icon={Globe}
+                label="Website"
+                value={lead.website ? (
+                  <a
+                    href={/^https?:\/\//i.test(lead.website) ? lead.website : `https://${lead.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline break-all"
+                  >
+                    {lead.website}
+                  </a>
+                ) : "—"}
+              />
               <Field icon={Building2} label="Industry" value={industries.find((i) => i.id === lead.industry)?.name ?? lead.industry} />
               <Field
                 icon={Tag}
@@ -204,29 +229,30 @@ export default function LeadDetail() {
               />
               <Field icon={Briefcase} label="Source" value={source?.name} />
               <Field
-                icon={CalendarDays}
-                label="Related Event"
-                value={event ? (
-                  <button className="text-primary hover:underline" onClick={() => nav(`/events/${event.id}`)}>{event.name}</button>
+                icon={MapPin}
+                label="Address"
+                value={lead.address ? (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline whitespace-pre-wrap"
+                  >
+                    {lead.address}
+                  </a>
                 ) : "—"}
               />
-              <Field
-                icon={Tag}
-                label="Indicative Budget"
-                value={(lead as any).indicative_budget != null ? `₹${Number((lead as any).indicative_budget).toLocaleString("en-IN")}` : "—"}
-              />
-              <Field icon={MapPin} label="Address" value={lead.address} />
-              <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
-              <Field icon={CalendarDays} label="Last Modified" value={(lead as any).updated_at ? format(new Date((lead as any).updated_at), "dd MMM yyyy, HH:mm") : "—"} />
             </CardContent>
           </Card>
 
-          {((lead as any).opportunity_value != null ||
-            (lead as any).opportunity_close_date ||
-            (lead as any).opportunity_probability != null) && (
-            <Card>
-              <CardHeader><CardTitle className="text-base">Opportunity Highlight</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Opportunity Highlight</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground">Indicative Budget</div>
+                  <div>{(lead as any).indicative_budget != null ? `₹${Number((lead as any).indicative_budget).toLocaleString("en-IN")}` : "—"}</div>
+                </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Opportunity Value</div>
                   <div>{(lead as any).opportunity_value != null ? `₹${Number((lead as any).opportunity_value).toLocaleString("en-IN")}` : "—"}</div>
@@ -239,18 +265,22 @@ export default function LeadDetail() {
                   <div className="text-xs text-muted-foreground">Probability of Win</div>
                   <div>{(lead as any).opportunity_probability != null ? `${(lead as any).opportunity_probability}%` : "—"}</div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Requirement Overview</div>
+                <div className="text-sm whitespace-pre-wrap leading-relaxed">{lead.researched_information || "—"}</div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {lead.researched_information && (
-            <Card>
-              <CardHeader><CardTitle className="text-base">Requirement Overview</CardTitle></CardHeader>
-              <CardContent>
-                <div className="text-sm whitespace-pre-wrap leading-relaxed">{lead.researched_information}</div>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Audit &amp; System Details</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
+              <Field icon={CalendarDays} label="Last Modified" value={(lead as any).updated_at ? format(new Date((lead as any).updated_at), "dd MMM yyyy, HH:mm") : "—"} />
+            </CardContent>
+          </Card>
+
 
           {lead.business_card_url && (
             <Card>
