@@ -106,8 +106,10 @@ export default function Dashboard() {
     { label: "Pending Expenses", value: pendingExpenses.count, icon: Receipt, colorClass: "bg-destructive/5 text-destructive", path: "/expenses", module: "module_expenses" },
   ];
 
-
-  const visibleCards = overviewCards.filter((c) => !c.module || hasModuleAccess(c.module));
+  // Admins always see full dashboard; others see only their permitted modules
+  const visibleCards = isAdmin
+    ? overviewCards
+    : overviewCards.filter((c) => !c.module || hasModuleAccess(c.module));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
