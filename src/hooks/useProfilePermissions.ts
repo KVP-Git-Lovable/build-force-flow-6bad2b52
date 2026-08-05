@@ -92,7 +92,7 @@ export function useProfilePermissions() {
   const hasModuleAccess = useCallback(
     (moduleName: string) => {
       // Admin users automatically have access to all modules
-      if (isAdmin && moduleName === "module_admin_panel") return true;
+      if (isAdmin) return true;
       return hasPermission(moduleName, "read");
     },
     [hasPermission, isAdmin]
