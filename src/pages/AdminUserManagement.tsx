@@ -147,10 +147,10 @@ function useUserSecurityAssignments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_security_profiles")
-        .select("user_id, profile_id, security_profiles(name)");
+        .select("user_id, profile_id, security_profiles(id, name)");
       if (error) throw error;
       console.log("User security assignments:", data);
-      return (data || []) as { user_id: string; profile_id: string; security_profiles: { name: string } | null }[];
+      return (data || []) as { user_id: string; profile_id: string; security_profiles: { id: string; name: string } | null }[];
     },
   });
 }
@@ -229,14 +229,26 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
   // Fetch current security profile assignment
   useEffect(() => {
     const fetchSecurityProfile = async () => {
-      const { data } = await supabase
-        .from("user_security_profiles")
-        .select("profile_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (data?.profile_id) {
-        setRoleId(data.profile_id);
-      } else {
+      try {
+        const { data, error } = await supabase
+          .from("user_security_profiles")
+          .select("profile_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (error && error.code !== "PGRST116") {
+          console.error("Error fetching security profile:", error);
+        }
+
+        if (data?.profile_id) {
+          console.log("Loaded role for user:", { userId: user.id, profileId: data.profile_id });
+          setRoleId(data.profile_id);
+        } else {
+          console.log("No security profile found for user, using fallback:", { userId: user.id, roleId: user.role_id });
+          setRoleId(user.role_id || "");
+        }
+      } catch (err) {
+        console.error("Exception fetching security profile:", err);
         setRoleId(user.role_id || "");
       }
     };
@@ -268,6 +280,7 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
         username: username || null,
         phone: phone || null,
         reporting_manager_id: managerId === "none" ? null : managerId,
+        role_id: roleId || null, // Also save to legacy role_id column as fallback
       }).eq("id", user.id);
       if (userError) throw userError;
 
@@ -278,23 +291,40 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
       }).eq("id", user.id);
       if (profileError) throw profileError;
 
-      // Update security profile assignment using upsert to handle conflicts
+      // Update security profile assignment
       if (roleId) {
         console.log("Saving role:", { userId: user.id, profileId: roleId });
-        const { error: upsertError, data } = await supabase.from("user_security_profiles").upsert(
-          { user_id: user.id, profile_id: roleId },
-          { onConflict: "user_id" }
-        );
-        if (upsertError) {
-          console.error("Role assignment error details:", {
-            error: upsertError,
-            userId: user.id,
-            roleId: roleId,
-            message: upsertError.message,
-          });
-          throw new Error(`Failed to assign role: ${upsertError.message}`);
+        try {
+          // First try to delete existing assignment
+          const { error: deleteError } = await supabase
+            .from("user_security_profiles")
+            .delete()
+            .eq("user_id", user.id);
+
+          if (deleteError && deleteError.code !== "PGRST116") {
+            console.warn("Warning deleting old role:", deleteError);
+          }
+
+          // Then insert the new assignment
+          const { data, error: insertError } = await supabase
+            .from("user_security_profiles")
+            .insert({ user_id: user.id, profile_id: roleId });
+
+          if (insertError) {
+            console.error("Role assignment error details:", {
+              error: insertError,
+              userId: user.id,
+              roleId: roleId,
+              message: insertError.message,
+              code: insertError.code,
+            });
+            throw new Error(`Failed to assign role: ${insertError.message}`);
+          }
+          console.log("Role saved successfully", data);
+        } catch (err) {
+          console.error("Role update exception:", err);
+          throw err;
         }
-        console.log("Role saved successfully", data);
       }
 
 
@@ -727,11 +757,34 @@ export default function AdminUserManagement() {
   const { data: secAssignments = [] } = useUserSecurityAssignments();
 
   const queryClient = useQueryClient();
+
+  // Map security profile names to display names
+  const secProfileNameToDisplay: Record<string, string> = {
+    "System Administrator": "Admin",
+    "Sales Manager": "Sales Manager",
+    "Field Sales Executive": "Field User",
+    "Data Viewer": "Data Viewer",
+  };
+
   // Build user→security profile name map from assignments
   const userRoleMap = new Map<string, string>();
   secAssignments.forEach((a) => {
-    if (a.security_profiles?.name) userRoleMap.set(a.user_id, a.security_profiles.name);
+    if (a.security_profiles?.name) {
+      // Map security profile name to display name
+      const displayName = secProfileNameToDisplay[a.security_profiles.name] || a.security_profiles.name;
+      userRoleMap.set(a.user_id, displayName);
+    }
   });
+
+  // Debug: log the userRoleMap to help troubleshoot role display issues
+  console.log("User role map population:", {
+    totalUsers: appUsers.length,
+    secAssignmentsCount: secAssignments.length,
+    usersInRoleMap: userRoleMap.size,
+    sampleAssignments: secAssignments.slice(0, 3),
+    sampleRoleMap: Array.from(userRoleMap.entries()).slice(0, 3),
+  });
+
   // Fallback: old roleMap from roles table for users not yet assigned a security profile
   const roleMap = new Map(roles.map((r) => [r.id, r.name]));
 
