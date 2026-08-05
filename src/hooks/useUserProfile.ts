@@ -51,8 +51,8 @@ export function useUserProfile(): UserProfileState {
       if (!user) return null;
 
       try {
-        // Fetch profile and role data directly from tables
-        const [profileRes, userRes] = await Promise.all([
+        // Fetch profile and all role-related data
+        const [profileRes, userRes, secProfileRes] = await Promise.all([
           supabase
             .from("profiles")
             .select("id, full_name, username, profile_picture_url, phone_number")
@@ -63,6 +63,11 @@ export function useUserProfile(): UserProfileState {
             .select("role_id, roles(name)")
             .eq("id", user.id)
             .single(),
+          supabase
+            .from("user_security_profiles")
+            .select("security_profiles(name)")
+            .eq("user_id", user.id)
+            .maybeSingle(),
         ]);
 
         const profile: UserProfile = profileRes.data ?? {
@@ -73,15 +78,24 @@ export function useUserProfile(): UserProfileState {
           phone_number: null,
         };
 
-        // Determine role - check users.role_id first
+        // Determine role - check multiple sources
         let role = "user";
         const roleData = userRes.data as { roles?: { name?: string } | null } | null;
-        if (roleData?.roles?.name === "Admin") {
+        const secProfileData = secProfileRes.data as { security_profiles?: { name?: string } | null } | null;
+
+        // Check if user is admin through any method
+        if (roleData?.roles?.name === "Admin" || secProfileData?.security_profiles?.name === "System Administrator") {
           role = "admin";
         }
 
         writeCache(user.id, profile, role);
-        console.log("User profile loaded:", { userId: user.id, role, roleName: roleData?.roles?.name });
+        console.log("User profile loaded:", {
+          userId: user.id,
+          role,
+          roleName: roleData?.roles?.name,
+          secProfileName: secProfileData?.security_profiles?.name,
+          email: user.email,
+        });
         return { profile, role };
       } catch (err) {
         console.error("Error loading user profile:", err);

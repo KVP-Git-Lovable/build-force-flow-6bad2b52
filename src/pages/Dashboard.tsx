@@ -103,13 +103,11 @@ export default function Dashboard() {
     { label: "Total Pipeline", value: money(leadKpis.pipeline), icon: TrendingUp, colorClass: "bg-info/5 text-info", path: "/leads", module: "module_leads" },
     { label: "Closing This Month", value: money(leadKpis.closingValue), icon: CalendarClock, colorClass: "bg-warning/5 text-warning", path: "/leads", module: "module_leads" },
     { label: "Pending Leaves", value: pendingLeaves, icon: CalendarOff, colorClass: "bg-accent/5 text-accent", path: "/attendance", module: "module_attendance" },
-    { label: "Pending Expenses", value: pendingExpenses.count, icon: Receipt, colorClass: "bg-destructive/5 text-destructive", path: "/expenses", module: "module_expenses" },
   ];
 
-  // Admins always see full dashboard; others see only their permitted modules
-  const visibleCards = isAdmin
-    ? overviewCards
-    : overviewCards.filter((c) => !c.module || hasModuleAccess(c.module));
+  // Filter cards by module access for all users (including admins)
+  // Only show cards for enabled modules
+  const visibleCards = overviewCards.filter((c) => !c.module || hasModuleAccess(c.module));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
