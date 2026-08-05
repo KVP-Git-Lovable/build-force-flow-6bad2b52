@@ -74,10 +74,7 @@ function StatCard({ icon: Icon, label, value, accent }: StatCardProps) {
   );
 }
 
-function WorkforceOverviewSectionInner(
-  _props: Record<string, never>,
-  ref: React.ForwardedRef<HTMLDivElement>,
-) {
+function WorkforceOverviewSectionInner() {
   const { hasWidgetPermission, isLoading: permsLoading } = useProfilePermissions();
   const { isAdmin } = useUserProfile();
   const canView = isAdmin || hasWidgetPermission("widget_admin_attendance_overview");
@@ -199,3 +196,12 @@ function WorkforceOverviewSectionInner(
     </Card>
   );
 }
+
+const WorkforceOverviewSection = forwardRef<HTMLDivElement>((_props, ref) => (
+  <div ref={ref}>
+    <WorkforceOverviewSectionInner />
+  </div>
+));
+WorkforceOverviewSection.displayName = "WorkforceOverviewSection";
+
+export default WorkforceOverviewSection;
