@@ -208,8 +208,10 @@ export default function GPSTracking() {
       let points = (pointsRes.data || []) as GPSPoint[];
       console.log("Total raw points:", points.length);
 
-      // Smart filtering: reject points that would require impossible speeds
-      const MAX_SPEED_KMH = 120; // Max realistic speed (field work vehicle)
+      // Smart filtering: reject points that would require impossible speeds or large gaps
+      // For field work: max 50 km/h (local driving in cities)
+      const MAX_SPEED_KMH = 50;
+      const MAX_TIME_GAP_MINUTES = 5; // Gaps > 5 min = different activity/stopped
       const cleanedPoints: GPSPoint[] = [];
 
       for (const curr of points) {
@@ -230,16 +232,25 @@ export default function GPSTracking() {
           Math.sin(dLon / 2) ** 2;
         const distanceKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        // Calculate time difference in hours
+        // Calculate time difference
         const prevTime = new Date(prev.timestamp).getTime();
         const currTime = new Date(curr.timestamp).getTime();
-        const timeDiffHours = (currTime - prevTime) / (1000 * 60 * 60);
+        const timeDiffMs = currTime - prevTime;
+        const timeDiffMinutes = timeDiffMs / (1000 * 60);
+        const timeDiffHours = timeDiffMinutes / 60;
 
-        // Calculate implied speed
+        // Reject if time gap too large (likely different activity)
+        if (timeDiffMinutes > MAX_TIME_GAP_MINUTES) {
+          console.log("Skipped large time gap:", timeDiffMinutes.toFixed(1) + " min");
+          cleanedPoints.push(curr); // Reset starting point
+          continue;
+        }
+
+        // Calculate implied speed (km/h)
         const impliedSpeedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : 0;
 
-        // Accept if: distance < 50m (normal GPS noise) OR implied speed is realistic
-        const isNoise = distanceKm < 0.05;
+        // Accept if: distance < 30m (normal GPS noise) OR implied speed is realistic
+        const isNoise = distanceKm < 0.03;
         const isRealistic = timeDiffHours > 0 && impliedSpeedKmh <= MAX_SPEED_KMH;
 
         if (isNoise || isRealistic) {
@@ -247,7 +258,7 @@ export default function GPSTracking() {
         } else {
           console.log("Rejected impossible speed:", {
             distanceKm: distanceKm.toFixed(3),
-            timeSec: ((currTime - prevTime) / 1000).toFixed(0),
+            timeSec: timeDiffMs / 1000,
             impliedSpeedKmh: impliedSpeedKmh.toFixed(1),
           });
         }
