@@ -93,8 +93,8 @@ export function AppHeader() {
   );
 
   const visibleAdminItems = useMemo(
-    () => adminItems.filter((item) => hasModuleAccess(item.module)),
-    [hasModuleAccess]
+    () => isAdmin ? adminItems : adminItems.filter((item) => hasModuleAccess(item.module)),
+    [hasModuleAccess, isAdmin]
   );
 
   const allLabels = useMemo(() => navigationItems.map((i) => i.label), [navigationItems]);

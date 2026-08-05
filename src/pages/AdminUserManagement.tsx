@@ -281,12 +281,20 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
       // Update security profile assignment using upsert to handle conflicts
       if (roleId) {
         console.log("Saving role:", { userId: user.id, profileId: roleId });
-        const { error: upsertError } = await supabase.from("user_security_profiles").upsert(
+        const { error: upsertError, data } = await supabase.from("user_security_profiles").upsert(
           { user_id: user.id, profile_id: roleId },
           { onConflict: "user_id" }
         );
-        if (upsertError) throw upsertError;
-        console.log("Role saved successfully");
+        if (upsertError) {
+          console.error("Role assignment error details:", {
+            error: upsertError,
+            userId: user.id,
+            roleId: roleId,
+            message: upsertError.message,
+          });
+          throw new Error(`Failed to assign role: ${upsertError.message}`);
+        }
+        console.log("Role saved successfully", data);
       }
 
 
