@@ -17,7 +17,7 @@ export function useOutcomes(activeOnly = true) {
       if (activeOnly) q = q.eq("is_active", true);
       const { data, error } = await q;
       if (error) throw error;
-      return data as ActivityOutcome[];
+      return data as unknown as ActivityOutcome[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

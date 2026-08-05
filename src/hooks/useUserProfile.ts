@@ -19,7 +19,17 @@ interface UserProfileState {
   initials: string;
 }
 
-const PROFILE_CACHE_KEY = "user_profile_cache_v1";
+const PROFILE_CACHE_KEY = "user_profile_cache_v2";
+
+const ADMIN_PROFILE_NAMES = ["administrator", "system administrator"];
+
+function isAdminProfileName(name?: string | null): boolean {
+  return !!name && ADMIN_PROFILE_NAMES.includes(name.trim().toLowerCase());
+}
+
+function isAdminRoleName(name?: string | null): boolean {
+  return !!name && ["admin", "administrator"].includes(name.trim().toLowerCase());
+}
 
 function readCache(userId: string | undefined): { profile: UserProfile; role: string } | undefined {
   if (!userId) return undefined;
@@ -84,18 +94,22 @@ export function useUserProfile(): UserProfileState {
         const secProfileData = secProfileRes.data as { security_profiles?: { name?: string } | null } | null;
 
         // Check if user is admin through any method
-        if (roleData?.roles?.name === "Admin" || secProfileData?.security_profiles?.name === "System Administrator") {
+        if (
+          isAdminRoleName(roleData?.roles?.name) ||
+          isAdminProfileName(secProfileData?.security_profiles?.name)
+        ) {
           role = "admin";
         }
 
         writeCache(user.id, profile, role);
-        console.log("User profile loaded:", {
-          userId: user.id,
-          role,
-          roleName: roleData?.roles?.name,
-          secProfileName: secProfileData?.security_profiles?.name,
-          email: user.email,
-        });
+        if (import.meta.env.DEV) {
+          console.log("User profile loaded:", {
+            userId: user.id,
+            role,
+            roleName: roleData?.roles?.name,
+            secProfileName: secProfileData?.security_profiles?.name,
+          });
+        }
         return { profile, role };
       } catch (err) {
         console.error("Error loading user profile:", err);
@@ -121,7 +135,9 @@ export function useUserProfile(): UserProfileState {
           .maybeSingle();
 
         const secProfileName = (secProfile as { security_profiles?: { name?: string } | null } | null)?.security_profiles?.name ?? null;
-        console.log("Security profile lookup:", { userId: user.id, secProfileName });
+        if (import.meta.env.DEV) {
+          console.log("Security profile lookup:", { userId: user.id, secProfileName });
+        }
         return { secProfileName };
       } catch (err) {
         console.error("Error fetching security profile:", err);
@@ -149,17 +165,7 @@ export function useUserProfile(): UserProfileState {
   // Check admin status from multiple sources:
   // 1. Primary role from users.role_id (direct check for "admin")
   // 2. Security profile name as fallback
-  const isAdmin =
-    role === "admin" ||
-    secProfileName === "System Administrator";
-
-  console.log("User profile state:", {
-    userId: user?.id,
-    role,
-    secProfileName,
-    isAdmin,
-    loading: isLoading
-  });
+  const isAdmin = role === "admin" || isAdminProfileName(secProfileName);
 
   return {
     profile,

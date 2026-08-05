@@ -55,29 +55,30 @@ export function useAutoAssignRoles() {
         }
 
         // Map role name to security profile name
-        const roleToProfileMap: Record<string, string> = {
-          'Admin': 'System Administrator',
-          'Sales Manager': 'Sales Manager',
-          'Field User': 'Field Sales Executive',
-          'Data Viewer': 'Data Viewer',
+        const roleToProfileMap: Record<string, string[]> = {
+          'Admin': ['Administrator', 'System Administrator'],
+          'Sales Manager': ['Sales Manager'],
+          'Field User': ['Field Sales Executive'],
+          'Data Viewer': ['Data Viewer'],
         };
 
-        const profileName = roleToProfileMap[roleData.name];
-        if (!profileName) {
+        const profileNames = roleToProfileMap[roleData.name];
+        if (!profileNames?.length) {
           console.log('No security profile mapping for role:', roleData.name);
           assignedRef.current = true;
           return;
         }
 
         // Get security profile ID
-        const { data: profileData } = await supabase
+        const { data: profileMatches } = await supabase
           .from('security_profiles')
-          .select('id')
-          .eq('name', profileName)
-          .maybeSingle();
+          .select('id, name')
+          .in('name', profileNames)
+          .limit(1);
 
+        const profileData = profileMatches?.[0];
         if (!profileData?.id) {
-          console.log('Security profile not found:', profileName);
+          console.log('Security profile not found:', profileNames);
           assignedRef.current = true;
           return;
         }
@@ -96,7 +97,7 @@ export function useAutoAssignRoles() {
           console.log('Successfully assigned security profile:', {
             userId: user.id,
             roleName: roleData.name,
-            profileName: profileName,
+            profileName: profileData.name,
           });
         }
       } catch (err) {

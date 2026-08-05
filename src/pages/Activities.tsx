@@ -396,6 +396,8 @@ export default function Activities() {
   // Timeline state
   const [attendance, setAttendance] = useState<{ check_in_time: string | null; check_out_time: string | null } | null>(null);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  // Attendance snapshot for the activity form's selected date/user
+  const [formAttendance, setFormAttendance] = useState<{ check_in_time: string | null; check_out_time: string | null } | null>(null);
 
   // GPS state
   const [gpsData, setGpsData] = useState<{ points: any[]; stops: any[] }>({ points: [], stops: [] });
