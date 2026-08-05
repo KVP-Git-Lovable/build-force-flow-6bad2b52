@@ -209,19 +209,29 @@ export default function GPSTracking() {
       console.log("Total raw points:", points.length);
 
       // Multi-layer filtering for accurate GPS tracking
+      // CRITICAL: Only accept high-accuracy GPS (satellite), not cell tower data
       const MAX_SPEED_KMH = 35; // Conservative: ~city speeds
       const MAX_TIME_GAP_MINUTES = 5; // Gaps > 5 min = separate activity
-      const MIN_ACCURACY_METERS = 50; // Reject poor accuracy (>50m error)
+      const MAX_ACCURACY_METERS = 30; // Only accept GPS with < 30m accuracy (satellite-based)
       const cleanedPoints: GPSPoint[] = [];
 
-      // First pass: reject low-accuracy points (tower-based, not satellite)
+      // First pass: ONLY accept high-accuracy GPS points (satellite, not cell tower)
+      // Cell tower triangulation is 100-500m accuracy and creates phantom distances
       const accuratePoints = points.filter((p) => {
-        if (!p.accuracy || p.accuracy <= MIN_ACCURACY_METERS) {
-          return true; // Keep good accuracy or unknown
+        if (!p.accuracy) {
+          // Unknown accuracy - reject to be safe
+          console.log("Rejected unknown accuracy point");
+          return false;
         }
-        console.log("Rejected low accuracy:", p.accuracy.toFixed(0) + "m");
-        return false;
+        if (p.accuracy > MAX_ACCURACY_METERS) {
+          // Low accuracy = cell tower data, not real GPS
+          console.log("Rejected cell tower data (accuracy:", p.accuracy.toFixed(0) + "m)");
+          return false;
+        }
+        return true; // Good GPS accuracy
       });
+
+      console.log("Filtered accuracy:", points.length, "→", accuratePoints.length, "points");
 
       for (const curr of accuratePoints) {
         if (cleanedPoints.length === 0) {
