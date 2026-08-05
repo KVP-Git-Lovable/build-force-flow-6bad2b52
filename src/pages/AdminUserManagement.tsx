@@ -786,7 +786,7 @@ export default function AdminUserManagement() {
     sampleRoleMap: Array.from(userRoleMap.entries()).slice(0, 3),
   });
 
-  // Helper function to get role display name for a user
+  // Helper function to get role display name for a user (must be before use in nested components)
   const getRoleDisplayName = (user: AppUser): string => {
     // 1. Check security profile assignment
     const secProfileRole = userRoleMap.get(user.id);
