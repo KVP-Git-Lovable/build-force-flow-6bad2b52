@@ -2,18 +2,10 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Handshake, ListChecks, FolderTree, Package, MapPin, Target, Tags, Ruler, Calendar, Flag, Compass, Gauge, Coins, CreditCard, TrendingUp, Briefcase } from "lucide-react";
+import { ListChecks, Flag, Compass, Gauge, Briefcase } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 
 const allMasterModules = [
-  {
-    title: "Vendor Master",
-    description: "Manage vendors, contacts, and supplier information",
-    icon: Handshake,
-    color: "bg-amber-100 text-amber-600",
-    path: "/vendors",
-    module: null as string | null,
-  },
   {
     title: "Activity Type Master",
     description: "Configure activity types and their settings",
@@ -21,62 +13,6 @@ const allMasterModules = [
     color: "bg-green-100 text-green-600",
     path: "/activity-types",
     module: "module_activities" as string | null,
-  },
-  {
-    title: "Category Master",
-    description: "Manage product categories and sub categories",
-    icon: FolderTree,
-    color: "bg-cyan-100 text-cyan-600",
-    path: "/master-data/categories",
-    module: null as string | null,
-  },
-  {
-    title: "Product Master",
-    description: "Manage products linked to categories",
-    icon: Package,
-    color: "bg-violet-100 text-violet-600",
-    path: "/master-data/products",
-    module: null as string | null,
-  },
-  {
-    title: "UOM Master",
-    description: "Manage units of measurement (Nos, Kg, Ton…)",
-    icon: Ruler,
-    color: "bg-teal-100 text-teal-600",
-    path: "/master-data/uom",
-    module: null as string | null,
-  },
-  {
-    title: "Address Book",
-    description: "Manage billing & delivery addresses for purchase orders",
-    icon: MapPin,
-    color: "bg-rose-100 text-rose-600",
-    path: "/master-data/addresses",
-    module: null as string | null,
-  },
-  {
-    title: "Opportunity Stages",
-    description: "Manage sales pipeline stages and colors",
-    icon: Target,
-    color: "bg-fuchsia-100 text-fuchsia-600",
-    path: "/master-data/opportunity-stages",
-    module: "module_opportunities" as string | null,
-  },
-  {
-    title: "Opportunity Types",
-    description: "Manage opportunity types (Upsell, Renewal, New…)",
-    icon: Tags,
-    color: "bg-sky-100 text-sky-600",
-    path: "/master-data/opportunity-types",
-    module: "module_opportunities" as string | null,
-  },
-  {
-    title: "Event Types",
-    description: "Categories for events (Trade Show, Webinar…)",
-    icon: Calendar,
-    color: "bg-purple-100 text-purple-600",
-    path: "/master-data/event-types",
-    module: "module_events" as string | null,
   },
   {
     title: "Lead Statuses",
@@ -109,30 +45,6 @@ const allMasterModules = [
     color: "bg-indigo-100 text-indigo-600",
     path: "/master-data/lead-scoring",
     module: "module_leads" as string | null,
-  },
-  {
-    title: "Currency Master",
-    description: "Currencies used in opportunities & quotes (INR, USD, EUR…)",
-    icon: Coins,
-    color: "bg-yellow-100 text-yellow-600",
-    path: "/master-data/currencies",
-    module: "module_opportunities" as string | null,
-  },
-  {
-    title: "Payment Terms",
-    description: "Payment terms for opportunities (Net 30, 50% Advance…)",
-    icon: CreditCard,
-    color: "bg-orange-100 text-orange-600",
-    path: "/master-data/payment-terms",
-    module: "module_opportunities" as string | null,
-  },
-  {
-    title: "Opportunity Scoring Rules",
-    description: "BANT & health thresholds for opportunities",
-    icon: TrendingUp,
-    color: "bg-pink-100 text-pink-600",
-    path: "/master-data/opportunity-scoring",
-    module: "module_opportunities" as string | null,
   },
 ];
 
