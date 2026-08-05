@@ -50,52 +50,56 @@ export function useUserProfile(): UserProfileState {
     queryFn: async () => {
       if (!user) return null;
 
-      const [rpcRes, profileRes] = await Promise.all([
-        supabase.rpc("ensure_current_user", {
-          _email: user.email ?? "",
-          _full_name: null,
-          _username: null,
-        }),
-        supabase
-          .from("profiles")
-          .select("id, full_name, username, profile_picture_url, phone_number")
-          .eq("id", user.id)
-          .single(),
-      ]);
+      try {
+        // Fetch profile and role data directly from tables
+        const [profileRes, userRes] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, full_name, username, profile_picture_url, phone_number")
+            .eq("id", user.id)
+            .single(),
+          supabase
+            .from("users")
+            .select("role_id, roles(name)")
+            .eq("id", user.id)
+            .single(),
+        ]);
 
-      const rpcData = rpcRes.data;
-      const profile: UserProfile = profileRes.data ?? {
-        id: user.id,
-        full_name: rpcData?.[0]?.full_name ?? null,
-        username: rpcData?.[0]?.username ?? null,
-        profile_picture_url: null,
-        phone_number: null,
-      };
+        const profile: UserProfile = profileRes.data ?? {
+          id: user.id,
+          full_name: null,
+          username: null,
+          profile_picture_url: null,
+          phone_number: null,
+        };
 
-      const role = rpcData?.[0]?.role ?? "user";
-      writeCache(user.id, profile, role);
-      return { profile, role };
+        // Determine role - check users.role_id first
+        let role = "user";
+        const roleData = userRes.data as { roles?: { name?: string } | null } | null;
+        if (roleData?.roles?.name === "Admin") {
+          role = "admin";
+        }
+
+        writeCache(user.id, profile, role);
+        console.log("User profile loaded:", { userId: user.id, role, roleName: roleData?.roles?.name });
+        return { profile, role };
+      } catch (err) {
+        console.error("Error loading user profile:", err);
+        return { profile: { id: user.id, full_name: null, username: null, profile_picture_url: null, phone_number: null }, role: "user" };
+      }
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
     initialData: cached,
   });
 
-  // Secondary query — role display name and admin status (not blocking dashboard render)
+  // Secondary query — check security profile for additional admin detection
   const { data: roleNameData } = useQuery({
     queryKey: ["user-role-name", user?.id],
     queryFn: async () => {
       if (!user) return null;
       try {
-        // First try to get role from users table
-        const { data: userRow } = await supabase
-          .from("users")
-          .select("role_id, roles(name)")
-          .eq("id", user.id)
-          .single();
-        const roleName = (userRow as { roles?: { name?: string } | null } | null)?.roles?.name ?? null;
-
-        // Also check security profile for more accurate admin detection
+        // Check security profile for more accurate admin detection
         const { data: secProfile } = await supabase
           .from("user_security_profiles")
           .select("security_profiles(name)")
@@ -103,12 +107,11 @@ export function useUserProfile(): UserProfileState {
           .maybeSingle();
 
         const secProfileName = (secProfile as { security_profiles?: { name?: string } | null } | null)?.security_profiles?.name ?? null;
-
-        console.log("Role fetch result:", { userId: user.id, roleName, secProfileName });
-        return { roleName, secProfileName };
+        console.log("Security profile lookup:", { userId: user.id, secProfileName });
+        return { secProfileName };
       } catch (err) {
-        console.error("Error fetching role name:", err);
-        return { roleName: null, secProfileName: null };
+        console.error("Error fetching security profile:", err);
+        return { secProfileName: null };
       }
     },
     enabled: !!user,
@@ -117,7 +120,6 @@ export function useUserProfile(): UserProfileState {
 
   const profile = data?.profile ?? null;
   const role = data?.role ?? null;
-  const roleName = roleNameData?.roleName ?? null;
   const secProfileName = roleNameData?.secProfileName ?? null;
 
   const displayName = profile?.full_name || profile?.username || "";
@@ -131,18 +133,15 @@ export function useUserProfile(): UserProfileState {
     : "??";
 
   // Check admin status from multiple sources:
-  // 1. Primary role from RPC (legacy system)
-  // 2. Role name from users.role_id
-  // 3. Security profile name
+  // 1. Primary role from users.role_id (direct check for "admin")
+  // 2. Security profile name as fallback
   const isAdmin =
     role === "admin" ||
-    roleName === "Admin" ||
     secProfileName === "System Administrator";
 
   console.log("User profile state:", {
     userId: user?.id,
     role,
-    roleName,
     secProfileName,
     isAdmin,
     loading: isLoading
@@ -151,7 +150,7 @@ export function useUserProfile(): UserProfileState {
   return {
     profile,
     role,
-    roleName,
+    roleName: null, // Deprecated - using role directly now
     isAdmin,
     loading: isLoading,
     initials,
