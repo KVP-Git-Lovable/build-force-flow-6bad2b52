@@ -206,26 +206,8 @@ export function LeadForm({
                 <SelectContent>{sources.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Related Event</Label>
-              <Select value={f.related_event_id || "__none"} onValueChange={(v) => setF({ ...f, related_event_id: v === "__none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">None</SelectItem>
-                  {events.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Indicative Budget (₹)</Label>
-              <Input
-                inputMode="decimal"
-                placeholder="Budget shared by the customer"
-                value={f.indicative_budget}
-                onChange={(e) => setF({ ...f, indicative_budget: e.target.value.replace(/[^0-9.]/g, "") })}
-              />
-            </div>
           </div>
+
 
           <div>
             <div className="flex items-center justify-between mb-1">
