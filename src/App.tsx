@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Auth from "./pages/Auth";
 
 
@@ -88,6 +89,7 @@ function PageFallback() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <AppErrorBoundary>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -166,6 +168,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+    </AppErrorBoundary>
   </QueryClientProvider>
 );
 
