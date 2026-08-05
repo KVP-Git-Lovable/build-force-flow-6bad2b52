@@ -208,8 +208,8 @@ export default function GPSTracking() {
       let points = (pointsRes.data || []) as GPSPoint[];
       console.log("Total raw points:", points.length);
 
-      // Conservative distance-based filtering: only accept points within 100m of previous point
-      const MAX_JUMP_KM = 0.1;
+      // Smart filtering: reject points that would require impossible speeds
+      const MAX_SPEED_KMH = 120; // Max realistic speed (field work vehicle)
       const cleanedPoints: GPSPoint[] = [];
 
       for (const curr of points) {
@@ -220,7 +220,7 @@ export default function GPSTracking() {
 
         const prev = cleanedPoints[cleanedPoints.length - 1];
 
-        // Calculate distance from last accepted point
+        // Calculate distance using Haversine formula
         const R = 6371;
         const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180;
         const dLon = ((curr.longitude - prev.longitude) * Math.PI) / 180;
@@ -228,17 +228,32 @@ export default function GPSTracking() {
           Math.cos((prev.latitude * Math.PI) / 180) *
           Math.cos((curr.latitude * Math.PI) / 180) *
           Math.sin(dLon / 2) ** 2;
-        const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distanceKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        // Only accept if within 100m (0.1km) - eliminates GPS noise
-        if (distance <= MAX_JUMP_KM) {
+        // Calculate time difference in hours
+        const prevTime = new Date(prev.timestamp).getTime();
+        const currTime = new Date(curr.timestamp).getTime();
+        const timeDiffHours = (currTime - prevTime) / (1000 * 60 * 60);
+
+        // Calculate implied speed
+        const impliedSpeedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : 0;
+
+        // Accept if: distance < 50m (normal GPS noise) OR implied speed is realistic
+        const isNoise = distanceKm < 0.05;
+        const isRealistic = timeDiffHours > 0 && impliedSpeedKmh <= MAX_SPEED_KMH;
+
+        if (isNoise || isRealistic) {
           cleanedPoints.push(curr);
         } else {
-          console.log("Rejected jump >100m:", distance.toFixed(3) + " km");
+          console.log("Rejected impossible speed:", {
+            distanceKm: distanceKm.toFixed(3),
+            timeSec: ((currTime - prevTime) / 1000).toFixed(0),
+            impliedSpeedKmh: impliedSpeedKmh.toFixed(1),
+          });
         }
       }
 
-      console.log("Final points after filtering:", cleanedPoints.length);
+      console.log("Filtered from", points.length, "to", cleanedPoints.length, "points");
       setGpsPoints(cleanedPoints);
       setGpsStops(stopsRes.data || []);
 
