@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Download, Smartphone, Share, MoreVertical, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useBranding } from "@/hooks/useBranding";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -10,6 +11,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function InstallApp() {
+  const { companyName } = useBranding();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -50,7 +52,7 @@ export default function InstallApp() {
       >
         <div className="text-center space-y-3">
           <img src="/pwa-icon-512.png" alt="App Icon" className="w-24 h-24 mx-auto rounded-2xl shadow-elevated" />
-          <h1 className="text-2xl font-bold text-foreground">Install Bharath Builders</h1>
+          <h1 className="text-2xl font-bold text-foreground">Install {companyName || "App"}</h1>
           <p className="text-muted-foreground text-sm">
             Install this app on your device for a faster, native-like experience.
           </p>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Share, Plus, X, Smartphone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useBranding } from "@/hooks/useBranding";
 
 interface Props {
   open: boolean;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function IOSInstallPrompt({ open, onClose }: Props) {
+  const { companyName } = useBranding();
   return (
     <AnimatePresence>
       {open && (
@@ -30,7 +32,7 @@ export default function IOSInstallPrompt({ open, onClose }: Props) {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Smartphone className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-bold">Install Bharath Builders</h3>
+                <h3 className="text-lg font-bold">Install {companyName || "App"}</h3>
               </div>
               <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1">
                 <X className="h-5 w-5" />

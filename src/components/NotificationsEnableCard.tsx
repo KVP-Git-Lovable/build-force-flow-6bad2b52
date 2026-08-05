@@ -11,12 +11,14 @@ import {
 } from "@/utils/webPush";
 import IOSInstallPrompt from "./IOSInstallPrompt";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranding } from "@/hooks/useBranding";
 
 interface Props {
   userId: string;
 }
 
 export default function NotificationsEnableCard({ userId }: Props) {
+  const { companyName } = useBranding();
   const [support, setSupport] = useState<PushSupport>("unsupported");
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -136,7 +138,7 @@ export default function NotificationsEnableCard({ userId }: Props) {
               <p className="font-medium">To enable notifications:</p>
               {support === "ios-standalone" ? (
                 <p className="text-muted-foreground">
-                  iPhone Settings → Notifications → Bharath Builders → Allow Notifications
+                  iPhone Settings → Notifications → {companyName || "App"} → Allow Notifications
                 </p>
               ) : (
                 <p className="text-muted-foreground">

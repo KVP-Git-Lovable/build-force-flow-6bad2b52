@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useBranding } from "@/hooks/useBranding";
 import {
   Shield,
   Clock,
@@ -64,6 +65,7 @@ export default function More() {
   const navigate = useNavigate();
   const { profile, isAdmin, initials } = useUserProfile();
   const { hasModuleAccess } = useProfilePermissions();
+  const { companyName } = useBranding();
   const displayName = profile?.full_name || profile?.username || "";
 
   const navigationItems = useMemo(
@@ -203,7 +205,7 @@ export default function More() {
         </motion.div>
 
         <p className="text-center text-[10px] text-muted-foreground py-2">
-          Bharath Builders v1.0 • Field Force Management
+          {companyName || "App"} v1.0 • Field Force Management
         </p>
       </div>
     </motion.div>
