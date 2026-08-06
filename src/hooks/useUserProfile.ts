@@ -32,14 +32,14 @@ function isAdminRoleName(name?: string | null): boolean {
   return !!name && ["admin", "administrator"].includes(name.trim().toLowerCase());
 }
 
-function readCache(userId: string | undefined): { profile: UserProfile; role: string } | undefined {
+function readCache(userId: string | undefined): { profile: UserProfile; role: string; displayRole: string | null } | undefined {
   if (!userId) return undefined;
   try {
     const raw = localStorage.getItem(PROFILE_CACHE_KEY);
     if (!raw) return undefined;
     const parsed = JSON.parse(raw);
     if (parsed?.userId !== userId) return undefined;
-    return { profile: parsed.profile, role: parsed.role };
+    return { profile: parsed.profile, role: parsed.role, displayRole: parsed.displayRole ?? null };
   } catch {
     return undefined;
   }
@@ -119,7 +119,7 @@ export function useUserProfile(): UserProfileState {
         return { profile, role, displayRole };
       } catch (err) {
         console.error("Error loading user profile:", err);
-        return { profile: { id: user.id, full_name: null, username: null, profile_picture_url: null, phone_number: null }, role: "user" };
+        return { profile: { id: user.id, full_name: null, username: null, profile_picture_url: null, phone_number: null }, role: "user", displayRole: null as string | null };
       }
     },
     enabled: !!user,
