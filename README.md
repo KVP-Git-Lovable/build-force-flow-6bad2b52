@@ -1,8 +1,8 @@
-# SBEE cables
+# Quickapp
 
-Project Name: Bharath Builders
+Project Name: Quickapp
 
-Build a field force management app called "Bharath Builders". The UI, navigation, and layout must closely replicate the style of a mobile-first sales force app with the following design patterns:
+Build a field force management app called "Quickapp". The UI, navigation, and layout must closely replicate the style of a mobile-first sales force app with the following design patterns:
 
 Navigation & Layout (must match exactly):
 
@@ -193,22 +193,3 @@ Recharts for any charts/graphs
 This project was built with [Lovable](https://lovable.dev).
 
 **Live app**: https://build-force-flow.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/eb4a3a70-d305-4716-9d58-00f25660967c).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
