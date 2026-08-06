@@ -502,7 +502,7 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
 }
 
 // ===== User Hierarchy with tree/list toggle =====
-function UserHierarchy({ users, roles, profiles, userRoleMap }: { users: AppUser[]; roles: Role[]; profiles: { id: string; profile_picture_url: string | null }[]; userRoleMap: Map<string, string> }) {
+function UserHierarchy({ users, roles, profiles, userRoleMap, getRoleDisplayName }: { users: AppUser[]; roles: Role[]; profiles: { id: string; profile_picture_url: string | null }[]; userRoleMap: Map<string, string>; getRoleDisplayName: (user: AppUser) => string }) {
   const [viewMode, setViewMode] = useState<"tree" | "list">("list");
   const roleMap = new Map(roles.map((r) => [r.id, r.name]));
   const activeUsers = users.filter(u => u.is_active);
@@ -928,7 +928,7 @@ export default function AdminUserManagement() {
 
         {/* Overview Tab - Hierarchy */}
         <TabsContent value="overview" className="space-y-4">
-          <UserHierarchy users={appUsers} roles={roles} profiles={profiles} userRoleMap={userRoleMap} />
+          <UserHierarchy users={appUsers} roles={roles} profiles={profiles} userRoleMap={userRoleMap} getRoleDisplayName={getRoleDisplayName} />
         </TabsContent>
 
         <TabsContent value="users" className="space-y-4">
