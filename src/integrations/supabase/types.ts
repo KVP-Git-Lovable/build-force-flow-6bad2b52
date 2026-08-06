@@ -5522,6 +5522,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_crm_record: {
+        Args: { _creator: string; _owner: string }
+        Returns: boolean
+      }
+      can_access_customer: { Args: { _customer_id: string }; Returns: boolean }
       can_access_object: {
         Args: { _object_name: string; _permission: string; _user_id: string }
         Returns: boolean
