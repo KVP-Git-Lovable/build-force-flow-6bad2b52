@@ -32,14 +32,14 @@ function isAdminRoleName(name?: string | null): boolean {
   return !!name && ["admin", "administrator"].includes(name.trim().toLowerCase());
 }
 
-function readCache(userId: string | undefined): { profile: UserProfile; role: string } | undefined {
+function readCache(userId: string | undefined): { profile: UserProfile; role: string; displayRole: string | null } | undefined {
   if (!userId) return undefined;
   try {
     const raw = localStorage.getItem(PROFILE_CACHE_KEY);
     if (!raw) return undefined;
     const parsed = JSON.parse(raw);
     if (parsed?.userId !== userId) return undefined;
-    return { profile: parsed.profile, role: parsed.role };
+    return { profile: parsed.profile, role: parsed.role, displayRole: parsed.displayRole ?? null };
   } catch {
     return undefined;
   }
