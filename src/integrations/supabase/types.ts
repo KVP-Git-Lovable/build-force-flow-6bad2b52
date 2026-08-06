@@ -5519,9 +5519,34 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      company_branding: {
+        Row: {
+          company_name: string | null
+          id: string | null
+          logo_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          id?: string | null
+          logo_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          id?: string | null
+          logo_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      can_access_crm_record: {
+        Args: { _creator: string; _owner: string }
+        Returns: boolean
+      }
+      can_access_customer: { Args: { _customer_id: string }; Returns: boolean }
       can_access_object: {
         Args: { _object_name: string; _permission: string; _user_id: string }
         Returns: boolean
