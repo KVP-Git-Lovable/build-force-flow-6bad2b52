@@ -119,7 +119,7 @@ export function useUserProfile(): UserProfileState {
         return { profile, role, displayRole };
       } catch (err) {
         console.error("Error loading user profile:", err);
-        return { profile: { id: user.id, full_name: null, username: null, profile_picture_url: null, phone_number: null }, role: "user" };
+        return { profile: { id: user.id, full_name: null, username: null, profile_picture_url: null, phone_number: null }, role: "user", displayRole: null as string | null };
       }
     },
     enabled: !!user,
