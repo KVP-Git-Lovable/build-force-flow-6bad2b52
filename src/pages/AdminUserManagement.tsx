@@ -57,6 +57,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import CreateUserWizard from "@/components/admin/create-user/CreateUserWizard";
+import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
 
 // Types
 interface Role {
@@ -174,7 +175,7 @@ function UserDetailDialog({ user, employee, roleName }: { user: AppUser; employe
         <div className="space-y-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={profile?.profile_picture_url || undefined} />
+              <SignedAvatarImage src={profile?.profile_picture_url || undefined} />
               <AvatarFallback className="bg-primary text-primary-foreground text-lg">
                 {(user.full_name || user.username || "U").charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -533,7 +534,7 @@ function UserHierarchy({ users, roles, profiles, userRoleMap, getRoleDisplayName
         <div className="flex flex-col items-center w-16 md:w-24">
           <div className={`rounded-full p-[2px] ring-2 ${colors.border.replace('border-t-', 'ring-')}`}>
             <Avatar className="h-8 w-8 md:h-12 md:w-12">
-              <AvatarImage src={profile?.profile_picture_url || undefined} />
+              <SignedAvatarImage src={profile?.profile_picture_url || undefined} />
               <AvatarFallback className={`text-[10px] md:text-sm font-semibold text-white ${colors.badge}`}>
                 {(user.full_name || "U").charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -601,7 +602,7 @@ function UserHierarchy({ users, roles, profiles, userRoleMap, getRoleDisplayName
               <div className="w-[18px]" />
             )}
             <Avatar className="h-7 w-7 shrink-0">
-              <AvatarImage src={profile?.profile_picture_url || undefined} />
+              <SignedAvatarImage src={profile?.profile_picture_url || undefined} />
               <AvatarFallback className={`text-[10px] font-semibold text-white ${colors.badge}`}>
                 {(user.full_name || "U").charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -1024,7 +1025,7 @@ export default function AdminUserManagement() {
                                     className={`h-9 w-9 ${profile?.profile_picture_url ? 'cursor-pointer hover:ring-2 hover:ring-primary transition-all' : ''}`}
                                     onClick={() => profile?.profile_picture_url && setPhotoPreviewUrl(profile.profile_picture_url)}
                                   >
-                                    <AvatarImage src={profile?.profile_picture_url || undefined} />
+                                    <SignedAvatarImage src={profile?.profile_picture_url || undefined} />
                                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                                       {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
                                     </AvatarFallback>
@@ -1108,7 +1109,7 @@ export default function AdminUserManagement() {
                       return (
                         <div key={user.id} className="p-3 flex items-start gap-3">
                           <Avatar className="h-9 w-9 shrink-0 mt-0.5">
-                            <AvatarImage src={profile?.profile_picture_url || undefined} />
+                            <SignedAvatarImage src={profile?.profile_picture_url || undefined} />
                             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                               {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
                             </AvatarFallback>

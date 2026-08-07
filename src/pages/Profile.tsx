@@ -15,6 +15,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import NotificationsEnableCard from "@/components/NotificationsEnableCard";
 import { toast } from "sonner";
 import {
+import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
   Camera,
   Mail,
   Phone,
@@ -225,7 +226,7 @@ export default function Profile() {
               onClick={() => data.profile_picture_url && setPhotoPreviewOpen(true)}
             >
               {data.profile_picture_url ? (
-                <AvatarImage src={data.profile_picture_url} alt="Profile" />
+                <SignedAvatarImage src={data.profile_picture_url} alt="Profile" />
               ) : null}
               <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-xl font-bold">
                 {initials}

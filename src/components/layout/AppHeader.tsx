@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import bbLogo from "@/assets/bb_logo.png";
+import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
 
 const CustomizeNavigationDialog = lazy(() => import("@/components/navigation/CustomizeNavigationDialog"));
 const DraggableNavGrid = lazy(() => import("@/components/navigation/DraggableNavGrid"));

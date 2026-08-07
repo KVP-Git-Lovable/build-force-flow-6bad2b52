@@ -25,6 +25,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useLeads } from "@/hooks/useLeadsEvents";
 import { formatCurrencyCompact } from "@/lib/currency";
 import WorkforceOverviewSection from "@/components/dashboard/WorkforceOverviewSection";
+import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
 
 
 const container = {
@@ -120,7 +121,7 @@ export default function Dashboard() {
             >
               <Avatar className="h-10 w-10 border-2 border-white/30">
                 {profile?.profile_picture_url ? (
-                  <AvatarImage src={profile.profile_picture_url} alt="Profile" />
+                  <SignedAvatarImage src={profile.profile_picture_url} alt="Profile" />
                 ) : null}
                 <AvatarFallback className="bg-white/20 text-primary-foreground font-bold text-sm">
                   {profileLoading ? "..." : initials}
