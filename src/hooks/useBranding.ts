@@ -55,9 +55,31 @@ export function useBranding() {
     refetchOnWindowFocus: true,
   });
 
+  const rawLogo = data?.logo_url ?? null;
+  const [logoUrl, setLogoUrl] = useState<string | null>(rawLogo);
+
+  // Logos stored in the private employee-photos bucket need a signed URL.
+  useEffect(() => {
+    let active = true;
+    if (!rawLogo) {
+      setLogoUrl(null);
+      return;
+    }
+    if (!rawLogo.includes("/employee-photos/")) {
+      setLogoUrl(rawLogo);
+      return;
+    }
+    resolveSignedUrl("employee-photos", rawLogo).then((u) => {
+      if (active) setLogoUrl(u || null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [rawLogo]);
+
   return {
     companyName: data?.company_name ?? null,
-    logoUrl: data?.logo_url ?? null,
+    logoUrl,
     loading: isLoading && !cached,
   };
 }
