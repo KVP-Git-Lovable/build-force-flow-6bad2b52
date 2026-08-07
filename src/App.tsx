@@ -8,7 +8,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
+import { useNativeStartup } from "@/hooks/useNativeStartup";
 import Auth from "./pages/Auth";
+
 
 
 // Lazy-load all route pages for faster initial load
@@ -88,8 +90,15 @@ function PageFallback() {
   );
 }
 
-const App = () => (
+const App = () => {
+  // Request native hardware permissions at launch, before any tracking hook
+  // mounts. Keeping this at the root avoids racing the background-geolocation
+  // watcher, which Android cannot resolve concurrently.
+  useNativeStartup();
+
+  return (
   <QueryClientProvider client={queryClient}>
+
     <AppErrorBoundary>
     <TooltipProvider>
       <Toaster />

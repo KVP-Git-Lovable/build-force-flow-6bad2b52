@@ -9,7 +9,7 @@ import ChangePasswordModal from "@/components/ChangePasswordModal";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import OfflineActivityBanner from "@/components/OfflineActivityBanner";
 import WebPushPrompt from "@/components/WebPushPrompt";
-import { useNativeStartup } from "@/hooks/useNativeStartup";
+
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useDeviceStatusReporter } from "@/hooks/useDeviceStatusReporter";
 import { useGPSTracker } from "@/hooks/useGPSTracker";
