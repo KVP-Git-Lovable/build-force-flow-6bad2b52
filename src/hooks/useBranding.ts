@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveSignedUrl } from "@/utils/signedStorage";
 
 export interface Branding {
   company_name: string | null;
