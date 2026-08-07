@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import bbLogo from "@/assets/bb_logo.png";
+import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
 
 const CustomizeNavigationDialog = lazy(() => import("@/components/navigation/CustomizeNavigationDialog"));
 const DraggableNavGrid = lazy(() => import("@/components/navigation/DraggableNavGrid"));
@@ -221,7 +222,7 @@ export function AppHeader() {
                   >
                     <Avatar className="h-12 w-12 border-2 border-primary-foreground/30">
                       {profile?.profile_picture_url ? (
-                        <AvatarImage src={profile.profile_picture_url} alt={displayName} />
+                        <SignedAvatarImage src={profile.profile_picture_url} alt={displayName} />
                       ) : null}
                       <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
                         {initials}

@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import NotificationsEnableCard from "@/components/NotificationsEnableCard";
 import { toast } from "sonner";
+import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
 import {
   Camera,
   Mail,
@@ -225,7 +226,7 @@ export default function Profile() {
               onClick={() => data.profile_picture_url && setPhotoPreviewOpen(true)}
             >
               {data.profile_picture_url ? (
-                <AvatarImage src={data.profile_picture_url} alt="Profile" />
+                <SignedAvatarImage src={data.profile_picture_url} alt="Profile" />
               ) : null}
               <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-xl font-bold">
                 {initials}
@@ -475,7 +476,7 @@ export default function Profile() {
       <Dialog open={photoPreviewOpen} onOpenChange={setPhotoPreviewOpen}>
         <DialogContent className="max-w-md p-2 bg-black/90 border-none">
           {data.profile_picture_url && (
-            <img
+            <SignedImage
               src={data.profile_picture_url}
               alt="Profile Preview"
               className="w-full h-auto rounded-lg object-contain max-h-[80vh]"

@@ -28,6 +28,7 @@ import { useNavigate } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
+import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
 
 const adminItems = [
   { icon: Shield, label: "Admin Controls", href: "/admin-controls", color: "from-emerald-500 to-emerald-600", module: "module_admin_panel" },
@@ -92,7 +93,7 @@ export default function More() {
         >
           <Avatar className="h-12 w-12 border-2 border-white/30">
             {profile?.profile_picture_url ? (
-              <AvatarImage src={profile.profile_picture_url} alt={displayName} />
+              <SignedAvatarImage src={profile.profile_picture_url} alt={displayName} />
             ) : null}
             <AvatarFallback className="bg-white/20 text-primary-foreground font-bold">
               {initials}

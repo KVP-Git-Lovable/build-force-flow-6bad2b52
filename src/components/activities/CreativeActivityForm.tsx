@@ -1,3 +1,4 @@
+import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -988,7 +989,7 @@ export default function CreativeActivityForm({
               <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
                 <div className="flex items-start gap-3 min-w-0">
                   {currentProfile?.profile_picture_url ? (
-                    <img
+                    <SignedImage
                       src={currentProfile.profile_picture_url}
                       alt={currentProfile.full_name || currentProfile.username || "Me"}
                       className="h-10 w-10 rounded-full object-cover shrink-0 border border-border"

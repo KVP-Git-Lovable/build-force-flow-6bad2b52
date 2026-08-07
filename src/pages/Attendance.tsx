@@ -1,3 +1,4 @@
+import { resolveEmployeePhotoUrl } from "@/utils/signedStorage";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, subMonths } from "date-fns";
@@ -248,7 +249,8 @@ export default function Attendance() {
 
       if (profilePictureUrl) {
         setProcessingStep("face");
-        const matchResult = await compareImages(profilePictureUrl, photoUrl);
+        const signedBaseline = await resolveEmployeePhotoUrl(profilePictureUrl);
+        const matchResult = await compareImages(signedBaseline || profilePictureUrl, photoUrl);
         faceVerificationStatus = matchResult.status;
         faceMatchConfidence = matchResult.confidence;
 

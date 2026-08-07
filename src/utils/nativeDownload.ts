@@ -33,22 +33,20 @@ async function uploadToStorageAndOpen(blob: Blob, filename: string): Promise<boo
       return false;
     }
 
-    // Get the public URL
-    const { data: urlData } = supabase.storage
+    // Get a short-lived signed URL (bucket is private)
+    const { data: urlData, error: signError } = await supabase.storage
       .from('temp-downloads')
-      .getPublicUrl(storagePath, {
+      .createSignedUrl(storagePath, 300, {
         download: filename, // Forces Content-Disposition: attachment
       });
 
-    if (!urlData?.publicUrl) {
-      console.error('Failed to get public URL');
+    if (signError || !urlData?.signedUrl) {
+      console.error('Failed to create signed URL', signError);
       return false;
     }
 
-    console.log('Opening download URL:', urlData.publicUrl);
-
     // Open the HTTPS URL in system browser — triggers real download on Android
-    await Browser.open({ url: urlData.publicUrl });
+    await Browser.open({ url: urlData.signedUrl });
 
     toast.success(`Downloaded: ${filename}`);
 
