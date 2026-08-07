@@ -35,7 +35,9 @@ export function AppLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const lastUserIdRef = useRef<string | null>(null);
-  useNativeStartup();
+  // Native permissions are requested at the app root (see App.tsx) so they
+  // never race the background-geolocation watcher started below.
+
   useAutoAssignRoles(); // Auto-assign roles on app load
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);

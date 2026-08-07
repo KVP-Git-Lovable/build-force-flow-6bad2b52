@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 // Bump this token on every APK release to force the WebView to bypass
 // any cached HTML/JS from a prior install.
-const RELEASE_TOKEN = '20260424-2';
+const RELEASE_TOKEN = '20260807-1';
 
 // Where the APK gets its web content.
 //
