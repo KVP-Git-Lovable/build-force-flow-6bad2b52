@@ -1208,7 +1208,7 @@ export default function AdminUserManagement() {
             <DialogDescription>Full size profile photo preview</DialogDescription>
           </DialogHeader>
           {photoPreviewUrl && (
-            <img
+            <SignedImage
               src={photoPreviewUrl}
               alt="Profile photo"
               className="w-full h-auto rounded-lg object-contain max-h-[70vh]"
