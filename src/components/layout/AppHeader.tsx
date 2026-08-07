@@ -221,7 +221,7 @@ export function AppHeader() {
                   >
                     <Avatar className="h-12 w-12 border-2 border-primary-foreground/30">
                       {profile?.profile_picture_url ? (
-                        <AvatarImage src={profile.profile_picture_url} alt={displayName} />
+                        <SignedAvatarImage src={profile.profile_picture_url} alt={displayName} />
                       ) : null}
                       <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
                         {initials}
