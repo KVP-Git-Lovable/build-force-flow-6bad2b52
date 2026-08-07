@@ -90,6 +90,21 @@ export function useGPSTracker(userId: string | null | undefined) {
 
     async function startNativeBackground() {
       try {
+        // Only register the watcher once the OS has actually granted location.
+        // Requesting here too would race the startup permission request and
+        // Android would abandon one of the callbacks, leaving location denied.
+        try {
+          const { Geolocation } = await import("@capacitor/geolocation");
+          const perm = await Geolocation.checkPermissions();
+          if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
+            console.warn("[GPSTracker] Location not granted yet — skipping background watcher");
+            return false;
+          }
+        } catch (e) {
+          console.warn("[GPSTracker] Could not check location permission:", e);
+          return false;
+        }
+
         const { registerPlugin } = await import("@capacitor/core");
         const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
         if (!BackgroundGeolocation?.addWatcher) return false;
@@ -98,7 +113,8 @@ export function useGPSTracker(userId: string | null | undefined) {
           {
             backgroundMessage: "Tracking your workday location. Tap to open JOVO.",
             backgroundTitle: "JOVO — Day Tracking active",
-            requestPermissions: true,
+            requestPermissions: false,
+
             stale: false,
             distanceFilter: 25, // OS-level filter; we further throttle in insertPoint
           },

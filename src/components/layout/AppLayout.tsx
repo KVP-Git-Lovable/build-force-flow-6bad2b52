@@ -9,7 +9,7 @@ import ChangePasswordModal from "@/components/ChangePasswordModal";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import OfflineActivityBanner from "@/components/OfflineActivityBanner";
 import WebPushPrompt from "@/components/WebPushPrompt";
-import { useNativeStartup } from "@/hooks/useNativeStartup";
+
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useDeviceStatusReporter } from "@/hooks/useDeviceStatusReporter";
 import { useGPSTracker } from "@/hooks/useGPSTracker";
@@ -35,7 +35,9 @@ export function AppLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const lastUserIdRef = useRef<string | null>(null);
-  useNativeStartup();
+  // Native permissions are requested at the app root (see App.tsx) so they
+  // never race the background-geolocation watcher started below.
+
   useAutoAssignRoles(); // Auto-assign roles on app load
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
