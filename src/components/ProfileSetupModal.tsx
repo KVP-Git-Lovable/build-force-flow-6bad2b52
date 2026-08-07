@@ -1,3 +1,4 @@
+import { SignedImage } from "@/components/ui/signed-image";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,7 @@ export default function ProfileSetupModal({ userId, profilePictureUrl, onComplet
 
           <div className="flex flex-col items-center gap-4 py-4">
             {previewUrl ? (
-              <img src={previewUrl} alt="Profile" className="w-32 h-32 rounded-full object-cover border-2 border-primary" />
+              <SignedImage src={previewUrl} alt="Profile" className="w-32 h-32 rounded-full object-cover border-2 border-primary" />
             ) : (
               <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center">
                 <UserCircle className="h-16 w-16 text-muted-foreground" />

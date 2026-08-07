@@ -78,11 +78,11 @@ export default function CompanyProfile() {
       const ext = file.name.split(".").pop();
       const path = `company-logo/logo.${ext}`;
       const { error: uploadError } = await supabase.storage
-        .from("employee-photos")
+        .from("branding")
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from("employee-photos").getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from("branding").getPublicUrl(path);
       const logoUrl = urlData.publicUrl + "?t=" + Date.now();
       updateField("logo_url", logoUrl);
       toast.success("Logo uploaded! Click Save to apply.");
