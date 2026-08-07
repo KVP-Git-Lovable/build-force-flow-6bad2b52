@@ -14,8 +14,8 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import NotificationsEnableCard from "@/components/NotificationsEnableCard";
 import { toast } from "sonner";
-import {
 import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
+import {
   Camera,
   Mail,
   Phone,
