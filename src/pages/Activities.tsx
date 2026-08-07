@@ -1,3 +1,4 @@
+import { SignedAudio } from "@/components/ui/signed-image";
 import { useState, useEffect, useMemo, useRef, Suspense, lazy, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -1919,9 +1920,7 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
               {audioUrls.length > 0 && (
                 <div className="pt-1">
                   {audioUrls.map((url: string, idx: number) => (
-                    <audio key={idx} controls className="h-8 w-full max-w-[240px]" preload="metadata">
-                      <source src={url} type={url.endsWith('.m4a') ? 'audio/mp4' : url.endsWith('.ogg') ? 'audio/ogg' : 'audio/webm'} />
-                    </audio>
+                    <SignedAudio key={idx} src={url} className="h-8 w-full max-w-[240px]" />
                   ))}
                 </div>
               )}

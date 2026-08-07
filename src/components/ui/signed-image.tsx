@@ -47,3 +47,20 @@ export function SignedImage({ src, bucket = "employee-photos", ...props }: Signe
   if (!signed) return null;
   return <img {...props} src={signed} />;
 }
+
+interface SignedAudioProps extends React.AudioHTMLAttributes<HTMLAudioElement> {
+  src?: string | null;
+  bucket?: string;
+}
+
+/** <audio> variant for private-bucket recordings. */
+export function SignedAudio({ src, bucket = "activity-audio", ...props }: SignedAudioProps) {
+  const signed = useSignedStorageUrl(bucket, src);
+  if (!signed) return null;
+  const type = signed.includes(".m4a") ? "audio/mp4" : signed.includes(".ogg") ? "audio/ogg" : "audio/webm";
+  return (
+    <audio {...props} controls preload="metadata">
+      <source src={signed} type={type} />
+    </audio>
+  );
+}
