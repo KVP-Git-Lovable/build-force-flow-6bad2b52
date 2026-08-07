@@ -1,3 +1,4 @@
+import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
