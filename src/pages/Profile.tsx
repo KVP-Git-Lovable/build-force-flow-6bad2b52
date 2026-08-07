@@ -476,7 +476,7 @@ export default function Profile() {
       <Dialog open={photoPreviewOpen} onOpenChange={setPhotoPreviewOpen}>
         <DialogContent className="max-w-md p-2 bg-black/90 border-none">
           {data.profile_picture_url && (
-            <img
+            <SignedImage
               src={data.profile_picture_url}
               alt="Profile Preview"
               className="w-full h-auto rounded-lg object-contain max-h-[80vh]"
