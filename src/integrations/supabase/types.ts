@@ -5568,6 +5568,30 @@ export type Database = {
           username: string
         }[]
       }
+      get_company_profile_full: {
+        Args: never
+        Returns: {
+          address: string | null
+          bank_account: string | null
+          bank_ifsc: string | null
+          bank_name: string | null
+          company_name: string
+          created_at: string
+          email: string | null
+          gst_number: string | null
+          id: string
+          logo_url: string | null
+          pan_number: string | null
+          phone: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "company_profile"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_dashboard_summary: { Args: never; Returns: Json }
       get_monthly_expense_summary: {
         Args: { _user_id: string; _year_month: string }
