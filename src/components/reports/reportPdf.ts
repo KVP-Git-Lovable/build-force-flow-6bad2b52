@@ -38,8 +38,8 @@ let cachedCompany: CompanyInfo | null | undefined;
 async function getCompany(): Promise<CompanyInfo | null> {
   if (cachedCompany !== undefined) return cachedCompany;
   try {
-    const { data } = await supabase
-      .from("company_profile")
+    const { data } = await (supabase as any)
+      .from("company_branding")
       .select("company_name, logo_url, address");
     const rows = (data ?? []) as CompanyInfo[];
     // Prefer the profile row that actually has a logo uploaded.
