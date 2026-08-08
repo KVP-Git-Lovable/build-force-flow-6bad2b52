@@ -277,13 +277,20 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
   const handleSave = async () => {
     setLoading(true);
     try {
-      const { error: userError } = await supabase.from("users").update({
+      // Only update role_id if it's a valid value (non-empty string matching a role)
+      const updatePayload: any = {
         full_name: fullName || null,
         username: username || null,
         phone: phone || null,
         reporting_manager_id: managerId === "none" ? null : managerId,
-        role_id: roleId || null, // Also save to legacy role_id column as fallback
-      }).eq("id", user.id);
+      };
+
+      // Only include role_id if it's a valid role ID
+      if (roleId && roleId.trim()) {
+        updatePayload.role_id = roleId;
+      }
+
+      const { error: userError } = await supabase.from("users").update(updatePayload).eq("id", user.id);
       if (userError) throw userError;
 
       const { error: profileError } = await supabase.from("profiles").update({
