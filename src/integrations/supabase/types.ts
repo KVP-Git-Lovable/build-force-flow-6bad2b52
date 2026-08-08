@@ -5519,7 +5519,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      company_branding: {
+        Row: {
+          address: string | null
+          company_name: string | null
+          id: string | null
+          logo_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_name?: string | null
+          id?: string | null
+          logo_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_name?: string | null
+          id?: string | null
+          logo_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_access_crm_record: {
