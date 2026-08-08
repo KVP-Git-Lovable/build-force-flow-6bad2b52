@@ -21,9 +21,9 @@ export default function CompanyProfile() {
   const companyQuery = useQuery({
     queryKey: ["company-profile"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("company_profile").select("*").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      const { data, error } = await (supabase as any).rpc("get_company_profile_full");
       if (error) throw error;
-      return data;
+      return (Array.isArray(data) ? data[0] : data) ?? null;
     },
   });
 

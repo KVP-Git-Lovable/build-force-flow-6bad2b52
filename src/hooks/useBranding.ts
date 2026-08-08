@@ -38,8 +38,8 @@ export function useBranding() {
   const { data, isLoading } = useQuery({
     queryKey: ["company-profile-public"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("company_profile")
+      const { data } = await (supabase as any)
+        .from("company_branding")
         .select("company_name, logo_url")
         .order("updated_at", { ascending: false })
         .limit(1)
