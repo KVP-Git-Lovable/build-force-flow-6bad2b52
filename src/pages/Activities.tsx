@@ -559,15 +559,19 @@ export default function Activities() {
   }, [activities, createActivity]);
 
   const filteredActivities = useMemo(() => {
-    if (!searchQuery) return dayActivities;
-    const q = searchQuery.toLowerCase();
-    return dayActivities.filter(
-      (a) =>
-        a.activity_name.toLowerCase().includes(q) ||
-        a.activity_type.toLowerCase().includes(q) ||
-        (a.user_full_name || "").toLowerCase().includes(q)
-    );
-  }, [dayActivities, searchQuery]);
+    const q = searchQuery.trim().toLowerCase();
+    return dayActivities.filter((a) => {
+      if (q) {
+        const hay = [a.activity_name, a.activity_type, a.user_full_name, (a as any).lead_name, (a as any).lead_company]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (typeFilter !== "all" && (a.activity_type || "") !== typeFilter) return false;
+      if (outcomeFilter !== "all" && ((a as any).outcome || "") !== outcomeFilter) return false;
+      if (riskFilter !== "all" && (((a as any).risk as string) || "green") !== riskFilter) return false;
+      return true;
+    });
+  }, [dayActivities, searchQuery, typeFilter, outcomeFilter, riskFilter]);
 
   // Sort by start_time for timeline
   const timelineSorted = useMemo(() => {
