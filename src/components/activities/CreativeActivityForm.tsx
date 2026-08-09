@@ -1341,6 +1341,7 @@ export default function CreativeActivityForm({
                   </div>
                 )}
               </div>
+              )}
 
 
               {/* Activity type chips */}
