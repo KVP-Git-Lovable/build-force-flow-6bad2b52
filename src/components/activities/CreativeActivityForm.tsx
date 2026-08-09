@@ -624,6 +624,32 @@ export default function CreativeActivityForm({
         payload.status = "planned";
         payload.status_history = [{ status: "planned", at: new Date().toISOString() } as ActivityStatusEntry];
         await createActivity(payload, undefined, true);
+      }
+
+      // Auto-create the next follow-up task
+      if (followUpTarget) {
+        try {
+          await createActivity({
+            activity_name: `Follow up: ${activityType || "Activity"}`,
+            activity_type: activityType || "General Activity",
+            activity_date: followUpTarget,
+            description: null,
+            site_id: projectId || null,
+            lead_id: leadId || null,
+            outcome: "Not started",
+            photo_urls: [],
+            status: "planned",
+            status_history: [{ status: "planned", at: new Date().toISOString() } as ActivityStatusEntry],
+            ...(canAssign ? { assigned_user_ids: assignedIds } : {}),
+          } as any, undefined, true);
+          toast.success(`Follow-up scheduled for ${format(parseISO(followUpTarget), "MMM d, yyyy")}`);
+        } catch {
+          toast.error("Could not create the follow-up task");
+        }
+      }
+
+      if (!isEdit) {
+
 
         // Create the GRN record + items + advance PO status
         if (isGrnType && grnPoId && grnRowsToInsert.length > 0) {
