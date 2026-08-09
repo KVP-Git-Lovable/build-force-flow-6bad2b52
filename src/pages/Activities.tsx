@@ -967,6 +967,39 @@ export default function Activities() {
             <Plus className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">New</span>
           </Button>
         </div>
+
+        {/* Activity type / Outcome / Risk filters */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs shrink-0"><SelectValue placeholder="Type" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {activityTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
+            <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs shrink-0"><SelectValue placeholder="Outcome" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All outcomes</SelectItem>
+              {ACTIVITY_OUTCOMES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={riskFilter} onValueChange={setRiskFilter}>
+            <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs shrink-0"><SelectValue placeholder="Risk" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All risk</SelectItem>
+              <SelectItem value="green">On Track</SelectItem>
+              <SelectItem value="orange">Attention</SelectItem>
+              <SelectItem value="red">Critical</SelectItem>
+            </SelectContent>
+          </Select>
+          {(typeFilter !== "all" || outcomeFilter !== "all" || riskFilter !== "all") && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0"
+              onClick={() => { setTypeFilter("all"); setOutcomeFilter("all"); setRiskFilter("all"); }}>
+              Clear
+            </Button>
+          )}
+        </div>
       </motion.div>
 
       {/* Activity Report Generator - hidden from UI */}
