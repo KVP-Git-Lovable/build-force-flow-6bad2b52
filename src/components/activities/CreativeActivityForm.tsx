@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { uploadActivityPhoto, uploadActivityFile, resolveActivityPhotoUrl } from "@/utils/activityPhotos";
+import { uploadActivityFile, resolveActivityPhotoUrl } from "@/utils/activityPhotos";
 import type { Activity as ActivityType, ActivityPhotoEntry, ActivityStatusEntry } from "@/hooks/useActivities";
 import { format, parseISO } from "date-fns";
 
