@@ -74,6 +74,10 @@ export interface Activity {
   milestone_status?: string;
   lead_id?: string | null;
   lead_name?: string;
+  lead_company?: string;
+  outcome?: string | null;
+  risk?: string | null;
+  next_follow_up_date?: string | null;
 
   // Offline queue metadata
   _pending?: boolean;
