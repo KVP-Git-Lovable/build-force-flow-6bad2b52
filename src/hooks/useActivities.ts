@@ -26,6 +26,9 @@ export interface ActivityPhotoEntry {
   lat?: number | null;
   lng?: number | null;
   address?: string | null;
+  name?: string | null;
+  type?: string | null;
+  by?: string | null;
 }
 
 
