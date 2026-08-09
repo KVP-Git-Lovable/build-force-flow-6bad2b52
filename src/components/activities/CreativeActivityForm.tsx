@@ -40,7 +40,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { uploadActivityFile, resolveActivityPhotoUrl } from "@/utils/activityPhotos";
 import type { Activity as ActivityType, ActivityPhotoEntry, ActivityStatusEntry } from "@/hooks/useActivities";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addDays } from "date-fns";
+
+const FOLLOW_UP_OPTIONS = ["Later today", "Tomorrow", "Day-after", "Next week", "Custom date"] as const;
 
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { supabase } from "@/integrations/supabase/client";
