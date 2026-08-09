@@ -371,6 +371,18 @@ export default function CreativeActivityForm({
     return q ? users.filter((u) => u.full_name.toLowerCase().includes(q)) : users;
   }, [users, assignSearch]);
 
+  const resolveFollowUpDate = (): string | null => {
+    const base = activityDate ? parseISO(activityDate) : new Date();
+    switch (followUp) {
+      case "Later today": return format(base, "yyyy-MM-dd");
+      case "Tomorrow": return format(addDays(base, 1), "yyyy-MM-dd");
+      case "Day-after": return format(addDays(base, 2), "yyyy-MM-dd");
+      case "Next week": return format(addDays(base, 7), "yyyy-MM-dd");
+      case "Custom date": return followUpDate || null;
+      default: return null;
+    }
+  };
+
   const uploaderName = currentProfile?.full_name || currentProfile?.username || null;
 
   const uploadPhotoBlob = useCallback(async (blob: Blob) => {
