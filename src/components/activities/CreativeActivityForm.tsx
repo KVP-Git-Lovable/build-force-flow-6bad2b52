@@ -1328,6 +1328,49 @@ export default function CreativeActivityForm({
                 </div>
               </div>
 
+              {/* Next follow up */}
+              <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-950/30 dark:to-indigo-950/30 border border-sky-100 dark:border-sky-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
+                <p className="text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300 mb-2">
+                  Next Follow Up
+                </p>
+                <div className="flex flex-wrap gap-2 min-w-0">
+                  {FOLLOW_UP_OPTIONS.map((f) => {
+                    const active = f === followUp;
+                    return (
+                      <button
+                        key={f}
+                        onClick={() => {
+                          setFollowUp(active ? "" : f);
+                          if (active || f !== "Custom date") setFollowUpDate("");
+                        }}
+                        className={cn(
+                          "max-w-full px-3.5 min-h-8 h-auto py-1.5 rounded-full text-xs font-medium border transition-all whitespace-normal break-words [overflow-wrap:anywhere]",
+                          active
+                            ? "bg-gradient-to-r from-sky-600 to-indigo-600 text-white border-transparent shadow-md"
+                            : "bg-white dark:bg-background border-sky-200 dark:border-sky-900/60 text-foreground hover:border-sky-400 hover:text-sky-600"
+                        )}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
+                {followUp === "Custom date" && (
+                  <Input
+                    type="date"
+                    value={followUpDate}
+                    onChange={(e) => setFollowUpDate(e.target.value)}
+                    className="mt-2 h-9 max-w-[200px]"
+                  />
+                )}
+                {followUp && (
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    {resolveFollowUpDate()
+                      ? `A follow-up task will be created for ${format(parseISO(resolveFollowUpDate()!), "MMM d, yyyy")} with outcome "Not started".`
+                      : "Pick a custom date to schedule the follow-up."}
+                  </p>
+                )}
+              </div>
 
 
               {/* GRN — Goods Receipt (only when Activity Type contains "GRN") */}
