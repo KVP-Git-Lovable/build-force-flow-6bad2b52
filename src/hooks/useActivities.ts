@@ -161,15 +161,18 @@ export function useActivities() {
 
       // Fetch lead names
       const leadIds = [...new Set((data || []).filter((a: any) => a.lead_id).map((a: any) => a.lead_id))];
-      let leadMap: Record<string, string> = {};
+      let leadMap: Record<string, { name: string; company: string }> = {};
       if (leadIds.length > 0) {
         const { data: leadData } = await supabase.from("leads").select("id, company_name, contact_name").in("id", leadIds);
-        (leadData || []).forEach((l: any) => { leadMap[l.id] = l.company_name || l.contact_name || "Lead"; });
+        (leadData || []).forEach((l: any) => {
+          leadMap[l.id] = { name: l.contact_name || l.company_name || "Lead", company: l.company_name || "" };
+        });
       }
 
       const mapped: Activity[] = (data || []).map((a: any) => {
         const siteInfo = a.site_id ? siteMap[a.site_id] : null;
         const msInfo = a.milestone_id ? milestoneMap[a.milestone_id] : null;
+        const leadInfo = a.lead_id ? leadMap[a.lead_id] : null;
         return {
           ...a,
           attachment_urls: a.attachment_urls || [],
@@ -181,7 +184,8 @@ export function useActivities() {
           site_flag: siteInfo?.flag || "",
           milestone_name: msInfo?.name || "",
           milestone_status: msInfo?.status || "",
-          lead_name: a.lead_id ? leadMap[a.lead_id] || "" : "",
+          lead_name: leadInfo?.name || "",
+          lead_company: leadInfo?.company || "",
         };
       });
 
