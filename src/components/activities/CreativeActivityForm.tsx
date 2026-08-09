@@ -1026,33 +1026,59 @@ export default function CreativeActivityForm({
 
                 {/* Icon action rail — under description */}
                 <div className="mt-2 pt-2 border-t border-border/60 flex flex-wrap items-center gap-1 min-w-0 max-w-full">
-                  {/* Photo */}
-                  {cfgTakePhoto && (
-                    <>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handlePhotoPick}
-                        className="hidden"
-                      />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+                  {/* Attachment — camera, gallery or document */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handlePhotoPick}
+                    className="hidden"
+                  />
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleGalleryPick}
+                    className="hidden"
+                  />
+                  <input
+                    ref={docInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleGalleryPick}
+                    className="hidden"
+                  />
+                  <DropdownMenu>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
                           <button
                             type="button"
-                            onClick={handleOpenCamera}
                             disabled={uploadingPhoto}
                             className="h-9 w-9 rounded-full flex items-center justify-center text-fuchsia-600 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/30 disabled:opacity-60 transition"
-                            aria-label="Add photo"
+                            aria-label="Add attachment"
                           >
-                            {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                            {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                           </button>
-                        </TooltipTrigger>
-                        <TooltipContent>Add photo{photos.length > 0 ? ` (${photos.length})` : ""}</TooltipContent>
-                      </Tooltip>
-                    </>
-                  )}
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>Add attachment{photos.length > 0 ? ` (${photos.length})` : ""}</TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={handleOpenCamera} className="gap-2">
+                        <Camera className="h-3.5 w-3.5" /> Take photo
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => galleryInputRef.current?.click()} className="gap-2">
+                        <ImagePlus className="h-3.5 w-3.5" /> Photo gallery
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => docInputRef.current?.click()} className="gap-2">
+                        <Paperclip className="h-3.5 w-3.5" /> Document
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
 
                   {/* Activity Check in / Check out */}
                   {showCheckIn && (
