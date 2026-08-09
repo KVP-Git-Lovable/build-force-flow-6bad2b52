@@ -1889,7 +1889,11 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
 
   const leadId = (a as any).lead_id as string | undefined;
   const leadName = (a as any).lead_name as string | undefined;
-  const linkedName = leadName || a.site_name || a.project_name || "";
+  const leadCompany = (a as any).lead_company as string | undefined;
+  const leadTitle = leadName ? `${leadName}${leadCompany && leadCompany !== leadName ? ` · ${leadCompany}` : ""}` : "";
+  const headline = leadTitle || a.site_name || a.project_name || a.activity_name || a.activity_type || "Activity";
+  const linkedName = leadTitle || a.site_name || a.project_name || "";
+  const followUpDate = (a as any).next_follow_up_date as string | undefined;
   const audioUrls = (a.attachment_urls || []).filter((url: string) => url.includes("activity-audio"));
 
   const Row = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
@@ -1907,7 +1911,20 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
 
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="font-semibold text-sm truncate">{a.activity_name || a.activity_type || "Activity"}</span>
+              {leadId ? (
+                <button
+                  type="button"
+                  className="font-semibold text-sm truncate text-primary underline underline-offset-2 text-left"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/leads/${leadId}`); }}
+                >
+                  {headline}
+                </button>
+              ) : (
+                <span className="font-semibold text-sm truncate">{headline}</span>
+              )}
+              {!leadId && a.site_flag && (
+                <span className={`inline-block h-2 w-2 rounded-full ${a.site_flag === "red" ? "bg-red-500" : a.site_flag === "orange" ? "bg-orange-500" : "bg-emerald-500"}`} />
+              )}
               {(a as any)._pending && (
                 <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 text-amber-700 border-amber-300">
                   {(a as any)._sync_error ? "Sync failed" : "Pending sync"}
@@ -1916,7 +1933,10 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
             </div>
 
             <div className="ml-6 space-y-0.5">
-              <Row icon={<Activity className="h-3 w-3" />}>{a.activity_type || "—"}</Row>
+              <Row icon={<Activity className="h-3 w-3" />}>
+                {a.activity_name || a.activity_type || "—"}
+                {(a as any).outcome && <span className="ml-1.5 text-[10px]">• {(a as any).outcome}</span>}
+              </Row>
 
               <Row icon={<Clock className="h-3 w-3" />}>
                 {a.start_time
@@ -1924,24 +1944,11 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
                   : "—"}
               </Row>
 
-              <Row icon={<span>📍</span>}>
-                {linkedName ? (
-                  leadId ? (
-                    <button
-                      type="button"
-                      className="text-primary underline underline-offset-2 text-left"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/leads/${leadId}`); }}
-                    >
-                      {linkedName}
-                    </button>
-                  ) : (
-                    <span className="text-primary">{linkedName}</span>
-                  )
-                ) : "—"}
-                {!leadId && a.site_flag && (
-                  <span className={`ml-1.5 inline-block h-2 w-2 rounded-full ${a.site_flag === "red" ? "bg-red-500" : a.site_flag === "orange" ? "bg-orange-500" : "bg-emerald-500"}`} />
-                )}
-              </Row>
+              {followUpDate && (
+                <Row icon={<CalendarDays className="h-3 w-3" />}>
+                  Next follow-up: {format(parseISO(String(followUpDate).slice(0, 10)), "MMM d, yyyy")}
+                </Row>
+              )}
 
               <Row icon={<MapPin className="h-3 w-3" />}>{a.location_address || "—"}</Row>
 
