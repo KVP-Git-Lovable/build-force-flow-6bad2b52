@@ -829,6 +829,22 @@ export default function CreativeActivityForm({
                   {editActivity.user_full_name && (
                     <p className="text-[11px] text-muted-foreground break-words [overflow-wrap:anywhere]">By {editActivity.user_full_name}</p>
                   )}
+                  {(selectedLead || (editActivity as any).lead_name) && (
+                    <div className="flex items-center gap-1.5 text-[11px] min-w-0">
+                      <Badge variant="outline" className="text-[10px] shrink-0">Lead</Badge>
+                      <span className="font-medium min-w-0 break-words [overflow-wrap:anywhere]">
+                        {selectedLead
+                          ? `${selectedLead.name}${selectedLead.company ? ` · ${selectedLead.company}` : ""}`
+                          : (editActivity as any).lead_name}
+                      </span>
+                    </div>
+                  )}
+                  {(editActivity as any).next_follow_up_date && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-sky-700 dark:text-sky-300 min-w-0">
+                      <Calendar className="h-3 w-3 shrink-0" />
+                      <span>Next follow-up: {format(parseISO(String((editActivity as any).next_follow_up_date).slice(0, 10)), "MMM d, yyyy")}</span>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] min-w-0">
                     {editActivity.activity_date && (
                       <div className="flex items-center gap-1.5 text-muted-foreground min-w-0"><Calendar className="h-3 w-3 shrink-0" /><span className="min-w-0 break-words">{format(parseISO(editActivity.activity_date), "MMM d, yyyy")}</span></div>
