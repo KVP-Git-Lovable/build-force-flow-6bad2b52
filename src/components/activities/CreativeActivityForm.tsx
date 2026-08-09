@@ -175,6 +175,8 @@ export default function CreativeActivityForm({
   const [photos, setPhotos] = useState<ActivityPhotoEntry[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<Record<string, string>>({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [followUp, setFollowUp] = useState<string>("");
+  const [followUpDate, setFollowUpDate] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string>("planned");
   const [changingStatus, setChangingStatus] = useState(false);
