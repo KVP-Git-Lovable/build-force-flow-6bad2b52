@@ -63,6 +63,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentPosition } from "@/utils/nativePermissions";
 import { useActivities, type Activity as ActivityType, type ActivityPhotoEntry, type ActivityStatusEntry } from "@/hooks/useActivities";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import ActivityReportGenerator from "@/components/activities/ActivityReportGenerator";
