@@ -619,6 +619,8 @@ export default function CreativeActivityForm({
         site_id: projectId || null,
         lead_id: leadId || null,
         outcome: outcome || null,
+        risk: risk || null,
+        next_follow_up_date: followUpTarget,
         photo_urls: photos,
         grn_po_id: isGrnType ? (grnPoId || null) : null,
         ...(canAssign ? { assigned_user_ids: assignedIds } : {}),
