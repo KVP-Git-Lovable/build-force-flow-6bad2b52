@@ -368,19 +368,21 @@ export default function CreativeActivityForm({
     return q ? users.filter((u) => u.full_name.toLowerCase().includes(q)) : users;
   }, [users, assignSearch]);
 
+  const uploaderName = currentProfile?.full_name || currentProfile?.username || null;
+
   const uploadPhotoBlob = useCallback(async (blob: Blob) => {
     setUploadingPhoto(true);
     try {
-      const entry = await uploadActivityPhoto(blob);
+      const entry = await uploadActivityFile(blob, uploaderName);
       setPhotos((p) => [...p, entry]);
       const url = await resolveActivityPhotoUrl(entry.url);
       setPhotoPreviews((prev) => ({ ...prev, [entry.url]: url }));
     } catch (err: any) {
-      toast.error(err.message || "Failed to upload photo");
+      toast.error(err.message || "Failed to upload attachment");
     } finally {
       setUploadingPhoto(false);
     }
-  }, []);
+  }, [uploaderName]);
 
   const handlePhotoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -396,6 +398,7 @@ export default function CreativeActivityForm({
       await uploadPhotoBlob(f);
     }
   };
+
 
 
   const handleOpenCamera = useCallback(async () => {
