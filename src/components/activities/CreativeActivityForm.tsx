@@ -568,6 +568,7 @@ export default function CreativeActivityForm({
     }
 
     setSaving(true);
+    const followUpTarget = resolveFollowUpDate();
     try {
       // Upload voice recording (audio mode) as attachment
       let audioUrl: string | null = null;
