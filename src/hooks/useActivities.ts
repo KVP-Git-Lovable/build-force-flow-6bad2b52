@@ -311,6 +311,8 @@ export function useActivities() {
       opportunity_id: (activity as any).opportunity_id || null,
       lead_id: (activity as any).lead_id || null,
       outcome: (activity as any).outcome || null,
+      risk: (activity as any).risk || null,
+      next_follow_up_date: (activity as any).next_follow_up_date || null,
       location_lat: activity.location_lat || null,
       location_lng: activity.location_lng || null,
       location_address: activity.location_address || null,
