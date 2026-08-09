@@ -1300,16 +1300,15 @@ export default function CreativeActivityForm({
                 )}
               </div>
 
-              {/* Attachments section — photos & documents with stamp + uploader */}
+              {/* Attachments section — only shown once something is attached */}
+              {photos.length > 0 && (
               <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     Attachments ({photos.length})
                   </p>
                 </div>
-                {photos.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground">Use the attachment icon above to add photos or documents</p>
-                ) : (
+                {(
                   <div className="space-y-2">
                     {photos.map((ph) => (
                       <div key={ph.url} className="flex items-start gap-2 rounded-xl border border-border bg-muted/30 p-2 min-w-0">
