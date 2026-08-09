@@ -257,6 +257,14 @@ export default function CreativeActivityForm({
       setStatus(editActivity.status || "planned");
       setCheckedIn(!!(editActivity as any).check_in_at);
       setGrnPoId((editActivity as any).grn_po_id || "");
+      setRisk((editActivity as any).risk || "green");
+      if ((editActivity as any).next_follow_up_date) {
+        setFollowUp("Custom date");
+        setFollowUpDate(String((editActivity as any).next_follow_up_date).slice(0, 10));
+      } else {
+        setFollowUp("");
+        setFollowUpDate("");
+      }
 
       // resolve photo previews
       (editActivity.photo_urls || []).forEach(async (ph) => {
