@@ -1669,7 +1669,7 @@ export default function CreativeActivityForm({
                   className="rounded-full h-10 px-5 bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-pink-600 text-white hover:brightness-110 shadow-md min-w-0"
                 >
                   {saving ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1.5" />}
-                  {isEdit ? "Save" : "Post"}
+                  Save
                 </Button>
               </div>
             </div>
