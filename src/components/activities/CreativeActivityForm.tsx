@@ -202,6 +202,7 @@ export default function CreativeActivityForm({
   } = useAudioRecorder();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const docInputRef = useRef<HTMLInputElement | null>(null);
   const [showCamera, setShowCamera] = useState(false);
 
   // ---- GRN inline state ----
