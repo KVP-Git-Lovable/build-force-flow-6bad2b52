@@ -160,12 +160,13 @@ export function LeadForm({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between gap-3">
+        <DialogHeader className="pr-8">
+          <DialogTitle className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
             <span>{lead ? "Edit Lead" : "New Lead"}</span>
             {!lead && <BusinessCardScanner onScanned={applyScanned} />}
           </DialogTitle>
         </DialogHeader>
+
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Name *</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>

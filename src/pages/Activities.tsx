@@ -970,7 +970,7 @@ export default function Activities() {
         </div>
 
         {/* Activity type / Outcome / Risk filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 py-1.5">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs shrink-0"><SelectValue placeholder="Type" /></SelectTrigger>
             <SelectContent>
