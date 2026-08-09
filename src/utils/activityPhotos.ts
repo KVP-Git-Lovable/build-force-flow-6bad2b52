@@ -63,6 +63,50 @@ export async function uploadActivityPhoto(blob: Blob): Promise<ActivityPhotoEntr
 }
 
 /**
+ * Upload any attachment (image from camera/gallery, or a document) with
+ * a date/time stamp and the uploader's name.
+ */
+export async function uploadActivityFile(
+  file: File | Blob,
+  uploadedBy?: string | null
+): Promise<ActivityPhotoEntry> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const name = (file as File).name || `capture-${Date.now()}.jpg`;
+  const mime = file.type || "application/octet-stream";
+  const isImage = mime.startsWith("image/");
+
+  let toUpload: Blob = file;
+  if (isImage) {
+    try {
+      toUpload = await compressImage(file, 1280, 0.7);
+    } catch {
+      /* fall back to original */
+    }
+  }
+
+  const ext = isImage ? "jpg" : (name.includes(".") ? name.split(".").pop()!.toLowerCase() : "bin");
+  const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, toUpload, { contentType: isImage ? "image/jpeg" : mime, upsert: false });
+  if (error) throw error;
+
+  const geo = isImage ? await captureGeo() : { lat: null, lng: null, address: null };
+  return {
+    url: path,
+    at: new Date().toISOString(),
+    lat: geo.lat,
+    lng: geo.lng,
+    address: geo.address,
+    name,
+    type: isImage ? "image" : "file",
+    by: uploadedBy || null,
+  };
+}
+
+/**
  * Resolve a stored photo path (or legacy full URL) to a usable signed URL.
  */
 export async function resolveActivityPhotoUrl(pathOrUrl: string): Promise<string> {

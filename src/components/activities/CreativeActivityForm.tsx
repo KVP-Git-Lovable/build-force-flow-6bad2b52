@@ -38,9 +38,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { uploadActivityPhoto, resolveActivityPhotoUrl } from "@/utils/activityPhotos";
+import { uploadActivityFile, resolveActivityPhotoUrl } from "@/utils/activityPhotos";
 import type { Activity as ActivityType, ActivityPhotoEntry, ActivityStatusEntry } from "@/hooks/useActivities";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addDays } from "date-fns";
+
+const FOLLOW_UP_OPTIONS = ["Later today", "Tomorrow", "Day-after", "Next week", "Custom date"] as const;
 
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { supabase } from "@/integrations/supabase/client";
@@ -175,6 +177,8 @@ export default function CreativeActivityForm({
   const [photos, setPhotos] = useState<ActivityPhotoEntry[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<Record<string, string>>({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [followUp, setFollowUp] = useState<string>("");
+  const [followUpDate, setFollowUpDate] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string>("planned");
   const [changingStatus, setChangingStatus] = useState(false);
@@ -200,6 +204,7 @@ export default function CreativeActivityForm({
   } = useAudioRecorder();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const docInputRef = useRef<HTMLInputElement | null>(null);
   const [showCamera, setShowCamera] = useState(false);
 
   // ---- GRN inline state ----
@@ -225,6 +230,8 @@ export default function CreativeActivityForm({
       setRisk("green");
       setPhotos([]);
       setPhotoPreviews({});
+      setFollowUp("");
+      setFollowUpDate("");
       setAssignOpen(false);
       setAssignSearch("");
       clearRecording();
@@ -364,19 +371,33 @@ export default function CreativeActivityForm({
     return q ? users.filter((u) => u.full_name.toLowerCase().includes(q)) : users;
   }, [users, assignSearch]);
 
+  const resolveFollowUpDate = (): string | null => {
+    const base = activityDate ? parseISO(activityDate) : new Date();
+    switch (followUp) {
+      case "Later today": return format(base, "yyyy-MM-dd");
+      case "Tomorrow": return format(addDays(base, 1), "yyyy-MM-dd");
+      case "Day-after": return format(addDays(base, 2), "yyyy-MM-dd");
+      case "Next week": return format(addDays(base, 7), "yyyy-MM-dd");
+      case "Custom date": return followUpDate || null;
+      default: return null;
+    }
+  };
+
+  const uploaderName = currentProfile?.full_name || currentProfile?.username || null;
+
   const uploadPhotoBlob = useCallback(async (blob: Blob) => {
     setUploadingPhoto(true);
     try {
-      const entry = await uploadActivityPhoto(blob);
+      const entry = await uploadActivityFile(blob, uploaderName);
       setPhotos((p) => [...p, entry]);
       const url = await resolveActivityPhotoUrl(entry.url);
       setPhotoPreviews((prev) => ({ ...prev, [entry.url]: url }));
     } catch (err: any) {
-      toast.error(err.message || "Failed to upload photo");
+      toast.error(err.message || "Failed to upload attachment");
     } finally {
       setUploadingPhoto(false);
     }
-  }, []);
+  }, [uploaderName]);
 
   const handlePhotoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -392,6 +413,7 @@ export default function CreativeActivityForm({
       await uploadPhotoBlob(f);
     }
   };
+
 
 
   const handleOpenCamera = useCallback(async () => {
@@ -558,6 +580,7 @@ export default function CreativeActivityForm({
     }
 
     setSaving(true);
+    const followUpTarget = resolveFollowUpDate();
     try {
       // Upload voice recording (audio mode) as attachment
       let audioUrl: string | null = null;
@@ -601,6 +624,32 @@ export default function CreativeActivityForm({
         payload.status = "planned";
         payload.status_history = [{ status: "planned", at: new Date().toISOString() } as ActivityStatusEntry];
         await createActivity(payload, undefined, true);
+      }
+
+      // Auto-create the next follow-up task
+      if (followUpTarget) {
+        try {
+          await createActivity({
+            activity_name: `Follow up: ${activityType || "Activity"}`,
+            activity_type: activityType || "General Activity",
+            activity_date: followUpTarget,
+            description: null,
+            site_id: projectId || null,
+            lead_id: leadId || null,
+            outcome: "Not started",
+            photo_urls: [],
+            status: "planned",
+            status_history: [{ status: "planned", at: new Date().toISOString() } as ActivityStatusEntry],
+            ...(canAssign ? { assigned_user_ids: assignedIds } : {}),
+          } as any, undefined, true);
+          toast.success(`Follow-up scheduled for ${format(parseISO(followUpTarget), "MMM d, yyyy")}`);
+        } catch {
+          toast.error("Could not create the follow-up task");
+        }
+      }
+
+      if (!isEdit) {
+
 
         // Create the GRN record + items + advance PO status
         if (isGrnType && grnPoId && grnRowsToInsert.length > 0) {
@@ -1019,33 +1068,59 @@ export default function CreativeActivityForm({
 
                 {/* Icon action rail — under description */}
                 <div className="mt-2 pt-2 border-t border-border/60 flex flex-wrap items-center gap-1 min-w-0 max-w-full">
-                  {/* Photo */}
-                  {cfgTakePhoto && (
-                    <>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handlePhotoPick}
-                        className="hidden"
-                      />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+                  {/* Attachment — camera, gallery or document */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handlePhotoPick}
+                    className="hidden"
+                  />
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleGalleryPick}
+                    className="hidden"
+                  />
+                  <input
+                    ref={docInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleGalleryPick}
+                    className="hidden"
+                  />
+                  <DropdownMenu>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
                           <button
                             type="button"
-                            onClick={handleOpenCamera}
                             disabled={uploadingPhoto}
                             className="h-9 w-9 rounded-full flex items-center justify-center text-fuchsia-600 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/30 disabled:opacity-60 transition"
-                            aria-label="Add photo"
+                            aria-label="Add attachment"
                           >
-                            {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                            {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                           </button>
-                        </TooltipTrigger>
-                        <TooltipContent>Add photo{photos.length > 0 ? ` (${photos.length})` : ""}</TooltipContent>
-                      </Tooltip>
-                    </>
-                  )}
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>Add attachment{photos.length > 0 ? ` (${photos.length})` : ""}</TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={handleOpenCamera} className="gap-2">
+                        <Camera className="h-3.5 w-3.5" /> Take photo
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => galleryInputRef.current?.click()} className="gap-2">
+                        <ImagePlus className="h-3.5 w-3.5" /> Photo gallery
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => docInputRef.current?.click()} className="gap-2">
+                        <Paperclip className="h-3.5 w-3.5" /> Document
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
 
                   {/* Activity Check in / Check out */}
                   {showCheckIn && (
@@ -1195,63 +1270,40 @@ export default function CreativeActivityForm({
                 )}
               </div>
 
-              {/* Photos section — available in new, edit and saved records */}
+              {/* Attachments section — photos & documents with stamp + uploader */}
               <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Photos ({photos.length})
+                    Attachments ({photos.length})
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                    disabled={uploadingPhoto}
-                    onClick={handleOpenCamera}
-                  >
-                    {uploadingPhoto ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Camera className="h-3.5 w-3.5 mr-1.5" />}
-                    Take Photo
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                    disabled={uploadingPhoto}
-                    onClick={() => galleryInputRef.current?.click()}
-                  >
-                    <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
-                    Upload
-                  </Button>
-                  <input
-                    ref={galleryInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleGalleryPick}
-                    className="hidden"
-                  />
-                </div>
                 {photos.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground mt-2">No photos uploaded</p>
+                  <p className="text-[11px] text-muted-foreground">Use the attachment icon above to add photos or documents</p>
                 ) : (
-                  <div className="grid grid-cols-3 gap-2 mt-3 min-w-0">
+                  <div className="space-y-2">
                     {photos.map((ph) => (
-                      <div key={ph.url} className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
-                        {photoPreviews[ph.url] ? (
-                          <img src={photoPreviews[ph.url]} alt="Activity photo" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
+                      <div key={ph.url} className="flex items-start gap-2 rounded-xl border border-border bg-muted/30 p-2 min-w-0">
+                        <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                          {ph.type === "file" ? (
+                            <Paperclip className="h-4 w-4 text-muted-foreground" />
+                          ) : photoPreviews[ph.url] ? (
+                            <img src={photoPreviews[ph.url]} alt={ph.name || "Attachment"} className="w-full h-full object-cover" />
+                          ) : (
                             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          </div>
-                        )}
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate">{ph.name || "Attachment"}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {ph.at ? format(parseISO(ph.at), "MMM d, yyyy h:mm a") : ""}
+                            {ph.by ? ` • ${ph.by}` : ""}
+                          </p>
+                        </div>
                         <button
                           type="button"
                           onClick={() => setPhotos((p) => p.filter((x) => x.url !== ph.url))}
-                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-80 transition"
-                          aria-label="Remove photo"
+                          className="h-6 w-6 rounded-full bg-muted text-muted-foreground hover:text-destructive flex items-center justify-center shrink-0"
+                          aria-label="Remove attachment"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -1260,6 +1312,7 @@ export default function CreativeActivityForm({
                   </div>
                 )}
               </div>
+
 
               {/* Activity type chips */}
               <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-100 dark:border-amber-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
@@ -1316,6 +1369,49 @@ export default function CreativeActivityForm({
                 </div>
               </div>
 
+              {/* Next follow up */}
+              <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-950/30 dark:to-indigo-950/30 border border-sky-100 dark:border-sky-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
+                <p className="text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300 mb-2">
+                  Next Follow Up
+                </p>
+                <div className="flex flex-wrap gap-2 min-w-0">
+                  {FOLLOW_UP_OPTIONS.map((f) => {
+                    const active = f === followUp;
+                    return (
+                      <button
+                        key={f}
+                        onClick={() => {
+                          setFollowUp(active ? "" : f);
+                          if (active || f !== "Custom date") setFollowUpDate("");
+                        }}
+                        className={cn(
+                          "max-w-full px-3.5 min-h-8 h-auto py-1.5 rounded-full text-xs font-medium border transition-all whitespace-normal break-words [overflow-wrap:anywhere]",
+                          active
+                            ? "bg-gradient-to-r from-sky-600 to-indigo-600 text-white border-transparent shadow-md"
+                            : "bg-white dark:bg-background border-sky-200 dark:border-sky-900/60 text-foreground hover:border-sky-400 hover:text-sky-600"
+                        )}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
+                {followUp === "Custom date" && (
+                  <Input
+                    type="date"
+                    value={followUpDate}
+                    onChange={(e) => setFollowUpDate(e.target.value)}
+                    className="mt-2 h-9 max-w-[200px]"
+                  />
+                )}
+                {followUp && (
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    {resolveFollowUpDate()
+                      ? `A follow-up task will be created for ${format(parseISO(resolveFollowUpDate()!), "MMM d, yyyy")} with outcome "Not started".`
+                      : "Pick a custom date to schedule the follow-up."}
+                  </p>
+                )}
+              </div>
 
 
               {/* GRN — Goods Receipt (only when Activity Type contains "GRN") */}
