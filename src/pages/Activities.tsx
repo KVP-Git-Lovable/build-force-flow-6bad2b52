@@ -224,6 +224,9 @@ export default function Activities() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<"timeline" | "gps" | "activity">("activity");
   const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [outcomeFilter, setOutcomeFilter] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
   const [reportFiltersOpen, setReportFiltersOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
