@@ -227,6 +227,8 @@ export default function CreativeActivityForm({
       setRisk("green");
       setPhotos([]);
       setPhotoPreviews({});
+      setFollowUp("");
+      setFollowUpDate("");
       setAssignOpen(false);
       setAssignSearch("");
       clearRecording();
