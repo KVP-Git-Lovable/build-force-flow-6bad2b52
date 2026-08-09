@@ -63,6 +63,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentPosition } from "@/utils/nativePermissions";
 import { useActivities, type Activity as ActivityType, type ActivityPhotoEntry, type ActivityStatusEntry } from "@/hooks/useActivities";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import ActivityReportGenerator from "@/components/activities/ActivityReportGenerator";
@@ -224,6 +225,9 @@ export default function Activities() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<"timeline" | "gps" | "activity">("activity");
   const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [outcomeFilter, setOutcomeFilter] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
   const [reportFiltersOpen, setReportFiltersOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
@@ -559,15 +563,19 @@ export default function Activities() {
   }, [activities, createActivity]);
 
   const filteredActivities = useMemo(() => {
-    if (!searchQuery) return dayActivities;
-    const q = searchQuery.toLowerCase();
-    return dayActivities.filter(
-      (a) =>
-        a.activity_name.toLowerCase().includes(q) ||
-        a.activity_type.toLowerCase().includes(q) ||
-        (a.user_full_name || "").toLowerCase().includes(q)
-    );
-  }, [dayActivities, searchQuery]);
+    const q = searchQuery.trim().toLowerCase();
+    return dayActivities.filter((a) => {
+      if (q) {
+        const hay = [a.activity_name, a.activity_type, a.user_full_name, (a as any).lead_name, (a as any).lead_company]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (typeFilter !== "all" && (a.activity_type || "") !== typeFilter) return false;
+      if (outcomeFilter !== "all" && ((a as any).outcome || "") !== outcomeFilter) return false;
+      if (riskFilter !== "all" && (((a as any).risk as string) || "green") !== riskFilter) return false;
+      return true;
+    });
+  }, [dayActivities, searchQuery, typeFilter, outcomeFilter, riskFilter]);
 
   // Sort by start_time for timeline
   const timelineSorted = useMemo(() => {
@@ -959,6 +967,39 @@ export default function Activities() {
           <Button className="gradient-hero text-primary-foreground shrink-0 px-3 sm:px-4" onClick={handleOpenCreate}>
             <Plus className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">New</span>
           </Button>
+        </div>
+
+        {/* Activity type / Outcome / Risk filters */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs shrink-0"><SelectValue placeholder="Type" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {activityTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
+            <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs shrink-0"><SelectValue placeholder="Outcome" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All outcomes</SelectItem>
+              {ACTIVITY_OUTCOMES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={riskFilter} onValueChange={setRiskFilter}>
+            <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs shrink-0"><SelectValue placeholder="Risk" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All risk</SelectItem>
+              <SelectItem value="green">On Track</SelectItem>
+              <SelectItem value="orange">Attention</SelectItem>
+              <SelectItem value="red">Critical</SelectItem>
+            </SelectContent>
+          </Select>
+          {(typeFilter !== "all" || outcomeFilter !== "all" || riskFilter !== "all") && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0"
+              onClick={() => { setTypeFilter("all"); setOutcomeFilter("all"); setRiskFilter("all"); }}>
+              Clear
+            </Button>
+          )}
         </div>
       </motion.div>
 
@@ -1848,7 +1889,11 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
 
   const leadId = (a as any).lead_id as string | undefined;
   const leadName = (a as any).lead_name as string | undefined;
-  const linkedName = leadName || a.site_name || a.project_name || "";
+  const leadCompany = (a as any).lead_company as string | undefined;
+  const leadTitle = leadName ? `${leadName}${leadCompany && leadCompany !== leadName ? ` · ${leadCompany}` : ""}` : "";
+  const headline = leadTitle || a.site_name || a.project_name || a.activity_name || a.activity_type || "Activity";
+  const linkedName = leadTitle || a.site_name || a.project_name || "";
+  const followUpDate = (a as any).next_follow_up_date as string | undefined;
   const audioUrls = (a.attachment_urls || []).filter((url: string) => url.includes("activity-audio"));
 
   const Row = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
@@ -1866,7 +1911,20 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
 
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="font-semibold text-sm truncate">{a.activity_name || a.activity_type || "Activity"}</span>
+              {leadId ? (
+                <button
+                  type="button"
+                  className="font-semibold text-sm truncate text-primary underline underline-offset-2 text-left"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/leads/${leadId}`); }}
+                >
+                  {headline}
+                </button>
+              ) : (
+                <span className="font-semibold text-sm truncate">{headline}</span>
+              )}
+              {!leadId && a.site_flag && (
+                <span className={`inline-block h-2 w-2 rounded-full ${a.site_flag === "red" ? "bg-red-500" : a.site_flag === "orange" ? "bg-orange-500" : "bg-emerald-500"}`} />
+              )}
               {(a as any)._pending && (
                 <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 text-amber-700 border-amber-300">
                   {(a as any)._sync_error ? "Sync failed" : "Pending sync"}
@@ -1875,7 +1933,10 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
             </div>
 
             <div className="ml-6 space-y-0.5">
-              <Row icon={<Activity className="h-3 w-3" />}>{a.activity_type || "—"}</Row>
+              <Row icon={<Activity className="h-3 w-3" />}>
+                {a.activity_name || a.activity_type || "—"}
+                {(a as any).outcome && <span className="ml-1.5 text-[10px]">• {(a as any).outcome}</span>}
+              </Row>
 
               <Row icon={<Clock className="h-3 w-3" />}>
                 {a.start_time
@@ -1883,24 +1944,11 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
                   : "—"}
               </Row>
 
-              <Row icon={<span>📍</span>}>
-                {linkedName ? (
-                  leadId ? (
-                    <button
-                      type="button"
-                      className="text-primary underline underline-offset-2 text-left"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/leads/${leadId}`); }}
-                    >
-                      {linkedName}
-                    </button>
-                  ) : (
-                    <span className="text-primary">{linkedName}</span>
-                  )
-                ) : "—"}
-                {!leadId && a.site_flag && (
-                  <span className={`ml-1.5 inline-block h-2 w-2 rounded-full ${a.site_flag === "red" ? "bg-red-500" : a.site_flag === "orange" ? "bg-orange-500" : "bg-emerald-500"}`} />
-                )}
-              </Row>
+              {followUpDate && (
+                <Row icon={<CalendarDays className="h-3 w-3" />}>
+                  Next follow-up: {format(parseISO(String(followUpDate).slice(0, 10)), "MMM d, yyyy")}
+                </Row>
+              )}
 
               <Row icon={<MapPin className="h-3 w-3" />}>{a.location_address || "—"}</Row>
 

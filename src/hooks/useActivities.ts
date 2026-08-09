@@ -74,6 +74,10 @@ export interface Activity {
   milestone_status?: string;
   lead_id?: string | null;
   lead_name?: string;
+  lead_company?: string;
+  outcome?: string | null;
+  risk?: string | null;
+  next_follow_up_date?: string | null;
 
   // Offline queue metadata
   _pending?: boolean;
@@ -157,15 +161,18 @@ export function useActivities() {
 
       // Fetch lead names
       const leadIds = [...new Set((data || []).filter((a: any) => a.lead_id).map((a: any) => a.lead_id))];
-      let leadMap: Record<string, string> = {};
+      let leadMap: Record<string, { name: string; company: string }> = {};
       if (leadIds.length > 0) {
         const { data: leadData } = await supabase.from("leads").select("id, company_name, contact_name").in("id", leadIds);
-        (leadData || []).forEach((l: any) => { leadMap[l.id] = l.company_name || l.contact_name || "Lead"; });
+        (leadData || []).forEach((l: any) => {
+          leadMap[l.id] = { name: l.contact_name || l.company_name || "Lead", company: l.company_name || "" };
+        });
       }
 
       const mapped: Activity[] = (data || []).map((a: any) => {
         const siteInfo = a.site_id ? siteMap[a.site_id] : null;
         const msInfo = a.milestone_id ? milestoneMap[a.milestone_id] : null;
+        const leadInfo = a.lead_id ? leadMap[a.lead_id] : null;
         return {
           ...a,
           attachment_urls: a.attachment_urls || [],
@@ -177,7 +184,8 @@ export function useActivities() {
           site_flag: siteInfo?.flag || "",
           milestone_name: msInfo?.name || "",
           milestone_status: msInfo?.status || "",
-          lead_name: a.lead_id ? leadMap[a.lead_id] || "" : "",
+          lead_name: leadInfo?.name || "",
+          lead_company: leadInfo?.company || "",
         };
       });
 
@@ -303,6 +311,8 @@ export function useActivities() {
       opportunity_id: (activity as any).opportunity_id || null,
       lead_id: (activity as any).lead_id || null,
       outcome: (activity as any).outcome || null,
+      risk: (activity as any).risk || null,
+      next_follow_up_date: (activity as any).next_follow_up_date || null,
       location_lat: activity.location_lat || null,
       location_lng: activity.location_lng || null,
       location_address: activity.location_address || null,
@@ -376,7 +386,7 @@ export function useActivities() {
       'activity_name', 'activity_type', 'activity_date', 'start_time', 'end_time',
       'duration_type', 'total_hours', 'total_days', 'from_date', 'to_date',
       'description', 'remarks', 'status',
-      'project_id', 'site_id', 'milestone_id', 'grn_po_id', 'customer_id', 'opportunity_id', 'lead_id', 'outcome', 'location_address',
+      'project_id', 'site_id', 'milestone_id', 'grn_po_id', 'customer_id', 'opportunity_id', 'lead_id', 'outcome', 'risk', 'next_follow_up_date', 'location_address',
       'status_changed_at', 'status_change_lat', 'status_change_lng',
       'location_lat', 'location_lng', 'attachment_urls',
       'status_history', 'photo_urls',

@@ -37,12 +37,14 @@ export type Database = {
           location_lat: number | null
           location_lng: number | null
           milestone_id: string | null
+          next_follow_up_date: string | null
           opportunity_id: string | null
           outcome: string | null
           photo_urls: Json
           project_id: string | null
           remarks: string | null
           retailer_id: string | null
+          risk: string | null
           site_id: string | null
           start_time: string | null
           status: string
@@ -78,12 +80,14 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           milestone_id?: string | null
+          next_follow_up_date?: string | null
           opportunity_id?: string | null
           outcome?: string | null
           photo_urls?: Json
           project_id?: string | null
           remarks?: string | null
           retailer_id?: string | null
+          risk?: string | null
           site_id?: string | null
           start_time?: string | null
           status?: string
@@ -119,12 +123,14 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           milestone_id?: string | null
+          next_follow_up_date?: string | null
           opportunity_id?: string | null
           outcome?: string | null
           photo_urls?: Json
           project_id?: string | null
           remarks?: string | null
           retailer_id?: string | null
+          risk?: string | null
           site_id?: string | null
           start_time?: string | null
           status?: string

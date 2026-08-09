@@ -257,6 +257,14 @@ export default function CreativeActivityForm({
       setStatus(editActivity.status || "planned");
       setCheckedIn(!!(editActivity as any).check_in_at);
       setGrnPoId((editActivity as any).grn_po_id || "");
+      setRisk((editActivity as any).risk || "green");
+      if ((editActivity as any).next_follow_up_date) {
+        setFollowUp("Custom date");
+        setFollowUpDate(String((editActivity as any).next_follow_up_date).slice(0, 10));
+      } else {
+        setFollowUp("");
+        setFollowUpDate("");
+      }
 
       // resolve photo previews
       (editActivity.photo_urls || []).forEach(async (ph) => {
@@ -611,6 +619,8 @@ export default function CreativeActivityForm({
         site_id: projectId || null,
         lead_id: leadId || null,
         outcome: outcome || null,
+        risk: risk || null,
+        next_follow_up_date: followUpTarget,
         photo_urls: photos,
         grn_po_id: isGrnType ? (grnPoId || null) : null,
         ...(canAssign ? { assigned_user_ids: assignedIds } : {}),
@@ -760,8 +770,12 @@ export default function CreativeActivityForm({
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-base font-semibold leading-tight truncate">{isEdit ? "Edit Post" : "New Post"}</h2>
-                  <p className="text-[11px] text-white/80 truncate">Share what's happening on the ground</p>
+                  <h2 className="text-base font-semibold leading-tight truncate">{isEdit ? "Edit Activity" : "New Activity"}</h2>
+                  <p className="text-[11px] text-white/80 truncate">
+                    {selectedLead
+                      ? `${selectedLead.name}${selectedLead.company ? ` · ${selectedLead.company}` : ""}`
+                      : "Share what's happening on the ground"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -814,6 +828,22 @@ export default function CreativeActivityForm({
                   </div>
                   {editActivity.user_full_name && (
                     <p className="text-[11px] text-muted-foreground break-words [overflow-wrap:anywhere]">By {editActivity.user_full_name}</p>
+                  )}
+                  {(selectedLead || (editActivity as any).lead_name) && (
+                    <div className="flex items-center gap-1.5 text-[11px] min-w-0">
+                      <Badge variant="outline" className="text-[10px] shrink-0">Lead</Badge>
+                      <span className="font-medium min-w-0 break-words [overflow-wrap:anywhere]">
+                        {selectedLead
+                          ? `${selectedLead.name}${selectedLead.company ? ` · ${selectedLead.company}` : ""}`
+                          : (editActivity as any).lead_name}
+                      </span>
+                    </div>
+                  )}
+                  {(editActivity as any).next_follow_up_date && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-sky-700 dark:text-sky-300 min-w-0">
+                      <Calendar className="h-3 w-3 shrink-0" />
+                      <span>Next follow-up: {format(parseISO(String((editActivity as any).next_follow_up_date).slice(0, 10)), "MMM d, yyyy")}</span>
+                    </div>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] min-w-0">
                     {editActivity.activity_date && (
@@ -1270,16 +1300,15 @@ export default function CreativeActivityForm({
                 )}
               </div>
 
-              {/* Attachments section — photos & documents with stamp + uploader */}
+              {/* Attachments section — only shown once something is attached */}
+              {photos.length > 0 && (
               <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     Attachments ({photos.length})
                   </p>
                 </div>
-                {photos.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground">Use the attachment icon above to add photos or documents</p>
-                ) : (
+                {(
                   <div className="space-y-2">
                     {photos.map((ph) => (
                       <div key={ph.url} className="flex items-start gap-2 rounded-xl border border-border bg-muted/30 p-2 min-w-0">
@@ -1312,6 +1341,7 @@ export default function CreativeActivityForm({
                   </div>
                 )}
               </div>
+              )}
 
 
               {/* Activity type chips */}
@@ -1639,7 +1669,7 @@ export default function CreativeActivityForm({
                   className="rounded-full h-10 px-5 bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-pink-600 text-white hover:brightness-110 shadow-md min-w-0"
                 >
                   {saving ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1.5" />}
-                  {isEdit ? "Save" : "Post"}
+                  Save
                 </Button>
               </div>
             </div>
