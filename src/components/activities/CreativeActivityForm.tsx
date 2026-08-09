@@ -770,8 +770,12 @@ export default function CreativeActivityForm({
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-base font-semibold leading-tight truncate">{isEdit ? "Edit Post" : "New Post"}</h2>
-                  <p className="text-[11px] text-white/80 truncate">Share what's happening on the ground</p>
+                  <h2 className="text-base font-semibold leading-tight truncate">{isEdit ? "Edit Activity" : "New Activity"}</h2>
+                  <p className="text-[11px] text-white/80 truncate">
+                    {selectedLead
+                      ? `${selectedLead.name}${selectedLead.company ? ` · ${selectedLead.company}` : ""}`
+                      : "Share what's happening on the ground"}
+                  </p>
                 </div>
               </div>
             </div>
