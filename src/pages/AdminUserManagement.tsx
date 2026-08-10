@@ -762,56 +762,68 @@ export default function AdminUserManagement() {
 
   const handleLoginAsUser = async (user: AppUser) => {
     try {
-      // Verify admin has permission
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) {
+      // Get current user's session token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
         toast.error('Not authenticated');
         return;
       }
 
-      // Log impersonation to audit table
-      const { error: auditError } = await supabase.from('audit_logs').insert({
-        action: 'admin_impersonate_user',
-        actor_user_id: currentUser.id,
-        target_user_id: user.id,
-        details: {
-          admin_email: currentUser.email,
-          target_email: user.email,
-          target_name: user.full_name,
-          timestamp: new Date().toISOString(),
-        },
-      });
+      // Call Edge Function to generate impersonation session
+      const { data: responseData, error: functionError } = await supabase.functions.invoke(
+        'impersonate-user',
+        {
+          body: { target_user_id: user.id },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
 
-      if (auditError) {
-        console.warn('Audit log error:', auditError);
+      if (functionError) {
+        console.error('Function error:', functionError);
+        toast.error(functionError.message || 'Failed to impersonate user');
+        return;
       }
 
-      // Create a temporary impersonation via localStorage
-      // Note: For proper impersonation, you need a backend endpoint that creates a valid session token
-      const impersonationData = {
+      if (!responseData.success) {
+        toast.error(responseData.error || 'Impersonation failed');
+        return;
+      }
+
+      // Set the new session for the target user
+      const { error: setSessionError } = await supabase.auth.setSession({
+        access_token: responseData.session.access_token,
+        refresh_token: responseData.session.refresh_token,
+      });
+
+      if (setSessionError) {
+        console.error('Set session error:', setSessionError);
+        toast.error('Failed to set session');
+        return;
+      }
+
+      // Store impersonation info for reference
+      localStorage.setItem('impersonation_info', JSON.stringify({
         impersonated_user_id: user.id,
         impersonated_user_email: user.email,
         impersonated_user_name: user.full_name,
-        admin_user_id: currentUser.id,
         impersonation_start: new Date().toISOString(),
-      };
+      }));
 
-      localStorage.setItem('impersonation_session', JSON.stringify(impersonationData));
+      console.log(`Successfully impersonating ${user.full_name || user.email}`);
 
-      console.log(`Admin ${currentUser.email} is impersonating ${user.full_name || user.email}`);
+      // Show success message
+      toast.success(`Logged in as ${user.full_name || user.email}`);
 
-      // Show success message with instructions
-      toast.success(`Impersonating ${user.full_name || user.email}\n\nTo properly login, use the password reset link or work with backend to generate a session token.`, {
-        duration: 5000,
-      });
-
-      // Optional: Open a modal with user's credentials (for testing in dev)
-      if (import.meta.env.DEV) {
-        alert(`Impersonating: ${user.full_name || user.email}\nEmail: ${user.email}\n\nFor production, use backend session token generation.`);
-      }
+      // Redirect to dashboard
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 500);
     } catch (err: any) {
       console.error('Impersonation error:', err);
-      toast.error(err.message || 'Failed to set up impersonation');
+      toast.error(err.message || 'Failed to impersonate user');
     }
   };
 
