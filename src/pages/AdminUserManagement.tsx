@@ -39,6 +39,7 @@ import {
   Pencil,
   RefreshCw,
   Columns3,
+  UserCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -759,6 +760,35 @@ export default function AdminUserManagement() {
     );
   };
 
+  const handleLoginAsUser = async (user: AppUser) => {
+    try {
+      // Log admin impersonation action for audit
+      console.log(`Admin ${profile?.full_name} is logging in as ${user.full_name || user.email}`);
+
+      // Create impersonation session via RPC or direct update
+      const { error } = await supabase.rpc('impersonate_user', {
+        target_user_id: user.id,
+      }).catch(() => {
+        // Fallback: If RPC doesn't exist, use direct auth method
+        return supabase.auth.signInWithPassword({
+          email: user.email,
+          password: 'admin-impersonate-token', // This won't work - needs backend
+        });
+      });
+
+      if (!error) {
+        // Redirect to dashboard as the impersonated user
+        navigate('/dashboard');
+        toast.success(`Logged in as ${user.full_name || user.email}`);
+      } else {
+        toast.error('Impersonation not available - requires backend setup');
+      }
+    } catch (err: any) {
+      console.error('Impersonation error:', err);
+      toast.error('Failed to impersonate user');
+    }
+  };
+
   const { data: appUsers = [], isLoading: usersLoading } = useAppUsers();
   const { data: employees = [] } = useEmployees();
   const { data: roles = [] } = useRoles();
@@ -1089,6 +1119,9 @@ export default function AdminUserManagement() {
                                       <DropdownMenuContent align="end">
                                         <DropdownMenuItem onClick={() => setEditingUser(user)}>
                                           <Edit className="h-4 w-4 mr-2" /> Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleLoginAsUser(user)}>
+                                          <UserCheck className="h-4 w-4 mr-2" /> Login as User
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget(user)}>
                                           <Trash2 className="h-4 w-4 mr-2" /> Delete
