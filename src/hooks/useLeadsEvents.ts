@@ -177,7 +177,7 @@ export function useLeads() {
   return useQuery({
     queryKey: ["leads"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("leads" as any).select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("leads" as any).select("*, created_by_user:created_by(id, full_name, username, email), owner:owner_id(id, full_name, username, email)").order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as LeadRow[];
     },
@@ -188,7 +188,7 @@ export function useLead(id?: string) {
   return useQuery({
     queryKey: ["lead", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("leads" as any).select("*").eq("id", id!).single();
+      const { data, error } = await supabase.from("leads" as any).select("*, created_by_user:created_by(id, full_name, username, email), owner:owner_id(id, full_name, username, email)").eq("id", id!).single();
       if (error) throw error;
       return data as unknown as LeadRow;
     },
@@ -263,7 +263,7 @@ export function useLeadsForEvent(eventId?: string) {
   return useQuery({
     queryKey: ["leads-for-event", eventId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("leads" as any).select("*")
+      const { data, error } = await supabase.from("leads" as any).select("*, created_by_user:created_by(id, full_name, username, email), owner:owner_id(id, full_name, username, email)")
         .eq("related_event_id", eventId!).order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as LeadRow[];
