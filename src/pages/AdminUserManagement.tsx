@@ -798,7 +798,7 @@ export default function AdminUserManagement() {
 
       localStorage.setItem('impersonation_session', JSON.stringify(impersonationData));
 
-      console.log(`Admin ${profile?.full_name} is impersonating ${user.full_name || user.email}`);
+      console.log(`Admin ${currentUser.email} is impersonating ${user.full_name || user.email}`);
 
       // Show success message with instructions
       toast.success(`Impersonating ${user.full_name || user.email}\n\nTo properly login, use the password reset link or work with backend to generate a session token.`, {
