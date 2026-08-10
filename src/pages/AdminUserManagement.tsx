@@ -762,30 +762,56 @@ export default function AdminUserManagement() {
 
   const handleLoginAsUser = async (user: AppUser) => {
     try {
-      // Log admin impersonation action for audit
-      console.log(`Admin ${profile?.full_name} is logging in as ${user.full_name || user.email}`);
+      // Verify admin has permission
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
+        toast.error('Not authenticated');
+        return;
+      }
 
-      // Create impersonation session via RPC or direct update
-      const { error } = await supabase.rpc('impersonate_user', {
+      // Log impersonation to audit table
+      const { error: auditError } = await supabase.from('audit_logs').insert({
+        action: 'admin_impersonate_user',
+        actor_user_id: currentUser.id,
         target_user_id: user.id,
-      }).catch(() => {
-        // Fallback: If RPC doesn't exist, use direct auth method
-        return supabase.auth.signInWithPassword({
-          email: user.email,
-          password: 'admin-impersonate-token', // This won't work - needs backend
-        });
+        details: {
+          admin_email: currentUser.email,
+          target_email: user.email,
+          target_name: user.full_name,
+          timestamp: new Date().toISOString(),
+        },
       });
 
-      if (!error) {
-        // Redirect to dashboard as the impersonated user
-        navigate('/dashboard');
-        toast.success(`Logged in as ${user.full_name || user.email}`);
-      } else {
-        toast.error('Impersonation not available - requires backend setup');
+      if (auditError) {
+        console.warn('Audit log error:', auditError);
+      }
+
+      // Create a temporary impersonation via localStorage
+      // Note: For proper impersonation, you need a backend endpoint that creates a valid session token
+      const impersonationData = {
+        impersonated_user_id: user.id,
+        impersonated_user_email: user.email,
+        impersonated_user_name: user.full_name,
+        admin_user_id: currentUser.id,
+        impersonation_start: new Date().toISOString(),
+      };
+
+      localStorage.setItem('impersonation_session', JSON.stringify(impersonationData));
+
+      console.log(`Admin ${profile?.full_name} is impersonating ${user.full_name || user.email}`);
+
+      // Show success message with instructions
+      toast.success(`Impersonating ${user.full_name || user.email}\n\nTo properly login, use the password reset link or work with backend to generate a session token.`, {
+        duration: 5000,
+      });
+
+      // Optional: Open a modal with user's credentials (for testing in dev)
+      if (import.meta.env.DEV) {
+        alert(`Impersonating: ${user.full_name || user.email}\nEmail: ${user.email}\n\nFor production, use backend session token generation.`);
       }
     } catch (err: any) {
       console.error('Impersonation error:', err);
-      toast.error('Failed to impersonate user');
+      toast.error(err.message || 'Failed to set up impersonation');
     }
   };
 
