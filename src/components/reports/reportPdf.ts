@@ -55,7 +55,8 @@ async function loadImageDataUrl(url: string): Promise<{ data: string; w: number;
   try {
     let dataUrl = url;
     if (!url.startsWith("data:")) {
-      const res = await fetch(url);
+      const fetchUrl = url.startsWith("http") ? url : `${window.location.origin}${url}`;
+      const res = await fetch(fetchUrl);
       const blob = await res.blob();
       dataUrl = await new Promise((resolve, reject) => {
         const r = new FileReader();
@@ -97,14 +98,17 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
     if (img) {
       const logoH = 21; // ~80px
       const logoW = Math.min(24, (img.w / img.h) * logoH);
-      const fmt = img.data.startsWith("data:image/jpeg") || img.data.startsWith("data:image/jpg")
-        ? "JPEG"
-        : "PNG";
+      let fmt: "JPEG" | "PNG" | "GIF" = "PNG";
+      if (img.data.startsWith("data:image/jpeg") || img.data.startsWith("data:image/jpg")) {
+        fmt = "JPEG";
+      } else if (img.data.startsWith("data:image/gif")) {
+        fmt = "GIF";
+      }
       try {
         doc.addImage(img.data, fmt, margin, y, logoW, logoH);
         headerBottom = Math.max(headerBottom, y + logoH);
-      } catch {
-        /* ignore unsupported format */
+      } catch (e) {
+        // If image fails (e.g., SVG), continue without logo
       }
       textX = margin + logoW + 5;
     }
