@@ -53,18 +53,21 @@ async function getCompany(): Promise<CompanyInfo | null> {
 
 async function loadImageDataUrl(url: string): Promise<{ data: string; w: number; h: number } | null> {
   try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const dataUrl: string = await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onloadend = () => resolve(r.result as string);
-      r.onerror = reject;
-      r.readAsDataURL(blob);
-    });
+    let dataUrl = url;
+    if (!url.startsWith("data:")) {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onloadend = () => resolve(r.result as string);
+        r.onerror = reject;
+        r.readAsDataURL(blob);
+      });
+    }
     const dims: { w: number; h: number } = await new Promise((resolve) => {
       const img = new Image();
       img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-      img.onerror = () => resolve({ w: 1, h: 1 });
+      img.onerror = () => resolve({ w: 120, h: 120 });
       img.src = dataUrl;
     });
     return { data: dataUrl, w: dims.w, h: dims.h };
