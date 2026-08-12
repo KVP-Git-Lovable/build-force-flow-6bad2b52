@@ -97,7 +97,7 @@ export default function LeadDetail() {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto">
+    <div className="p-4 md:p-6 space-y-4">
       <Button variant="ghost" size="sm" onClick={() => nav("/leads")} className="-ml-2">
         <ArrowLeft className="h-4 w-4 mr-1" />Back
       </Button>
