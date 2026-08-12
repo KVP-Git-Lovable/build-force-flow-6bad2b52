@@ -3,11 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentPosition, isNative } from "@/utils/nativePermissions";
 import { format } from "date-fns";
 
-const INTERVAL_MS = 60_000;          // sample at least every 60s
-const MIN_MOVE_METERS = 100;         // OR every 100m of movement
-const FOREGROUND_POLL_MS = 60_000;   // web / non-native fallback
-const MAX_ACCURACY_M = 100;          // reject fixes worse than 100m (usually IP/Wi-Fi guesses)
-const MAX_JUMP_METERS = 5000;        // reject teleport jumps >5km between consecutive samples
+const INTERVAL_MS = 30_000;          // sample at least every 30s
+const MIN_MOVE_METERS = 30;          // OR every 30m of movement
+const FOREGROUND_POLL_MS = 30_000;   // web / non-native fallback
+const MAX_ACCURACY_M = 300;          // reject fixes worse than 300m (reduced from 100m for better coverage)
+const MAX_JUMP_METERS = 10000;       // reject teleport jumps >10km between consecutive samples
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371000;
@@ -116,7 +116,7 @@ export function useGPSTracker(userId: string | null | undefined) {
             requestPermissions: false,
 
             stale: false,
-            distanceFilter: 25, // OS-level filter; we further throttle in insertPoint
+            distanceFilter: 10, // OS-level filter; we further throttle in insertPoint (reduced from 25)
           },
           async (location: any, error: any) => {
             if (error || !location) return;
