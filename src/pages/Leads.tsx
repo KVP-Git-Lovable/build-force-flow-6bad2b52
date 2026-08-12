@@ -87,12 +87,14 @@ function useLeadActivityStats() {
 
 function KpiCard({ icon: Icon, label, value, sub, color }: any) {
   return (
-    <Card><CardContent className="p-3 md:p-4 flex items-center gap-2 md:gap-3">
-      <div className={`p-2 rounded-lg shrink-0 ${color}`}><Icon className="h-4 w-4 md:h-5 md:w-5" /></div>
-      <div className="min-w-0">
-        <div className="text-[11px] md:text-xs text-muted-foreground leading-tight">{label}</div>
-        <div className="text-base md:text-xl font-bold truncate">{value}</div>
-        {sub && <div className="text-[10px] md:text-[11px] text-muted-foreground truncate">{sub}</div>}
+    <Card><CardContent className="p-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <div className={`p-2 rounded-lg shrink-0 ${color}`}><Icon className="h-4 w-4 md:h-5 md:w-5" /></div>
+        <div className="text-xs md:text-sm text-muted-foreground leading-tight font-medium">{label}</div>
+      </div>
+      <div className="pl-10 space-y-1">
+        <div className="text-lg md:text-2xl font-bold">{value}</div>
+        {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
       </div>
     </CardContent></Card>
   );
