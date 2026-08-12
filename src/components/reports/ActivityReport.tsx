@@ -139,9 +139,7 @@ export default function ActivityReport() {
         render: (r) => <span className="font-medium">{r.full_name}</span>,
         pdfWidth: 2,
       },
-      { key: "site", header: "Site", value: (r) => r.site, pdfWidth: 2 },
-      { key: "milestone", header: "Milestone", value: (r) => r.milestone, pdfWidth: 2 },
-      { key: "activity_type", header: "Activity Type", value: (r) => r.activity_type, pdfWidth: 2 },
+      { key: "activity_type", header: "Activity Type", value: (r) => r.activity_type, pdfWidth: 2.5 },
       {
         key: "description",
         header: "Description",
@@ -221,8 +219,6 @@ export default function ActivityReport() {
       filterSummary={[
         `${fieldLabel}: ${presetLabel(state.preset)} (${from} to ${to})`,
         `Employee: ${employee === "all" ? "All" : scope.users.find((u) => u.id === employee)?.full_name || "-"}`,
-        `Site: ${site === "all" ? "All" : sites.find((s) => s.value === site)?.label || "-"}`,
-        `Milestone: ${milestone === "all" ? "All" : milestones.find((m) => m.value === milestone)?.label || "-"}`,
         `Activity Type: ${actType === "all" ? "All" : actType}`,
       ]}
       filters={
@@ -241,23 +237,6 @@ export default function ActivityReport() {
             onChange={setEmployee}
             allLabel="All Employees"
             options={scope.users.map((u) => ({ value: u.id, label: u.full_name }))}
-          />
-          <SelectField
-            label="Site / Project"
-            value={site}
-            onChange={(v) => {
-              setSite(v);
-              setMilestone("all");
-            }}
-            allLabel="All Sites"
-            options={sites}
-          />
-          <SelectField
-            label="Milestone"
-            value={milestone}
-            onChange={setMilestone}
-            allLabel="All Milestones"
-            options={milestoneOptions}
           />
           <SelectField label="Activity Type" value={actType} onChange={setActType} allLabel="All Types" options={actTypes} />
         </>
