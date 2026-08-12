@@ -62,17 +62,26 @@ serve(async (req) => {
       )
     }
 
-    // Verify current user is admin
+    // Verify current user is admin by checking security profiles
     const { data: adminCheck, error: adminCheckError } = await supabaseAdmin
       .from("user_security_profiles")
-      .select("profile_id")
+      .select("profile_id, security_profiles(name)")
       .eq("user_id", currentUser.id)
-      .join("security_profiles", "profile_id", "id")
-      .eq("security_profiles.name", "System Administrator")
-      .maybeSingle()
 
-    if (adminCheckError || !adminCheck) {
+    if (adminCheckError) {
       console.error("Admin check failed:", adminCheckError)
+      return new Response(
+        JSON.stringify({ error: "Failed to verify admin status" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      )
+    }
+
+    // Check if any of the user's security profiles is System Administrator
+    const isAdmin = adminCheck && adminCheck.length > 0 && adminCheck.some(
+      (a: any) => a.security_profiles?.name === "System Administrator"
+    )
+
+    if (!isAdmin) {
       return new Response(
         JSON.stringify({ error: "Only System Administrators can impersonate users" }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
