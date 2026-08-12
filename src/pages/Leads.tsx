@@ -107,37 +107,37 @@ export default function Leads() {
 
   const [q, setQ] = useState("");
   const [leadOpen, setLeadOpen] = useState(false);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [createdPreset, setCreatedPreset] = useState("all");
   const [modifiedPreset, setModifiedPreset] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const getOwnerName = (user: any) => user?.full_name || user?.username || user?.email || "";
+  useEffect(() => {
+    const ids = Array.from(
+      new Set(leads.flatMap((l) => [l.created_by, (l as any).owner_id]).filter(Boolean)),
+    ) as string[];
+    const missing = ids.filter((id) => !userMap[id]);
+    if (!missing.length) return;
+    (async () => {
+      const { data: usrs } = await supabase.from("users").select("id, full_name, username, email").in("id", missing);
+      const map: Record<string, string> = {};
+      (usrs ?? []).forEach((u: any) => { map[u.id] = u.full_name || u.username || u.email || ""; });
+      const remaining = missing.filter((id) => !map[id]);
+      if (remaining.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", remaining);
+        (profs ?? []).forEach((p: any) => { map[p.id] = p.full_name || p.username || ""; });
+      }
+      setUserMap((prev) => ({ ...prev, ...map }));
+    })();
+  }, [leads, userMap]);
 
-  const ownerOf = (l: any) => {
-    if ((l as any).owner?.id) return (l as any).owner.id;
-    if ((l as any).created_by_user?.id) return (l as any).created_by_user.id;
-    return null;
-  };
-
-  const getOwnerDisplayName = (l: any) => {
-    if ((l as any).owner) return getOwnerName((l as any).owner) || "—";
-    if ((l as any).created_by_user) return getOwnerName((l as any).created_by_user) || "—";
-    return "—";
-  };
+  const ownerOf = (l: any) => (l.owner_id || l.created_by || null) as string | null;
 
   const ownerOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const options: { id: string; name: string }[] = [];
-    leads.forEach((l: any) => {
-      const id = ownerOf(l);
-      if (id && !seen.has(id)) {
-        seen.add(id);
-        options.push({ id, name: getOwnerDisplayName(l) });
-      }
-    });
-    return options.sort((a, b) => a.name.localeCompare(b.name));
-  }, [leads]);
+    const ids = Array.from(new Set(leads.map(ownerOf).filter(Boolean))) as string[];
+    return ids.map((id) => ({ id, name: userMap[id] || "Unknown" })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [leads, userMap]);
 
   const createdRange = useMemo(() => presetRange(createdPreset), [createdPreset]);
   const modifiedRange = useMemo(() => presetRange(modifiedPreset), [modifiedPreset]);
@@ -291,7 +291,8 @@ export default function Leads() {
       <div className="space-y-2 md:hidden">
         {visibleLeads.map((l: any) => {
           const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
-          const ownerName = getOwnerDisplayName(l);
+          const owner = ownerOf(l);
+          const ownerName = owner ? (userMap[owner] || "—") : "—";
           const ins = (insights as any)[l.id] ?? { activityCount: 0, documentCount: 0, sla: "Not Started" };
           const score = bantScore(
             {
@@ -364,7 +365,8 @@ export default function Leads() {
           <TableBody>
             {visibleLeads.map((l: any) => {
               const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
-              const ownerName = getOwnerDisplayName(l);
+              const owner = ownerOf(l);
+              const ownerName = owner ? (userMap[owner] || "—") : "—";
               return (
                 <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads/${l.id}`)}>
                   <TableCell className="font-medium">{l.name}{l.converted_customer_id && <Badge variant="secondary" className="ml-2">Converted</Badge>}</TableCell>
