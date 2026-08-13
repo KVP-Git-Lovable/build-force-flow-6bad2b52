@@ -36,7 +36,7 @@ export default function ProjectsPage() {
   const [showCreate, setShowCreate] = useState(false);
 
   const filtered = projects.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (p.name || "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || p.status === statusFilter;
     return matchSearch && matchStatus;
   });

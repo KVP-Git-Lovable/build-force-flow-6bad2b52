@@ -31,7 +31,7 @@ export default function TemplatesPage() {
   const [description, setDescription] = useState("");
 
   const filtered = templates.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase())
+    (t.name || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const handleCreate = () => {

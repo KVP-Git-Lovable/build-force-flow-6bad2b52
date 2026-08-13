@@ -71,8 +71,8 @@ export default function OpenGRNPicker({ siteId, value, onChange }: Props) {
     if (!q) return pos;
     return pos.filter((p) =>
       (p.po_number || "").toLowerCase().includes(q) ||
-      p.vendor_name.toLowerCase().includes(q) ||
-      p.status.toLowerCase().includes(q)
+      (p.vendor_name || "").toLowerCase().includes(q) ||
+      (p.status || "").toLowerCase().includes(q)
     );
   }, [pos, search]);
 

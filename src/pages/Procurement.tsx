@@ -201,8 +201,8 @@ export default function Procurement() {
       list = list.filter(
         (o) =>
           (o.po_number || "").toLowerCase().includes(q) ||
-          vName(o.vendor_id).toLowerCase().includes(q) ||
-          sName(o.site_id).toLowerCase().includes(q)
+          (vName(o.vendor_id) || "").toLowerCase().includes(q) ||
+          (sName(o.site_id) || "").toLowerCase().includes(q)
       );
     }
     if (filterStatus !== "all") list = list.filter((o) => o.status === filterStatus);

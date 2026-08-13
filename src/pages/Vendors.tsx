@@ -226,9 +226,9 @@ export default function Vendors() {
       const q = search.toLowerCase();
       list = list.filter(
         (v) =>
-          v.name.toLowerCase().includes(q) ||
-          v.phone.some((p) => p.includes(q)) ||
-          v.contact_person.some((c) => c.toLowerCase().includes(q))
+          (v.name || "").toLowerCase().includes(q) ||
+          v.phone.some((p) => (p || "").includes(q)) ||
+          v.contact_person.some((c) => (c || "").toLowerCase().includes(q))
       );
     }
     if (filterCategory !== "all") list = list.filter((v) => v.category === filterCategory);

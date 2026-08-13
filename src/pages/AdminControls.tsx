@@ -98,8 +98,8 @@ export default function AdminControls() {
 
   const filteredModules = visibleModules.filter(
     (m) =>
-      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (m.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (m.description || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

@@ -59,7 +59,7 @@ export default function Customers() {
   const filtered = customers.filter((c) => {
     if (fStatus !== "all" && c.status !== fStatus) return false;
     if (fOwner !== "all" && c.owner_id !== fOwner) return false;
-    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !(c.name || "").toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 

@@ -62,8 +62,8 @@ export default function WorkforceFilters({
 
   const filteredUsers = users.filter(
     (u) =>
-      u.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      u.username.toLowerCase().includes(search.toLowerCase())
+      (u.full_name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (u.username || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
