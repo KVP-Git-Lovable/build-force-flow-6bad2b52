@@ -103,7 +103,7 @@ const LiveAttendanceMonitoring = () => {
     try {
       setIsLoading(true);
       const { data: attendance } = await supabase.from('attendance').select('*').gte('date', format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd')).order('date', { ascending: false });
-      const { data: allUsers } = await supabase.from('users').select('id, full_name, username').eq('is_active', true);
+      const { data: allUsers } = await supabase.from('users').select('id, full_name, username');
 
       if (allUsers) {
         const result: AttendanceData[] = [];
