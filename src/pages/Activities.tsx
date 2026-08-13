@@ -1841,10 +1841,10 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
 
       const historyEntry: ActivityStatusEntry = { status: newStatus, at: now };
 
-
       // Capture GPS location
       try {
-        const pos = await getCurrentPosition();
+        toast.loading("Requesting location access...");
+        const pos = await getCurrentPosition({ timeout: 20000, enableHighAccuracy: true });
         updates.status_change_lat = pos.latitude;
         updates.status_change_lng = pos.longitude;
         updates.location_lat = pos.latitude;
@@ -1861,9 +1861,11 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
             historyEntry.address = geo.display_name;
           }
         } catch {}
+        toast.dismiss();
       } catch (geoErr) {
+        toast.dismiss();
         console.warn("Geolocation failed:", geoErr);
-        toast.error("Could not capture location. Status updated without location.");
+        toast.error("Location access required: Please enable location permission in your device settings and ensure GPS is turned on.");
       }
 
       // Set start/end time based on transition
