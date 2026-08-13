@@ -926,13 +926,21 @@ export default function CreativeActivityForm({
                   {/* Attachments */}
                   {editActivity.attachment_urls && editActivity.attachment_urls.length > 0 && (
                     <div className="pt-2 border-t border-border/60 min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Attachments</p>
-                      <div className="space-y-1">
-                        {editActivity.attachment_urls.map((u, i) => (
-                          <a key={i} href={u} target="_blank" rel="noreferrer" className="text-[11px] text-primary hover:underline flex items-center gap-1.5 min-w-0">
-                            <Paperclip className="h-3 w-3 shrink-0" /> <span className="min-w-0 truncate">Attachment {i + 1}</span>
-                          </a>
-                        ))}
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Attachments ({editActivity.attachment_urls.length})</p>
+                      <div className="space-y-2">
+                        {editActivity.attachment_urls.map((u, i) => {
+                          const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(u);
+                          const isAudio = /\.(mp3|wav|m4a|ogg)$/i.test(u);
+                          const fileName = u.split('/').pop() || `Attachment ${i + 1}`;
+
+                          return (
+                            <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition cursor-pointer group" onClick={() => { window.open(u, '_blank'); }}>
+                              <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
+                              <span className="min-w-0 truncate text-[11px] font-medium text-foreground group-hover:text-primary">{fileName}</span>
+                              <span className="text-[9px] text-muted-foreground shrink-0 group-hover:text-foreground">↗</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
