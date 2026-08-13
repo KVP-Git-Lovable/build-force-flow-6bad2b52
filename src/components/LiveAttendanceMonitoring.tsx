@@ -143,7 +143,7 @@ const LiveAttendanceMonitoring = () => {
   const applyFilters = () => {
     let filtered = [...attendanceData];
     if (selectedUsers.length > 0) filtered = filtered.filter(r => selectedUsers.includes(r.user_id));
-    if (searchQuery) filtered = filtered.filter(r => r.profiles?.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || r.profiles?.username.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (searchQuery) filtered = filtered.filter(r => r.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || r.profiles?.username?.toLowerCase().includes(searchQuery.toLowerCase()));
     const today = new Date();
     if (dateFilter === 'day') filtered = filtered.filter(r => r.date === format(today, 'yyyy-MM-dd'));
     else if (dateFilter === 'week') filtered = filtered.filter(r => r.date >= format(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7), 'yyyy-MM-dd'));
@@ -167,7 +167,7 @@ const LiveAttendanceMonitoring = () => {
   };
 
   const handleSelectAll = () => {
-    const filteredUsersList = users.filter(user => user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || user.username.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filteredUsersList = users.filter(user => (user.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) || (user.username || "").toLowerCase().includes(searchQuery.toLowerCase()));
     setSelectedUsers(filteredUsersList.map(user => user.id));
   };
 
@@ -202,8 +202,8 @@ const LiveAttendanceMonitoring = () => {
   };
 
   const filteredUsers = users.filter(user =>
-    user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.username.toLowerCase().includes(searchQuery.toLowerCase())
+    (user.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (user.username || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Table always shows the full filtered dataset (unchanged behavior)
