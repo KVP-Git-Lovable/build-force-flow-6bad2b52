@@ -111,11 +111,14 @@ const LiveAttendanceMonitoring = () => {
 
         attendance?.forEach(record => {
           const profile = allUsers.find(u => u.id === record.user_id);
+          // Skip records with no matching user (orphaned records)
+          if (!profile || !record.user_id) return;
+
           let activeMarketHours = null;
           if (record.check_in_time && record.check_out_time) {
             activeMarketHours = (new Date(record.check_out_time).getTime() - new Date(record.check_in_time).getTime()) / (1000 * 60 * 60);
           }
-          const entry: AttendanceData = { ...record, profiles: profile ? { full_name: profile.full_name, username: profile.username } : null, active_market_hours: activeMarketHours, signed_photo_url: null };
+          const entry: AttendanceData = { ...record, profiles: { full_name: profile.full_name, username: profile.username }, active_market_hours: activeMarketHours, signed_photo_url: null };
           result.push(entry);
 
           if (record.check_in_photo_url) {
