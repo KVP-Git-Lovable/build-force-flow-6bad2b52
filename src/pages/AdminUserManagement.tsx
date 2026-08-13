@@ -278,20 +278,13 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Only update role_id if it's a valid value (non-empty string matching a role)
+      // Update user profile data (don't update role_id - use security_profiles instead)
       const updatePayload: any = {
         full_name: fullName || null,
         username: username || null,
         phone: phone || null,
         reporting_manager_id: managerId === "none" ? null : managerId,
       };
-
-      // Always include role_id - set to NULL if empty, otherwise use the selected role
-      if (roleId && roleId.trim()) {
-        updatePayload.role_id = roleId;
-      } else {
-        updatePayload.role_id = null;
-      }
 
       const { error: userError } = await supabase.from("users").update(updatePayload).eq("id", user.id);
       if (userError) throw userError;
