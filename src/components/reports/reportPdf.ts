@@ -209,7 +209,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
 
   // ---- Summary ----
   if (args.summary && args.summary.length) {
-    if (y + 10 + args.summary.length * 5 > pageH - 16) {
+    if (y + 10 + args.summary.length * 7 > pageH - 16) {
       doc.addPage();
       y = margin;
     }
@@ -221,16 +221,23 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
     doc.setFontSize(10);
     doc.setTextColor(20, 30, 60);
     doc.text("Summary", margin, y);
-    y += 5;
+    y += 7;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(50, 50, 50);
+
+    // Calculate optimal column width for summary
+    const summaryLabelWidth = Math.max(...args.summary.map((s) => doc.getTextWidth(s.label + ":"))) + 5;
+    const summaryValueX = margin + summaryLabelWidth + 5;
+
     args.summary.forEach((s) => {
-      doc.text(`${s.label}:`, margin + 2, y);
-      doc.setFont("helvetica", "bold");
-      doc.text(s.value, margin + 70, y);
       doc.setFont("helvetica", "normal");
-      y += 5;
+      doc.text(`${s.label}:`, margin, y);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(20, 30, 60);
+      doc.text(s.value, summaryValueX, y);
+      doc.setTextColor(50, 50, 50);
+      y += 7;
     });
   }
 
