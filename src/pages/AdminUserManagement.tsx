@@ -286,9 +286,11 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
         reporting_manager_id: managerId === "none" ? null : managerId,
       };
 
-      // Only include role_id if it's a valid role ID
+      // Always include role_id - set to NULL if empty, otherwise use the selected role
       if (roleId && roleId.trim()) {
         updatePayload.role_id = roleId;
+      } else {
+        updatePayload.role_id = null;
       }
 
       const { error: userError } = await supabase.from("users").update(updatePayload).eq("id", user.id);
