@@ -271,4 +271,6 @@ const GoogleTrackMap = forwardRef<HTMLDivElement, GoogleTrackMapProps>(function 
   }
 
   return <div ref={containerRef} className="h-full w-full" />;
-}
+});
+
+export default GoogleTrackMap;
