@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import WeeklyExecutiveReport from "@/components/reports/WeeklyExecutiveReport";
 import ActivityReportGenerator from "@/components/reports/ActivityReport";
-import LeadsReportGenerator from "@/components/reports/LeadsReport";
+import LeadsReportGenerator from "@/components/reports/LeadReport";
 import { BarChart3, Activity, TrendingUp } from "lucide-react";
 
 export default function Reports() {

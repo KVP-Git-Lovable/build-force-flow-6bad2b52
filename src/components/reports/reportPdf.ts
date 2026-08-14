@@ -2,6 +2,20 @@ import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadPDF } from "@/utils/nativeDownload";
+import { resolveSignedUrl } from "@/utils/signedStorage";
+
+/**
+ * jsPDF's built-in Helvetica is WinAnsi only — glyphs such as ₹ render as
+ * garbage ("¹" plus broken kerning). Normalise every string we draw.
+ */
+function pdfText(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\u20B9/g, "Rs. ")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[^\x20-\x7E\n]/g, "");
+}
 
 export interface PdfColumn {
   header: string;
@@ -90,14 +104,20 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
 
   let y = margin;
 
-  // ---- Header ----
+  // ---- Header (logo left, company block beside it) ----
+  const logoBoxH = 16;
   let textX = margin;
-  let headerBottom = y + 11;
+  let headerBottom = y + logoBoxH;
   if (company?.logo_url) {
-    const img = await loadImageDataUrl(company.logo_url);
+    let src = company.logo_url;
+    if (src.includes("/employee-photos/")) {
+      src = (await resolveSignedUrl("employee-photos", src)) || src;
+    }
+    const img = await loadImageDataUrl(src);
     if (img) {
-      const logoH = 21; // ~80px
-      const logoW = Math.min(24, (img.w / img.h) * logoH);
+      const ratio = img.w && img.h ? img.w / img.h : 1;
+      const logoH = logoBoxH;
+      const logoW = Math.min(30, logoH * ratio);
       let fmt: "JPEG" | "PNG" | "GIF" = "PNG";
       if (img.data.startsWith("data:image/jpeg") || img.data.startsWith("data:image/jpg")) {
         fmt = "JPEG";
@@ -106,24 +126,25 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
       }
       try {
         doc.addImage(img.data, fmt, margin, y, logoW, logoH);
-        headerBottom = Math.max(headerBottom, y + logoH);
+        textX = margin + logoW + 6;
       } catch (e) {
         // If image fails (e.g., SVG), continue without logo
       }
-      textX = margin + logoW + 5;
     }
   }
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setTextColor(20, 30, 60);
-  doc.text(companyName, textX, y + 7);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(110, 110, 110);
-  if (company?.address) doc.text(String(company.address).slice(0, 90), textX, y + 12);
+  doc.text(pdfText(companyName), textX, y + 7);
+  if (company?.address) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(110, 110, 110);
+    doc.text(pdfText(company.address).slice(0, 100), textX, y + 12.5);
+  }
 
-  y = headerBottom + 4;
+  y = headerBottom + 3;
 
   doc.setDrawColor(200, 170, 80);
   doc.setLineWidth(0.6);
@@ -134,7 +155,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.setTextColor(20, 30, 60);
-  doc.text(args.title, margin, y);
+  doc.text(pdfText(args.title), margin, y);
   y += 6;
 
   // ---- Filters ----
@@ -142,7 +163,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.setTextColor(90, 90, 90);
-    const filterText = args.filters.join("    |    ");
+    const filterText = args.filters.map(pdfText).join("    |    ");
     const lines = doc.splitTextToSize(filterText, usableW);
     doc.text(lines, margin, y);
     y += lines.length * 4 + 2;
@@ -166,7 +187,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
     doc.setTextColor(255, 255, 255);
     args.columns.forEach((c, i) => {
       const cx = c.align === "right" ? colX[i] + colWidths[i] - 2 : colX[i] + 2;
-      doc.text(c.header, cx, y + 4.7, { align: c.align === "right" ? "right" : "left" });
+      doc.text(pdfText(c.header), cx, y + 4.7, { align: c.align === "right" ? "right" : "left" });
     });
     y += 7;
   };
@@ -180,7 +201,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
   args.rows.forEach((row, idx) => {
     // compute row height based on wrapped cells
     const wrapped = row.map((cell, i) =>
-      doc.splitTextToSize(String(cell ?? ""), colWidths[i] - 3)
+      doc.splitTextToSize(pdfText(cell), colWidths[i] - 3)
     );
     const rowLines = Math.max(...wrapped.map((w) => w.length), 1);
     const rowH = rowLines * 4 + 2;
@@ -209,35 +230,38 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
 
   // ---- Summary ----
   if (args.summary && args.summary.length) {
-    if (y + 10 + args.summary.length * 7 > pageH - 16) {
+    const blockH = 16 + args.summary.length * 6.5;
+    if (y + blockH > pageH - 16) {
       doc.addPage();
       y = margin;
     }
-    y += 5;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, y, pageW - margin, y);
     y += 6;
+    doc.setDrawColor(200, 170, 80);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 6.5;
+
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(10.5);
     doc.setTextColor(20, 30, 60);
     doc.text("Summary", margin, y);
-    y += 7;
-    doc.setFont("helvetica", "normal");
+    y += 6.5;
+
     doc.setFontSize(9);
-    doc.setTextColor(50, 50, 50);
+    const labels = args.summary.map((s) => pdfText(s.label) + ":");
+    doc.setFont("helvetica", "normal");
+    const labelW = Math.max(...labels.map((l) => doc.getTextWidth(l)));
+    const valueX = margin + labelW + 6;
 
-    // Calculate optimal column width for summary
-    const summaryLabelWidth = Math.max(...args.summary.map((s) => doc.getTextWidth(s.label + ":"))) + 5;
-    const summaryValueX = margin + summaryLabelWidth + 5;
-
-    args.summary.forEach((s) => {
+    args.summary.forEach((s, i) => {
       doc.setFont("helvetica", "normal");
-      doc.text(`${s.label}:`, margin, y);
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      doc.text(labels[i], margin, y);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(20, 30, 60);
-      doc.text(s.value, summaryValueX, y);
-      doc.setTextColor(50, 50, 50);
-      y += 7;
+      doc.text(pdfText(s.value), valueX, y);
+      y += 6.5;
     });
   }
 
@@ -269,7 +293,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
     doc.setFontSize(7.5);
     doc.setTextColor(130, 130, 130);
     doc.text(
-      `Generated: ${stamp}  •  By: ${args.generatedBy}`,
+      pdfText(`Generated: ${stamp}  |  By: ${args.generatedBy}`),
       margin,
       pageH - 7
     );
