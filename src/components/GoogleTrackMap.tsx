@@ -78,7 +78,7 @@ const AUTH_ERROR =
   "Google Maps rejected this domain. Add this site to the API key's HTTP referrer allowlist in Google Cloud Console.";
 
 const GoogleTrackMap = forwardRef<HTMLDivElement, GoogleTrackMapProps>(function GoogleTrackMap(
-  { location, gpsPoints, activityMarkers },
+  { location, gpsPoints, activityMarkers, routePath },
   _forwardedRef
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null);
