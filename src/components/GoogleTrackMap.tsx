@@ -118,6 +118,13 @@ const GoogleTrackMap = forwardRef<HTMLDivElement, GoogleTrackMapProps>(function 
       setReady(true);
     };
 
+    // Google calls this global when the key is rejected (e.g. RefererNotAllowedMapError)
+    const prevAuthFailure = (window as any).gm_authFailure;
+    (window as any).gm_authFailure = () => {
+      if (!cancelled) setError(AUTH_ERROR);
+      if (typeof prevAuthFailure === "function") prevAuthFailure();
+    };
+
     loadGoogleMaps()
       .then(() => init())
       .catch((e) => !cancelled && setError(e.message || "Map unavailable"));
