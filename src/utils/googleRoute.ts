@@ -36,8 +36,10 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<LatLng[]> {
           body: { points: chunk.map((p) => ({ lat: p.latitude, lng: p.longitude })) },
         });
         if (error) throw error;
-        return (data?.path as LatLng[]) || [];
+        const encoded = data?.polyline as string | null;
+        return encoded ? decodePolyline(encoded) : [];
       })
+
     );
 
     const path = results.flat();
