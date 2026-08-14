@@ -19,6 +19,7 @@ interface ReportActivity {
   user_name: string;
   activity_name: string;
   activity_type: string;
+  customer_name: string | null;
   description: string | null;
   activity_date: string;
   start_time: string | null;
@@ -108,7 +109,7 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
 
       let query = supabase
         .from('activity_events')
-        .select('*')
+        .select('*, leads(company_name)')
         .in('user_id', targetIds)
         .gte('activity_date', filterDateFrom)
         .lte('activity_date', filterDateTo)
@@ -127,6 +128,7 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
         user_name: nameMap.get(a.user_id) || 'Unknown',
         activity_name: a.activity_name,
         activity_type: a.activity_type,
+        customer_name: a.leads?.company_name || null,
         description: a.description,
         activity_date: a.activity_date,
         start_time: a.start_time,
@@ -157,6 +159,7 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
     if (!reportData) return [];
     return reportData.map(r => ({
       'User Name': r.user_name,
+      'Customer': r.customer_name || '-',
       'Activity': r.activity_name,
       'Type': r.activity_type,
       'Description': r.description || '-',
@@ -176,7 +179,7 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
     try {
       const rows = getReportRows();
       rows.push({
-        'User Name': '', 'Activity': '', 'Type': '', 'Description': 'TOTAL',
+        'User Name': '', 'Customer': '', 'Activity': '', 'Type': '', 'Description': 'TOTAL',
         'Date': '', 'Start Time': '', 'End Time': '',
         'Hours': totalHours.toFixed(1), 'Status': '', 'Location': '',
       });
@@ -207,8 +210,8 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
       doc.text(`Period: ${format(new Date(filterDateFrom), 'dd MMM yyyy')} – ${format(new Date(filterDateTo), 'dd MMM yyyy')}`, 14, 22);
       doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, 28);
 
-      const headers = ['User', 'Activity', 'Date', 'Start', 'End', 'Hours', 'Status', 'Location'];
-      const colX = [14, 50, 100, 135, 160, 185, 200, 235];
+      const headers = ['User', 'Customer', 'Activity', 'Date', 'Start', 'End', 'Hours', 'Status', 'Location'];
+      const colX = [14, 40, 65, 100, 135, 160, 185, 205, 240];
       let y = 38;
 
       doc.setFontSize(8);
@@ -230,14 +233,15 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
           y += 5;
           doc.setFont('helvetica', 'normal');
         }
-        doc.text(r.user_name.substring(0, 20), colX[0], y);
-        doc.text(r.activity_name.substring(0, 28), colX[1], y);
-        doc.text(format(new Date(r.activity_date), 'dd MMM yyyy'), colX[2], y);
-        doc.text(formatTime(r.start_time), colX[3], y);
-        doc.text(formatTime(r.end_time), colX[4], y);
-        doc.text(r.total_hours.toFixed(1), colX[5], y);
-        doc.text(r.status.replace('_', ' '), colX[6], y);
-        doc.text((r.location_address || '-').substring(0, 30), colX[7], y);
+        doc.text(r.user_name.substring(0, 15), colX[0], y);
+        doc.text((r.customer_name || '-').substring(0, 15), colX[1], y);
+        doc.text(r.activity_name.substring(0, 25), colX[2], y);
+        doc.text(format(new Date(r.activity_date), 'dd MMM yyyy'), colX[3], y);
+        doc.text(formatTime(r.start_time), colX[4], y);
+        doc.text(formatTime(r.end_time), colX[5], y);
+        doc.text(r.total_hours.toFixed(1), colX[6], y);
+        doc.text(r.status.replace('_', ' '), colX[7], y);
+        doc.text((r.location_address || '-').substring(0, 25), colX[8], y);
         y += 6;
       });
 
@@ -245,8 +249,8 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
       doc.line(14, y, 283, y);
       y += 6;
       doc.setFont('helvetica', 'bold');
-      doc.text('TOTAL HOURS', colX[4], y);
-      doc.text(totalHours.toFixed(1), colX[5], y);
+      doc.text('TOTAL HOURS', colX[5], y);
+      doc.text(totalHours.toFixed(1), colX[6], y);
 
       await downloadPDFNative(doc, `Activity_Report_${filterDateFrom}_to_${filterDateTo}.pdf`);
       toast.success('PDF report downloaded');
@@ -376,6 +380,7 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-medium text-sm">{r.user_name}</p>
+                          {r.customer_name && <p className="text-xs font-medium text-blue-600 dark:text-blue-400">{r.customer_name}</p>}
                           <p className="text-xs text-muted-foreground">
                             {r.activity_name} • {format(new Date(r.activity_date), 'dd MMM yyyy')}
                           </p>
@@ -400,6 +405,7 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
                       <TableHeader>
                         <TableRow>
                           <TableHead>User</TableHead>
+                          <TableHead>Customer</TableHead>
                           <TableHead>Activity</TableHead>
                           <TableHead>Date</TableHead>
                           <TableHead>Start</TableHead>
@@ -413,6 +419,7 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
                         {reportData.map(r => (
                           <TableRow key={r.id}>
                             <TableCell className="font-medium">{r.user_name}</TableCell>
+                            <TableCell className="font-medium text-blue-600 dark:text-blue-400">{r.customer_name || '-'}</TableCell>
                             <TableCell>{r.activity_name}</TableCell>
                             <TableCell>{format(new Date(r.activity_date), 'dd MMM yyyy')}</TableCell>
                             <TableCell>{formatTime(r.start_time)}</TableCell>
@@ -423,7 +430,7 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
                           </TableRow>
                         ))}
                         <TableRow className="font-bold bg-muted/50">
-                          <TableCell colSpan={5} className="text-right">Total Hours</TableCell>
+                          <TableCell colSpan={6} className="text-right">Total Hours</TableCell>
                           <TableCell className="text-right">{totalHours.toFixed(1)}</TableCell>
                           <TableCell colSpan={2} />
                         </TableRow>
