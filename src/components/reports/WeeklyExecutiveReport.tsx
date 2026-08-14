@@ -7,7 +7,6 @@ import { format, startOfWeek, endOfWeek } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
 
 interface LeadSummary {
   total: number;
