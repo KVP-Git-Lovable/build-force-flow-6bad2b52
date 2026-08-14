@@ -558,6 +558,10 @@ export default function GPSTracking() {
                   <Navigation className="h-4 w-4 mx-auto mb-1 text-primary" />
                   <p className="text-xs text-muted-foreground">Distance</p>
                   <p className="text-sm font-semibold">{totalDistance.toFixed(1)} km</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {isRoadDistance ? "road distance" : "estimated"}
+                  </p>
+
                 </CardContent>
               </Card>
               <Card className="shadow-card">
