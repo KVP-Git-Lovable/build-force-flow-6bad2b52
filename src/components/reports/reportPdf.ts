@@ -201,7 +201,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
   args.rows.forEach((row, idx) => {
     // compute row height based on wrapped cells
     const wrapped = row.map((cell, i) =>
-      doc.splitTextToSize(String(cell ?? ""), colWidths[i] - 3)
+      doc.splitTextToSize(pdfText(cell), colWidths[i] - 3)
     );
     const rowLines = Math.max(...wrapped.map((w) => w.length), 1);
     const rowH = rowLines * 4 + 2;
