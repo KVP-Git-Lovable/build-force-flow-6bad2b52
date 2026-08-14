@@ -425,7 +425,7 @@ export default function GPSTracking() {
                   <MapFallback />
                 ) : (
                   <Suspense fallback={<MapFallback />}>
-                    <LeafletMap
+                    <GoogleTrackMap
                       location={currentLocation}
                       activityMarkers={currentLocation ? [{
                         lat: currentLocation.lat,
@@ -576,7 +576,7 @@ export default function GPSTracking() {
                 ) : gpsPoints.length > 0 || activityMarkers.length > 0 ? (
                   <>
                     <Suspense fallback={<MapFallback />}>
-                      <LeafletMap
+                      <GoogleTrackMap
                         gpsPoints={gpsPoints}
                         activityMarkers={allMapMarkers}
                       />
