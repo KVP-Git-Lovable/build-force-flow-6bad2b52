@@ -230,35 +230,38 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
 
   // ---- Summary ----
   if (args.summary && args.summary.length) {
-    if (y + 10 + args.summary.length * 7 > pageH - 16) {
+    const blockH = 16 + args.summary.length * 6.5;
+    if (y + blockH > pageH - 16) {
       doc.addPage();
       y = margin;
     }
-    y += 5;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, y, pageW - margin, y);
     y += 6;
+    doc.setDrawColor(200, 170, 80);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 6.5;
+
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(10.5);
     doc.setTextColor(20, 30, 60);
     doc.text("Summary", margin, y);
-    y += 7;
-    doc.setFont("helvetica", "normal");
+    y += 6.5;
+
     doc.setFontSize(9);
-    doc.setTextColor(50, 50, 50);
+    const labels = args.summary.map((s) => pdfText(s.label) + ":");
+    doc.setFont("helvetica", "normal");
+    const labelW = Math.max(...labels.map((l) => doc.getTextWidth(l)));
+    const valueX = margin + labelW + 6;
 
-    // Calculate optimal column width for summary
-    const summaryLabelWidth = Math.max(...args.summary.map((s) => doc.getTextWidth(s.label + ":"))) + 5;
-    const summaryValueX = margin + summaryLabelWidth + 5;
-
-    args.summary.forEach((s) => {
+    args.summary.forEach((s, i) => {
       doc.setFont("helvetica", "normal");
-      doc.text(`${s.label}:`, margin, y);
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      doc.text(labels[i], margin, y);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(20, 30, 60);
-      doc.text(s.value, summaryValueX, y);
-      doc.setTextColor(50, 50, 50);
-      y += 7;
+      doc.text(pdfText(s.value), valueX, y);
+      y += 6.5;
     });
   }
 
