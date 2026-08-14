@@ -608,11 +608,13 @@ export default function GPSTracking() {
                       <GoogleTrackMap
                         gpsPoints={gpsPoints}
                         activityMarkers={allMapMarkers}
+                        routePath={route?.path ?? null}
                       />
                     </Suspense>
                     <div className="absolute top-2 right-2 z-[400] bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
                       Traveled: {totalDistance.toFixed(1)} km
                     </div>
+
                   </>
                 ) : (
                   <div className="h-full w-full flex flex-col items-center justify-center bg-muted/50">
