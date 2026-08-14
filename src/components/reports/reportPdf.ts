@@ -104,14 +104,20 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
 
   let y = margin;
 
-  // ---- Header ----
+  // ---- Header (logo left, company block beside it) ----
+  const logoBoxH = 16;
   let textX = margin;
-  let headerBottom = y + 11;
+  let headerBottom = y + logoBoxH;
   if (company?.logo_url) {
-    const img = await loadImageDataUrl(company.logo_url);
+    let src = company.logo_url;
+    if (src.includes("/employee-photos/")) {
+      src = (await resolveSignedUrl("employee-photos", src)) || src;
+    }
+    const img = await loadImageDataUrl(src);
     if (img) {
-      const logoH = 21; // ~80px
-      const logoW = Math.min(24, (img.w / img.h) * logoH);
+      const ratio = img.w && img.h ? img.w / img.h : 1;
+      const logoH = logoBoxH;
+      const logoW = Math.min(30, logoH * ratio);
       let fmt: "JPEG" | "PNG" | "GIF" = "PNG";
       if (img.data.startsWith("data:image/jpeg") || img.data.startsWith("data:image/jpg")) {
         fmt = "JPEG";
@@ -120,24 +126,25 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
       }
       try {
         doc.addImage(img.data, fmt, margin, y, logoW, logoH);
-        headerBottom = Math.max(headerBottom, y + logoH);
+        textX = margin + logoW + 6;
       } catch (e) {
         // If image fails (e.g., SVG), continue without logo
       }
-      textX = margin + logoW + 5;
     }
   }
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setTextColor(20, 30, 60);
-  doc.text(companyName, textX, y + 7);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(110, 110, 110);
-  if (company?.address) doc.text(String(company.address).slice(0, 90), textX, y + 12);
+  doc.text(pdfText(companyName), textX, y + 7);
+  if (company?.address) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(110, 110, 110);
+    doc.text(pdfText(company.address).slice(0, 100), textX, y + 12.5);
+  }
 
-  y = headerBottom + 4;
+  y = headerBottom + 3;
 
   doc.setDrawColor(200, 170, 80);
   doc.setLineWidth(0.6);
