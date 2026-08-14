@@ -109,7 +109,7 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
 
       let query = supabase
         .from('activity_events')
-        .select('*, leads(company_name)')
+        .select('*')
         .in('user_id', targetIds)
         .gte('activity_date', filterDateFrom)
         .lte('activity_date', filterDateTo)
@@ -123,12 +123,22 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
 
       const nameMap = new Map(teamMembers.map(m => [m.id, m.full_name]));
 
+      // Fetch lead data for all activities with lead_id
+      const leadIds = [...new Set((data || []).filter((a: any) => a.lead_id).map((a: any) => a.lead_id))];
+      let leadMap: Record<string, string> = {};
+      if (leadIds.length > 0) {
+        const { data: leadData } = await supabase.from('leads').select('id, company_name').in('id', leadIds);
+        (leadData || []).forEach((l: any) => {
+          leadMap[l.id] = l.company_name || '';
+        });
+      }
+
       const mapped: ReportActivity[] = (data || []).map((a: any) => ({
         id: a.id,
         user_name: nameMap.get(a.user_id) || 'Unknown',
         activity_name: a.activity_name,
         activity_type: a.activity_type,
-        customer_name: a.leads?.company_name || null,
+        customer_name: a.lead_id ? (leadMap[a.lead_id] || null) : null,
         description: a.description,
         activity_date: a.activity_date,
         start_time: a.start_time,
