@@ -10,13 +10,22 @@ export interface LatLng {
   lng: number;
 }
 
+export interface SnappedRoute {
+  /** Path to draw (road-snapped when `snapped` is true, raw track otherwise). */
+  path: LatLng[];
+  /** Actual road distance in metres, or null when routing was unavailable. */
+  distanceMeters: number | null;
+  snapped: boolean;
+}
+
 /**
  * Snap a GPS track to real roads using the Google Routes API (via the
  * `snap-gps-route` edge function, which calls the connector gateway).
+ * Returns both the snapped path and the real road distance travelled.
  * Falls back to the raw straight-line track if routing fails.
  */
-export async function getSnappedRoute(points: RoutePoint[]): Promise<LatLng[]> {
-  if (points.length < 2) return [];
+export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRoute> {
+  if (points.length < 2) return { path: [], distanceMeters: null, snapped: false };
 
   // Routes API allows up to 25 intermediates → 27 points per request.
   const MAX_PER_CALL = 25;
@@ -37,18 +46,27 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<LatLng[]> {
         });
         if (error) throw error;
         const encoded = data?.polyline as string | null;
-        return encoded ? decodePolyline(encoded) : [];
+        const meters = Number(data?.distanceMeters);
+        return {
+          path: encoded ? decodePolyline(encoded) : [],
+          meters: Number.isFinite(meters) ? meters : 0,
+        };
       })
-
     );
 
-    const path = results.flat();
+    const path = results.flatMap((r) => r.path);
     if (path.length < 2) throw new Error("empty route");
-    return path;
+    const distanceMeters = results.reduce((sum, r) => sum + r.meters, 0);
+    return { path, distanceMeters: distanceMeters > 0 ? distanceMeters : null, snapped: true };
   } catch {
-    return points.map((p) => ({ lat: p.latitude, lng: p.longitude }));
+    return {
+      path: points.map((p) => ({ lat: p.latitude, lng: p.longitude })),
+      distanceMeters: null,
+      snapped: false,
+    };
   }
 }
+
 
 /** Decode a Google encoded polyline into lat/lng pairs. */
 export function decodePolyline(encoded: string): LatLng[] {

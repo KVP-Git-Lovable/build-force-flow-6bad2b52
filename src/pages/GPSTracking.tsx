@@ -23,6 +23,8 @@ import { getCurrentPosition } from "@/utils/nativePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGPSTeamMembers } from "@/hooks/useGPSTeamMembers";
+import { getSnappedRoute, type SnappedRoute } from "@/utils/googleRoute";
+
 
 const GoogleTrackMap = lazy(() =>
   import("@/components/GoogleTrackMap").catch(() => {
@@ -86,6 +88,8 @@ export default function GPSTracking() {
   const [gpsStops, setGpsStops] = useState<GPSStop[]>([]);
   const [activityMarkers, setActivityMarkers] = useState<ActivityAtLocation[]>([]);
   const [trackingLoading, setTrackingLoading] = useState(false);
+  const [route, setRoute] = useState<SnappedRoute | null>(null);
+
 
   // Get own location
   useEffect(() => {
@@ -317,6 +321,25 @@ export default function GPSTracking() {
     }
   }, [activeTab, fetchTrackingData]);
 
+  // Resolve the real road route + distance once per set of GPS points
+  const routeKey = gpsPoints.map((p) => `${p.latitude.toFixed(5)},${p.longitude.toFixed(5)}`).join("|");
+  useEffect(() => {
+    let cancelled = false;
+    if (gpsPoints.length < 2) {
+      setRoute(null);
+      return;
+    }
+    getSnappedRoute(gpsPoints)
+      .then((res) => !cancelled && setRoute(res))
+      .catch(() => !cancelled && setRoute(null));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeKey]);
+
+
+
   // Build markers
   const allMapMarkers = [
     ...gpsStops.map((s) => ({
@@ -331,7 +354,8 @@ export default function GPSTracking() {
     })),
   ];
 
-  const totalDistance = gpsPoints.length > 1
+  // Straight-line fallback estimate
+  const haversineDistance = gpsPoints.length > 1
     ? gpsPoints.reduce((acc, p, i) => {
         if (i === 0) return 0;
         const prev = gpsPoints[i - 1];
@@ -346,6 +370,11 @@ export default function GPSTracking() {
         return acc + R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       }, 0)
     : 0;
+
+  // Real road distance from the Google Routes API (falls back to straight-line)
+  const isRoadDistance = route?.distanceMeters != null;
+  const totalDistance = isRoadDistance ? (route!.distanceMeters as number) / 1000 : haversineDistance;
+
 
   const firstPoint = gpsPoints.length > 0 ? gpsPoints[0] : null;
   const lastPoint = gpsPoints.length > 0 ? gpsPoints[gpsPoints.length - 1] : null;
@@ -529,6 +558,10 @@ export default function GPSTracking() {
                   <Navigation className="h-4 w-4 mx-auto mb-1 text-primary" />
                   <p className="text-xs text-muted-foreground">Distance</p>
                   <p className="text-sm font-semibold">{totalDistance.toFixed(1)} km</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {isRoadDistance ? "road distance" : "estimated"}
+                  </p>
+
                 </CardContent>
               </Card>
               <Card className="shadow-card">
@@ -579,11 +612,13 @@ export default function GPSTracking() {
                       <GoogleTrackMap
                         gpsPoints={gpsPoints}
                         activityMarkers={allMapMarkers}
+                        routePath={route?.path ?? null}
                       />
                     </Suspense>
                     <div className="absolute top-2 right-2 z-[400] bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
                       Traveled: {totalDistance.toFixed(1)} km
                     </div>
+
                   </>
                 ) : (
                   <div className="h-full w-full flex flex-col items-center justify-center bg-muted/50">

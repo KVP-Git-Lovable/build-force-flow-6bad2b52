@@ -18,7 +18,10 @@ interface GoogleTrackMapProps {
   location?: { lat: number; lng: number } | null;
   gpsPoints?: GPSPoint[];
   activityMarkers?: ActivityMarker[];
+  /** Precomputed road-snapped path. When provided, the map skips its own routing call. */
+  routePath?: { lat: number; lng: number }[] | null;
 }
+
 
 const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
 const CHANNEL = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined;
@@ -75,7 +78,7 @@ const AUTH_ERROR =
   "Google Maps rejected this domain. Add this site to the API key's HTTP referrer allowlist in Google Cloud Console.";
 
 const GoogleTrackMap = forwardRef<HTMLDivElement, GoogleTrackMapProps>(function GoogleTrackMap(
-  { location, gpsPoints, activityMarkers },
+  { location, gpsPoints, activityMarkers, routePath },
   _forwardedRef
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -150,15 +153,19 @@ const GoogleTrackMap = forwardRef<HTMLDivElement, GoogleTrackMapProps>(function 
   }, [ready]);
 
 
-  // Snap trail to roads
+  // Snap trail to roads (skipped when the parent already computed the route)
   useEffect(() => {
     let cancelled = false;
+    if (routePath) {
+      setRoutedPath(routePath);
+      return;
+    }
     if (points.length < 2) {
       setRoutedPath([]);
       return;
     }
     getSnappedRoute(points)
-      .then((path) => !cancelled && setRoutedPath(path))
+      .then((res) => !cancelled && setRoutedPath(res.path))
       .catch(() => {
         if (!cancelled) setRoutedPath(points.map((p) => ({ lat: p.latitude, lng: p.longitude })));
       });
@@ -166,7 +173,8 @@ const GoogleTrackMap = forwardRef<HTMLDivElement, GoogleTrackMapProps>(function 
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(points.map((p) => [p.latitude, p.longitude]))]);
+  }, [routePath, JSON.stringify(points.map((p) => [p.latitude, p.longitude]))]);
+
 
   // Draw everything
   useEffect(() => {
