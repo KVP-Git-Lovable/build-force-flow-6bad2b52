@@ -187,7 +187,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
     doc.setTextColor(255, 255, 255);
     args.columns.forEach((c, i) => {
       const cx = c.align === "right" ? colX[i] + colWidths[i] - 2 : colX[i] + 2;
-      doc.text(c.header, cx, y + 4.7, { align: c.align === "right" ? "right" : "left" });
+      doc.text(pdfText(c.header), cx, y + 4.7, { align: c.align === "right" ? "right" : "left" });
     });
     y += 7;
   };
