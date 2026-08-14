@@ -933,8 +933,37 @@ export default function CreativeActivityForm({
                           const isAudio = /\.(mp3|wav|m4a|ogg)$/i.test(u);
                           const fileName = u.split('/').pop() || `Attachment ${i + 1}`;
 
+                          if (isImage) {
+                            return (
+                              <div
+                                key={i}
+                                className="group relative p-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition cursor-pointer overflow-hidden"
+                                onClick={() => { window.open(u, '_blank'); }}
+                                role="button"
+                                tabIndex={0}
+                              >
+                                <img
+                                  src={u}
+                                  alt={fileName}
+                                  className="w-full h-40 object-cover rounded-md mb-2 group-hover:opacity-80 transition"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                                <p className="text-[10px] font-medium text-foreground truncate">{fileName}</p>
+                                <p className="text-[8px] text-muted-foreground">Click to view</p>
+                              </div>
+                            );
+                          }
+
                           return (
-                            <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition cursor-pointer group" onClick={() => { window.open(u, '_blank'); }}>
+                            <div
+                              key={i}
+                              className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition cursor-pointer group"
+                              onClick={() => { window.open(u, '_blank'); }}
+                              role="button"
+                              tabIndex={0}
+                            >
                               <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
                               <span className="min-w-0 truncate text-[11px] font-medium text-foreground group-hover:text-primary">{fileName}</span>
                               <span className="text-[9px] text-muted-foreground shrink-0 group-hover:text-foreground">↗</span>
