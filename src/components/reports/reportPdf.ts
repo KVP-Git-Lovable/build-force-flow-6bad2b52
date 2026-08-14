@@ -2,6 +2,20 @@ import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadPDF } from "@/utils/nativeDownload";
+import { resolveSignedUrl } from "@/utils/signedStorage";
+
+/**
+ * jsPDF's built-in Helvetica is WinAnsi only — glyphs such as ₹ render as
+ * garbage ("¹" plus broken kerning). Normalise every string we draw.
+ */
+function pdfText(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\u20B9/g, "Rs. ")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[^\x20-\x7E\n]/g, "");
+}
 
 export interface PdfColumn {
   header: string;
