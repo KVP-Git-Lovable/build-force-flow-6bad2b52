@@ -86,6 +86,8 @@ export default function GPSTracking() {
   const [gpsStops, setGpsStops] = useState<GPSStop[]>([]);
   const [activityMarkers, setActivityMarkers] = useState<ActivityAtLocation[]>([]);
   const [trackingLoading, setTrackingLoading] = useState(false);
+  const [route, setRoute] = useState<SnappedRoute | null>(null);
+
 
   // Get own location
   useEffect(() => {
