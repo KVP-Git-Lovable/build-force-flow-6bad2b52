@@ -18,7 +18,10 @@ interface GoogleTrackMapProps {
   location?: { lat: number; lng: number } | null;
   gpsPoints?: GPSPoint[];
   activityMarkers?: ActivityMarker[];
+  /** Precomputed road-snapped path. When provided, the map skips its own routing call. */
+  routePath?: { lat: number; lng: number }[] | null;
 }
+
 
 const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
 const CHANNEL = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined;
