@@ -24,12 +24,13 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGPSTeamMembers } from "@/hooks/useGPSTeamMembers";
 
-const LeafletMap = lazy(() =>
-  import("@/components/LeafletMap").catch(() => {
+const GoogleTrackMap = lazy(() =>
+  import("@/components/GoogleTrackMap").catch(() => {
     window.location.reload();
-    return import("@/components/LeafletMap");
+    return import("@/components/GoogleTrackMap");
   })
 );
+
 
 type DateRangeOption = "today" | "this_week" | "this_month" | "custom";
 
