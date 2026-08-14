@@ -24,12 +24,13 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGPSTeamMembers } from "@/hooks/useGPSTeamMembers";
 
-const LeafletMap = lazy(() =>
-  import("@/components/LeafletMap").catch(() => {
+const GoogleTrackMap = lazy(() =>
+  import("@/components/GoogleTrackMap").catch(() => {
     window.location.reload();
-    return import("@/components/LeafletMap");
+    return import("@/components/GoogleTrackMap");
   })
 );
+
 
 type DateRangeOption = "today" | "this_week" | "this_month" | "custom";
 
@@ -424,7 +425,7 @@ export default function GPSTracking() {
                   <MapFallback />
                 ) : (
                   <Suspense fallback={<MapFallback />}>
-                    <LeafletMap
+                    <GoogleTrackMap
                       location={currentLocation}
                       activityMarkers={currentLocation ? [{
                         lat: currentLocation.lat,
@@ -575,7 +576,7 @@ export default function GPSTracking() {
                 ) : gpsPoints.length > 0 || activityMarkers.length > 0 ? (
                   <>
                     <Suspense fallback={<MapFallback />}>
-                      <LeafletMap
+                      <GoogleTrackMap
                         gpsPoints={gpsPoints}
                         activityMarkers={allMapMarkers}
                       />
