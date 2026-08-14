@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { getSnappedRoute } from "@/utils/googleRoute";
 
@@ -71,7 +71,13 @@ const activityPinSvg = encodeURIComponent(`
   <circle cx="12" cy="12" r="4.5" fill="#ffffff"/>
 </svg>`);
 
-export default function GoogleTrackMap({ location, gpsPoints, activityMarkers }: GoogleTrackMapProps) {
+const AUTH_ERROR =
+  "Google Maps rejected this domain. Add this site to the API key's HTTP referrer allowlist in Google Cloud Console.";
+
+const GoogleTrackMap = forwardRef<HTMLDivElement, GoogleTrackMapProps>(function GoogleTrackMap(
+  { location, gpsPoints, activityMarkers },
+  _forwardedRef
+) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]);
@@ -110,6 +116,13 @@ export default function GoogleTrackMap({ location, gpsPoints, activityMarkers }:
       });
       infoRef.current = new g.maps.InfoWindow();
       setReady(true);
+    };
+
+    // Google calls this global when the key is rejected (e.g. RefererNotAllowedMapError)
+    const prevAuthFailure = (window as any).gm_authFailure;
+    (window as any).gm_authFailure = () => {
+      if (!cancelled) setError(AUTH_ERROR);
+      if (typeof prevAuthFailure === "function") prevAuthFailure();
     };
 
     loadGoogleMaps()
@@ -265,4 +278,6 @@ export default function GoogleTrackMap({ location, gpsPoints, activityMarkers }:
   }
 
   return <div ref={containerRef} className="h-full w-full" />;
-}
+});
+
+export default GoogleTrackMap;
