@@ -41,23 +41,35 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRout
   try {
     const results = await Promise.all(
       chunks.map(async (chunk) => {
-        const { data, error } = await supabase.functions.invoke("snap-gps-route", {
-          body: { points: chunk.map((p) => ({ lat: p.latitude, lng: p.longitude })) },
-        });
-        if (error) throw error;
-        const encoded = data?.polyline as string | null;
-        const meters = Number(data?.distanceMeters);
-        return {
-          path: encoded ? decodePolyline(encoded) : [],
-          meters: Number.isFinite(meters) ? meters : 0,
-        };
+        const raw = chunk.map((p) => ({ lat: p.latitude, lng: p.longitude }));
+        try {
+          const { data, error } = await supabase.functions.invoke("snap-gps-route", {
+            body: { points: raw },
+          });
+          if (error) throw error;
+          const encoded = data?.polyline as string | null;
+          const meters = Number(data?.distanceMeters);
+          const path = encoded ? decodePolyline(encoded) : [];
+          if (path.length < 2) throw new Error("empty route");
+          return { path, meters: Number.isFinite(meters) ? meters : 0, snapped: true };
+        } catch (e) {
+          // A single chunk failing (e.g. transient gateway 503) must not drop
+          // the whole trail — fall back to the raw track for this segment.
+          console.warn("snap-gps-route chunk failed, using raw track", e);
+          return { path: raw, meters: 0, snapped: false };
+        }
       })
     );
 
     const path = results.flatMap((r) => r.path);
     if (path.length < 2) throw new Error("empty route");
+    const allSnapped = results.every((r) => r.snapped);
     const distanceMeters = results.reduce((sum, r) => sum + r.meters, 0);
-    return { path, distanceMeters: distanceMeters > 0 ? distanceMeters : null, snapped: true };
+    return {
+      path,
+      distanceMeters: allSnapped && distanceMeters > 0 ? distanceMeters : null,
+      snapped: allSnapped,
+    };
   } catch {
     return {
       path: points.map((p) => ({ lat: p.latitude, lng: p.longitude })),
