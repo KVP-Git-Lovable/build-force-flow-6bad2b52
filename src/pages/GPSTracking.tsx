@@ -335,7 +335,8 @@ export default function GPSTracking() {
     })),
   ];
 
-  const totalDistance = gpsPoints.length > 1
+  // Straight-line fallback estimate
+  const haversineDistance = gpsPoints.length > 1
     ? gpsPoints.reduce((acc, p, i) => {
         if (i === 0) return 0;
         const prev = gpsPoints[i - 1];
@@ -350,6 +351,11 @@ export default function GPSTracking() {
         return acc + R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       }, 0)
     : 0;
+
+  // Real road distance from the Google Routes API (falls back to straight-line)
+  const isRoadDistance = route?.distanceMeters != null;
+  const totalDistance = isRoadDistance ? (route!.distanceMeters as number) / 1000 : haversineDistance;
+
 
   const firstPoint = gpsPoints.length > 0 ? gpsPoints[0] : null;
   const lastPoint = gpsPoints.length > 0 ? gpsPoints[gpsPoints.length - 1] : null;
