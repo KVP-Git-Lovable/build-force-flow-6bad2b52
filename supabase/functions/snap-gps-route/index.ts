@@ -44,22 +44,35 @@ Deno.serve(async (req) => {
 
     const wp = (p: LatLng) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
 
-    const response = await fetch(`${GATEWAY_URL}/routes/directions/v2:computeRoutes`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": GOOGLE_MAPS_API_KEY,
-        "Content-Type": "application/json",
-        "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.distanceMeters,routes.duration",
-      },
-      body: JSON.stringify({
-        origin: wp(points[0]),
-        destination: wp(points[points.length - 1]),
-        intermediates: points.slice(1, -1).map(wp),
-        travelMode: "DRIVE",
-        polylineQuality: "HIGH_QUALITY",
-      }),
+    const requestBody = JSON.stringify({
+      origin: wp(points[0]),
+      destination: wp(points[points.length - 1]),
+      intermediates: points.slice(1, -1).map(wp),
+      travelMode: "DRIVE",
+      polylineQuality: "HIGH_QUALITY",
     });
+
+    const callGateway = () =>
+      fetch(`${GATEWAY_URL}/routes/directions/v2:computeRoutes`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "X-Connection-Api-Key": GOOGLE_MAPS_API_KEY,
+          "Content-Type": "application/json",
+          "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.distanceMeters,routes.duration",
+        },
+        body: requestBody,
+      });
+
+    // The gateway occasionally drops the upstream connection (502/503/504).
+    // Retry those transient failures with a short backoff before giving up.
+    let response = await callGateway();
+    for (let attempt = 1; attempt <= 2 && [429, 500, 502, 503, 504].includes(response.status); attempt++) {
+      await response.body?.cancel();
+      await new Promise((r) => setTimeout(r, attempt * 500));
+      console.warn(`Routes gateway transient failure, retry ${attempt}`);
+      response = await callGateway();
+    }
 
     if (response.status === 403) {
       const details: Array<{ reason?: string }> = (await response.json().catch(() => ({})))?.error?.details ?? [];
