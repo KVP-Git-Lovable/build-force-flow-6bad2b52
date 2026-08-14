@@ -293,7 +293,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
     doc.setFontSize(7.5);
     doc.setTextColor(130, 130, 130);
     doc.text(
-      `Generated: ${stamp}  •  By: ${args.generatedBy}`,
+      pdfText(`Generated: ${stamp}  |  By: ${args.generatedBy}`),
       margin,
       pageH - 7
     );
