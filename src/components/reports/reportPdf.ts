@@ -155,7 +155,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.setTextColor(20, 30, 60);
-  doc.text(args.title, margin, y);
+  doc.text(pdfText(args.title), margin, y);
   y += 6;
 
   // ---- Filters ----
@@ -163,7 +163,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.setTextColor(90, 90, 90);
-    const filterText = args.filters.join("    |    ");
+    const filterText = args.filters.map(pdfText).join("    |    ");
     const lines = doc.splitTextToSize(filterText, usableW);
     doc.text(lines, margin, y);
     y += lines.length * 4 + 2;
