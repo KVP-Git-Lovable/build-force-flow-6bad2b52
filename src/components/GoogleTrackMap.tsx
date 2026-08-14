@@ -153,15 +153,19 @@ const GoogleTrackMap = forwardRef<HTMLDivElement, GoogleTrackMapProps>(function 
   }, [ready]);
 
 
-  // Snap trail to roads
+  // Snap trail to roads (skipped when the parent already computed the route)
   useEffect(() => {
     let cancelled = false;
+    if (routePath) {
+      setRoutedPath(routePath);
+      return;
+    }
     if (points.length < 2) {
       setRoutedPath([]);
       return;
     }
     getSnappedRoute(points)
-      .then((path) => !cancelled && setRoutedPath(path))
+      .then((res) => !cancelled && setRoutedPath(res.path))
       .catch(() => {
         if (!cancelled) setRoutedPath(points.map((p) => ({ lat: p.latitude, lng: p.longitude })));
       });
@@ -169,7 +173,8 @@ const GoogleTrackMap = forwardRef<HTMLDivElement, GoogleTrackMapProps>(function 
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(points.map((p) => [p.latitude, p.longitude]))]);
+  }, [routePath, JSON.stringify(points.map((p) => [p.latitude, p.longitude]))]);
+
 
   // Draw everything
   useEffect(() => {
