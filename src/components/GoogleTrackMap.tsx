@@ -82,29 +82,60 @@ export default function GoogleTrackMap({ location, gpsPoints, activityMarkers }:
 
   const points = gpsPoints || [];
 
-  // Load API + init map
+  // Load API + init map (waits until the container actually has a size, so a
+  // map mounted inside a hidden/zero-height tab doesn't render blank)
   useEffect(() => {
     let cancelled = false;
+    let raf: number | null = null;
+
+    const init = () => {
+      if (cancelled || mapRef.current) return;
+      const el = containerRef.current;
+      if (!el) {
+        raf = window.requestAnimationFrame(init);
+        return;
+      }
+      if (el.offsetWidth === 0 || el.offsetHeight === 0) {
+        raf = window.requestAnimationFrame(init);
+        return;
+      }
+      const g = (window as any).google;
+      mapRef.current = new g.maps.Map(el, {
+        center: { lat: 22.5, lng: 78.9 },
+        zoom: 5,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        gestureHandling: "greedy",
+      });
+      infoRef.current = new g.maps.InfoWindow();
+      setReady(true);
+    };
+
     loadGoogleMaps()
-      .then(() => {
-        if (cancelled || !containerRef.current) return;
-        const g = (window as any).google;
-        mapRef.current = new g.maps.Map(containerRef.current, {
-          center: { lat: 22.5, lng: 78.9 },
-          zoom: 5,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          gestureHandling: "greedy",
-        });
-        infoRef.current = new g.maps.InfoWindow();
-        setReady(true);
-      })
+      .then(() => init())
       .catch((e) => !cancelled && setError(e.message || "Map unavailable"));
+
     return () => {
       cancelled = true;
+      if (raf) window.cancelAnimationFrame(raf);
     };
   }, []);
+
+  // Keep the map sized correctly when its container changes (tab switch, layout shift)
+  useEffect(() => {
+    if (!ready || !containerRef.current || !mapRef.current) return;
+    const g = (window as any).google;
+    const el = containerRef.current;
+    const ro = new ResizeObserver(() => {
+      const center = mapRef.current.getCenter();
+      g.maps.event.trigger(mapRef.current, "resize");
+      if (center) mapRef.current.setCenter(center);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ready]);
+
 
   // Snap trail to roads
   useEffect(() => {
