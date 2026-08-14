@@ -321,6 +321,25 @@ export default function GPSTracking() {
     }
   }, [activeTab, fetchTrackingData]);
 
+  // Resolve the real road route + distance once per set of GPS points
+  const routeKey = gpsPoints.map((p) => `${p.latitude.toFixed(5)},${p.longitude.toFixed(5)}`).join("|");
+  useEffect(() => {
+    let cancelled = false;
+    if (gpsPoints.length < 2) {
+      setRoute(null);
+      return;
+    }
+    getSnappedRoute(gpsPoints)
+      .then((res) => !cancelled && setRoute(res))
+      .catch(() => !cancelled && setRoute(null));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeKey]);
+
+
+
   // Build markers
   const allMapMarkers = [
     ...gpsStops.map((s) => ({
