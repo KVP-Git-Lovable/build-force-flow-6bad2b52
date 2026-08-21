@@ -159,7 +159,7 @@ export function useUserProfile(): UserProfileState {
   const displayRole = data?.displayRole ?? null;
   const secProfileName = roleNameData?.secProfileName ?? null;
 
-  const displayName = profile?.full_name || profile?.username || "";
+  const displayName = profile?.full_name || profile?.username || user?.email?.split('@')[0] || "User";
   const initials = displayName
     ? displayName
         .split(" ")
@@ -167,7 +167,7 @@ export function useUserProfile(): UserProfileState {
         .join("")
         .toUpperCase()
         .slice(0, 2)
-    : "??";
+    : "U";
 
   // Check admin status from multiple sources:
   // 1. Primary role from users.role_id (direct check for "admin")
