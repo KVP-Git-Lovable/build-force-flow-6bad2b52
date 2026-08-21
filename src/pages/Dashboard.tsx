@@ -63,7 +63,8 @@ export default function Dashboard() {
   const { profile, isAdmin, initials, loading: profileLoading } = useUserProfile();
   const { hasModuleAccess } = useProfilePermissions();
   const { userId } = useCurrentUser();
-  const displayName = profile?.full_name || profile?.username || "";
+  const { user } = useCurrentUser();
+  const displayName = profile?.full_name || profile?.username || user?.email?.split('@')[0] || "User";
 
   const {
     dayStarted,
