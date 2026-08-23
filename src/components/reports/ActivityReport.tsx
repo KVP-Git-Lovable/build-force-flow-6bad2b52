@@ -18,6 +18,7 @@ const DATE_FIELDS: DateFieldOption[] = [
 interface Row {
   id: string;
   full_name: string;
+  customer: string;
   activity_date: string;
   site: string;
   milestone: string;
@@ -82,7 +83,7 @@ export default function ActivityReport() {
     try {
       let q = supabase
         .from("activity_events")
-        .select("id, user_id, activity_date, site_id, milestone_id, activity_type, description, total_hours, status")
+        .select("id, user_id, lead_id, activity_date, site_id, milestone_id, activity_type, description, total_hours, status")
         .order("activity_date", { ascending: false });
 
       if (state.field === "activity_date") {
@@ -103,10 +104,19 @@ export default function ActivityReport() {
       const nameMap = new Map(scope.users.map((u) => [u.id, u.full_name]));
       const siteMap = new Map(sites.map((s) => [s.value, s.label]));
       const msMap = new Map(milestones.map((m) => [m.value, m.label]));
+
+      const leadIds = Array.from(new Set((data || []).map((r) => r.lead_id).filter(Boolean))) as string[];
+      const leadMap = new Map<string, string>();
+      if (leadIds.length) {
+        const { data: leadRows } = await supabase.from("leads").select("id, company, name").in("id", leadIds);
+        (leadRows || []).forEach((l) => leadMap.set(l.id, l.company || l.name || "-"));
+      }
+
       setRows(
         (data || []).map((r) => ({
           id: r.id,
           full_name: nameMap.get(r.user_id) || "Unknown",
+          customer: r.lead_id ? leadMap.get(r.lead_id) || "-" : "-",
           activity_date: r.activity_date,
           site: r.site_id ? siteMap.get(r.site_id) || "-" : "-",
           milestone: r.milestone_id ? msMap.get(r.milestone_id) || "-" : "-",
@@ -138,6 +148,13 @@ export default function ActivityReport() {
         value: (r) => r.full_name,
         render: (r) => <span className="font-medium">{r.full_name}</span>,
         pdfWidth: 2,
+      },
+      {
+        key: "customer",
+        header: "Customer / Lead",
+        value: (r) => r.customer,
+        render: (r) => <span className="block max-w-[160px] truncate">{r.customer}</span>,
+        pdfWidth: 2.2,
       },
       { key: "activity_type", header: "Activity Type", value: (r) => r.activity_type, pdfWidth: 2.5 },
       {

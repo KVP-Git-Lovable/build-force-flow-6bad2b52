@@ -1,5 +1,8 @@
-import { BackgroundGeolocation } from "@capacitor-community/background-geolocation";
+import { registerPlugin } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
+
+// The community plugin ships native code only; register it dynamically.
+const BackgroundGeolocation = registerPlugin<any>("BackgroundGeolocation");
 
 interface TrackingSession {
   userId: string;
