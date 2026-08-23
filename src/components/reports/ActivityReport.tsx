@@ -149,6 +149,13 @@ export default function ActivityReport() {
         render: (r) => <span className="font-medium">{r.full_name}</span>,
         pdfWidth: 2,
       },
+      {
+        key: "customer",
+        header: "Customer / Lead",
+        value: (r) => r.customer,
+        render: (r) => <span className="block max-w-[160px] truncate">{r.customer}</span>,
+        pdfWidth: 2.2,
+      },
       { key: "activity_type", header: "Activity Type", value: (r) => r.activity_type, pdfWidth: 2.5 },
       {
         key: "description",
