@@ -1,5 +1,8 @@
-import { BackgroundGeolocation } from "@capacitor-community/background-geolocation";
+import { registerPlugin } from "@capacitor/core";
+import type { BackgroundGeolocationPlugin } from "@capacitor-community/background-geolocation";
 import { supabase } from "@/integrations/supabase/client";
+
+const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
 
 interface TrackingSession {
   userId: string;
