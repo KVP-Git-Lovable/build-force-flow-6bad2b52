@@ -18,6 +18,7 @@ const DATE_FIELDS: DateFieldOption[] = [
 interface Row {
   id: string;
   full_name: string;
+  customer: string;
   activity_date: string;
   site: string;
   milestone: string;
