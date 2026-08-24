@@ -114,10 +114,11 @@ export default function GPSTracking() {
       setLocationError(false);
       try {
         const today = format(new Date(), "yyyy-MM-dd");
+        const userId = currentSelectedUser === "me" ? currentUserId : currentSelectedUser;
         const { data } = await supabase
           .from("gps_tracking")
           .select("latitude, longitude, timestamp")
-          .eq("user_id", currentSelectedUser)
+          .eq("user_id", userId)
           .eq("date", today)
           .order("timestamp", { ascending: false })
           .limit(1);
@@ -214,10 +215,10 @@ export default function GPSTracking() {
       console.log("Total raw points:", points.length);
 
       // Multi-layer filtering for accurate GPS tracking
-      // CRITICAL: Only accept high-accuracy GPS (satellite), not cell tower data
+      // Accept good GPS accuracy (satellite + assisted GPS in urban areas)
       const MAX_SPEED_KMH = 35; // Conservative: ~city speeds
       const MAX_TIME_GAP_MINUTES = 5; // Gaps > 5 min = separate activity
-      const MAX_ACCURACY_METERS = 30; // Only accept GPS with < 30m accuracy (satellite-based)
+      const MAX_ACCURACY_METERS = 50; // Accept GPS with < 50m accuracy (includes urban/assisted GPS)
       const cleanedPoints: GPSPoint[] = [];
 
       // First pass: ONLY accept high-accuracy GPS points (satellite, not cell tower)
