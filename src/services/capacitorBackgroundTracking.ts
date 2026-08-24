@@ -39,10 +39,10 @@ export async function startCapacitorBackgroundTracking(userId: string): Promise<
 
     // Configure background geolocation
     await BackgroundGeolocation.startWatching({
-      // Capture location every 15 seconds (adjust as needed)
-      interval: 15000,
-      // Minimum distance in meters before reporting new location
-      minDisplacement: 5,
+      // Capture location every 5 seconds for better accuracy
+      interval: 5000,
+      // Minimum distance in meters before reporting (2m to catch all movements)
+      minDisplacement: 2,
       // High accuracy
       enableHighAccuracy: true,
       notificationTitle: "SBEE Cables",
