@@ -239,6 +239,15 @@ export default function GPSTracking() {
 
       console.log("Filtered accuracy:", points.length, "→", accuratePoints.length, "points");
 
+      // Calculate straight-line distance between two points (in meters)
+      const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const R = 6371000; // Earth radius in meters
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      };
+
       for (const curr of accuratePoints) {
         if (cleanedPoints.length === 0) {
           cleanedPoints.push(curr);
@@ -248,14 +257,15 @@ export default function GPSTracking() {
         const prev = cleanedPoints[cleanedPoints.length - 1];
 
         // Calculate distance using Haversine formula
-        const R = 6371;
-        const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180;
-        const dLon = ((curr.longitude - prev.longitude) * Math.PI) / 180;
-        const a = Math.sin(dLat / 2) ** 2 +
-          Math.cos((prev.latitude * Math.PI) / 180) *
-          Math.cos((curr.latitude * Math.PI) / 180) *
-          Math.sin(dLon / 2) ** 2;
-        const distanceKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distanceMeters = haversineDistance(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
+        const distanceKm = distanceMeters / 1000;
+
+        // CRITICAL: Skip stationary points (GPS jitter while idle)
+        // If distance < 20m, user is likely stationary - don't record
+        if (distanceMeters < 20) {
+          console.log("Skipped stationary point (GPS jitter):", distanceMeters.toFixed(1) + "m");
+          continue;
+        }
 
         // Calculate time difference
         const prevTime = new Date(prev.timestamp).getTime();
