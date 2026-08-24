@@ -65,12 +65,15 @@ export async function startCapacitorBackgroundTracking(userId: string): Promise<
           timestamp: new Date().toISOString(),
         });
 
-        console.log("Background location captured:", {
+        console.log("✅ Background location captured:", {
           lat: location.latitude.toFixed(6),
           lng: location.longitude.toFixed(6),
+          accuracy: location.accuracy,
+          timestamp: new Date().toISOString(),
         });
       } catch (error) {
-        console.error("Error saving background location:", error);
+        console.error("❌ Error saving background location:", error);
+        alert(`GPS tracking error: ${error}`);
       }
     });
 
