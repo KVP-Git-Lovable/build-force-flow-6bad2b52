@@ -37,6 +37,7 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
 export function useGPSTracker(userId: string | null | undefined) {
   const activeRef = useRef(false);
   const lastPointRef = useRef<{ lat: number; lng: number; ts: number } | null>(null);
+  const pendingJumpRef = useRef<{ lat: number; lng: number; accuracy: number | null; ts: number } | null>(null);
   const timerRef = useRef<number | null>(null);
   const watcherIdRef = useRef<string | null>(null);
   const foregroundBusyRef = useRef(false);
