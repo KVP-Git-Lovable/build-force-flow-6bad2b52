@@ -465,16 +465,8 @@ export default function CreativeActivityForm({
       const res = await checkInActivity(editActivity.id, site);
       setCheckedIn(true);
 
-      // Start background GPS tracking for this activity
-      if (currentUserId) {
-        try {
-          await startCapacitorBackgroundTracking(currentUserId);
-          console.log("Background tracking started for activity check-in");
-        } catch (trackingError) {
-          console.warn("Background tracking not available:", trackingError);
-          // Don't block check-in if tracking fails
-        }
-      }
+      // GPS tracking is owned by useGPSTracker (gated on day check-in) —
+      // activity check-in does not spawn a separate tracker.
 
       if (res?.within_site === true) toast.success(`Checked in · Within site (${res.distance_m}m)`);
       else if (res?.within_site === false) toast.warning(`Checked in · Outside site (${res.distance_m}m)`);
