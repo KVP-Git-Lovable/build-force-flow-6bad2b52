@@ -189,7 +189,7 @@ export default function GPSTracking() {
     const { from, to } = getDateRange();
     setTrackingLoading(true);
     try {
-      const [pointsRes, stopsRes, activitiesRes] = await Promise.all([
+      const [pointsRes, sessionsRes, stopsRes, activitiesRes] = await Promise.all([
         supabase
           .from("gps_tracking")
           .select("latitude, longitude, timestamp, speed, accuracy")
@@ -197,6 +197,12 @@ export default function GPSTracking() {
           .gte("date", from)
           .lte("date", to)
           .order("timestamp", { ascending: true }),
+        supabase
+          .from("activity_sessions")
+          .select("id, user_id, checked_in_at, checked_out_at")
+          .eq("user_id", userId)
+          .gte("checked_in_at", `${from}T00:00:00`)
+          .lte("checked_in_at", `${to}T23:59:59`),
         supabase
           .from("gps_tracking_stops")
           .select("latitude, longitude, timestamp, duration_minutes, reason")
@@ -213,12 +219,36 @@ export default function GPSTracking() {
 
       // Filter GPS points - remove noise/jitter while keeping real movement
       let points = (pointsRes.data || []) as GPSPoint[];
-      console.log("Total raw points:", points.length);
+      const sessions = sessionsRes.data || [];
+
+      // Check if GPS point timestamp is within an active session window
+      const isInActiveSession = (timestamp: string): boolean => {
+        const pointTime = new Date(timestamp).getTime();
+        return sessions.some((session: any) => {
+          const checkinTime = new Date(session.checked_in_at).getTime();
+          const checkoutTime = session.checked_out_at ? new Date(session.checked_out_at).getTime() : Infinity;
+          return pointTime >= checkinTime && pointTime <= checkoutTime;
+        });
+      };
+
+      // Filter by session first, then apply shared filtering
+      const sessionFilteredPoints = points.filter((p) => isInActiveSession(p.timestamp));
 
       // Shared filtering — identical algorithm on web, dashboard, and APK
       // (accuracy ≤100m, 20m stationary jitter, 160 km/h jump, 5-min gap split)
-      const cleanedPoints = filterTrackPoints(points) as GPSPoint[];
-      console.log("Filtered track:", points.length, "→", cleanedPoints.length, "points");
+      const cleanedPoints = filterTrackPoints(sessionFilteredPoints) as GPSPoint[];
+
+        if (isNoise || isRealistic) {
+          cleanedPoints.push(curr);
+        } else {
+          // Rejected impossible speed
+            distanceKm: distanceKm.toFixed(3),
+            timeSec: (timeDiffMs / 1000).toFixed(0),
+            impliedSpeedKmh: impliedSpeedKmh.toFixed(1),
+          });
+        }
+      }
+>>>>>>> e3162e1 (Implement GPS session tracking: validate points by check-in window)
 
       console.log("Filtered from", points.length, "to", cleanedPoints.length, "points");
       setGpsPoints(cleanedPoints);

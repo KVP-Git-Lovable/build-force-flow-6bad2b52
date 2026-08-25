@@ -465,8 +465,29 @@ export default function CreativeActivityForm({
       const res = await checkInActivity(editActivity.id, site);
       setCheckedIn(true);
 
-      // GPS tracking is owned by useGPSTracker (gated on day check-in) —
-      // activity check-in does not spawn a separate tracker.
+      // Create activity session (tracks check-in window for GPS validation)
+      if (currentUserId && editActivity.id) {
+        try {
+          await supabase.functions.invoke("manage-activity-session", {
+            body: {
+              action: "checkin",
+              userId: currentUserId,
+              activityId: editActivity.id,
+            },
+          });
+        } catch (sessionError) {
+          console.warn("Session tracking not available:", sessionError);
+        }
+      }
+
+      // Start background GPS tracking for this activity
+      if (currentUserId) {
+        try {
+          await startCapacitorBackgroundTracking(currentUserId);
+        } catch (trackingError) {
+          console.warn("Background tracking not available:", trackingError);
+        }
+      }
 
       if (res?.within_site === true) toast.success(`Checked in · Within site (${res.distance_m}m)`);
       else if (res?.within_site === false) toast.warning(`Checked in · Outside site (${res.distance_m}m)`);
@@ -484,6 +505,28 @@ export default function CreativeActivityForm({
     setCheckingIn(true);
     try {
       await checkOutActivity(editActivity.id);
+
+      // Close activity session (ends GPS validation window)
+      if (currentUserId && editActivity.id) {
+        try {
+          await supabase.functions.invoke("manage-activity-session", {
+            body: {
+              action: "checkout",
+              userId: currentUserId,
+              activityId: editActivity.id,
+            },
+          });
+        } catch (sessionError) {
+          console.warn("Session closure error:", sessionError);
+        }
+      }
+
+      // Stop background GPS tracking
+      try {
+        await stopCapacitorBackgroundTracking();
+      } catch (trackingError) {
+        console.warn("Error stopping background tracking:", trackingError);
+      }
 
       toast.success("Checked out");
       onCreated?.();

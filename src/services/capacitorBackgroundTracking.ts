@@ -124,6 +124,23 @@ async function saveLocationToDatabase(
   const today = new Date().toISOString().split("T")[0];
 
   try {
+    // Validate that GPS point falls within an active check-in session
+    const validationResult = await supabase.functions.invoke(
+      "validate-gps-session",
+      {
+        body: {
+          userId,
+          timestamp: location.timestamp,
+        },
+      }
+    );
+
+    if (!validationResult.data?.valid) {
+      console.warn("GPS point rejected: outside active session window");
+      return; // Silently skip this point
+    }
+
+    // Save validated GPS point
     await supabase.from("gps_tracking").insert({
       user_id: userId,
       date: today,
