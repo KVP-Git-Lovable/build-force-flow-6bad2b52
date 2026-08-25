@@ -73,7 +73,8 @@ export async function startCapacitorBackgroundTracking(userId: string): Promise<
         });
       } catch (error) {
         console.error("❌ Error saving background location:", error);
-        alert(`GPS tracking error: ${error}`);
+        // Don't alert - silent failure prevents popup spam (network drop, etc)
+        // Tracking will continue and retry automatically
       }
     });
 
@@ -134,7 +135,8 @@ async function saveLocationToDatabase(
     });
   } catch (error) {
     console.error("Error saving location to database:", error);
-    // Don't throw - continue tracking even if save fails
+    // Silent failure: continue tracking even if save fails (network drop, brief outage)
+    // Next batch will retry automatically
   }
 }
 
