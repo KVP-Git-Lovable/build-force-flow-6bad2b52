@@ -349,6 +349,7 @@ export type Database = {
           notes: string | null
           regularized_request_id: string | null
           status: string
+          total_distance_km: number | null
           total_hours: number | null
           updated_at: string
           user_id: string
@@ -372,6 +373,7 @@ export type Database = {
           notes?: string | null
           regularized_request_id?: string | null
           status?: string
+          total_distance_km?: number | null
           total_hours?: number | null
           updated_at?: string
           user_id: string
@@ -395,6 +397,7 @@ export type Database = {
           notes?: string | null
           regularized_request_id?: string | null
           status?: string
+          total_distance_km?: number | null
           total_hours?: number | null
           updated_at?: string
           user_id?: string
