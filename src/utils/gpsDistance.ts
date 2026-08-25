@@ -83,7 +83,30 @@ export function filterTrackPoints(points: TrackPoint[]): TrackPoint[] {
     }
     // else: impossible jump — reject the point
   }
-  return cleaned;
+
+  // Pass 2: ping-pong removal. When two location sources write alternating
+  // fixes (e.g. background watcher vs cached last-known fix), the track
+  // bounces A→B→A between two clusters, doubling the distance. A point that
+  // is far from BOTH its neighbours while the neighbours are close together
+  // is a stale-fix outlier — drop it.
+  const PING_PONG_OUTLIER_M = 300;  // outlier must be at least this far away
+  const PING_PONG_RETURN_M = 150;   // neighbours must be this close together
+  const deduped: TrackPoint[] = [];
+  for (let i = 0; i < cleaned.length; i++) {
+    const curr = cleaned[i];
+    const prev = deduped[deduped.length - 1];
+    const next = cleaned[i + 1];
+    if (prev && next) {
+      const outM = haversineMeters(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
+      const backM = haversineMeters(curr.latitude, curr.longitude, next.latitude, next.longitude);
+      const spanM = haversineMeters(prev.latitude, prev.longitude, next.latitude, next.longitude);
+      if (outM >= PING_PONG_OUTLIER_M && backM >= PING_PONG_OUTLIER_M && spanM <= PING_PONG_RETURN_M) {
+        continue; // stale-fix outlier between two agreeing fixes
+      }
+    }
+    deduped.push(curr);
+  }
+  return deduped;
 }
 
 /** Total straight-line distance (km) of an already-filtered track. */
