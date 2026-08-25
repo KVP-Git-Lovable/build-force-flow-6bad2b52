@@ -5,7 +5,6 @@ import "./index.css";
 import "./styles/mobile.css";
 import { requestNativePermissions } from "./utils/nativePermissions";
 import { checkAndBustCache, startVersionSync } from "./utils/cacheVersion";
-import { startBackgroundTracking } from "./services/backgroundTracking";
 
 // Recover from stale lazy-loaded chunks after a new deploy by reloading once.
 const CHUNK_RELOAD_KEY = "chunk_reload_attempt";
@@ -82,6 +81,6 @@ if (!reloading) {
   // Start periodic server-version sync (production only, non-blocking)
   startVersionSync();
 
-  // Start background location tracking for PWA and APK
-  startBackgroundTracking().catch((e) => console.warn("[Background Tracking] Init failed:", e));
+  // NOTE: GPS tracking is NOT auto-started here. It is gated on attendance
+  // check-in/check-out via useGPSTracker (mounted in AppLayout).
 }

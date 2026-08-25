@@ -6,7 +6,7 @@ import { format } from "date-fns";
 const INTERVAL_MS = 30_000;          // sample at least every 30s
 const MIN_MOVE_METERS = 30;          // OR every 30m of movement
 const FOREGROUND_POLL_MS = 30_000;   // web / non-native fallback
-const MAX_ACCURACY_M = 300;          // reject fixes worse than 300m (reduced from 100m for better coverage)
+const MAX_ACCURACY_M = 100;          // reject fixes worse than 100m (cell-tower guesses create phantom distance)
 const MAX_JUMP_METERS = 10000;       // reject teleport jumps >10km between consecutive samples
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
