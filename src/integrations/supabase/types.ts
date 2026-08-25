@@ -210,6 +210,47 @@ export type Database = {
           },
         ]
       }
+      activity_sessions: {
+        Row: {
+          activity_id: string
+          checked_in_at: string
+          checked_out_at: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          checked_in_at: string
+          checked_out_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          checked_in_at?: string
+          checked_out_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_sessions_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activity_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_types_master: {
         Row: {
           created_at: string
