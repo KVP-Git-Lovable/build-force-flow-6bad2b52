@@ -52,7 +52,7 @@ import { isNative, takeNativePhoto } from "@/utils/nativePermissions";
 import OpenGRNPicker from "@/components/procurement/OpenGRNPicker";
 import { receiptDrivenStatus } from "@/lib/procurement";
 import { ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
-import { startCapacitorBackgroundTracking, stopCapacitorBackgroundTracking } from "@/services/capacitorBackgroundTracking";
+
 
 interface GrnLineItem {
   id: string;
@@ -465,16 +465,8 @@ export default function CreativeActivityForm({
       const res = await checkInActivity(editActivity.id, site);
       setCheckedIn(true);
 
-      // Start background GPS tracking for this activity
-      if (currentUserId) {
-        try {
-          await startCapacitorBackgroundTracking(currentUserId);
-          console.log("Background tracking started for activity check-in");
-        } catch (trackingError) {
-          console.warn("Background tracking not available:", trackingError);
-          // Don't block check-in if tracking fails
-        }
-      }
+      // GPS tracking is owned by useGPSTracker (gated on day check-in) —
+      // activity check-in does not spawn a separate tracker.
 
       if (res?.within_site === true) toast.success(`Checked in · Within site (${res.distance_m}m)`);
       else if (res?.within_site === false) toast.warning(`Checked in · Outside site (${res.distance_m}m)`);
@@ -492,15 +484,6 @@ export default function CreativeActivityForm({
     setCheckingIn(true);
     try {
       await checkOutActivity(editActivity.id);
-
-      // Stop background GPS tracking
-      try {
-        await stopCapacitorBackgroundTracking();
-        console.log("Background tracking stopped for activity check-out");
-      } catch (trackingError) {
-        console.warn("Error stopping background tracking:", trackingError);
-        // Don't block check-out if tracking stop fails
-      }
 
       toast.success("Checked out");
       onCreated?.();

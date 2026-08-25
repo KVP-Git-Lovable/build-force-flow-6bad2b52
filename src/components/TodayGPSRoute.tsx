@@ -1,181 +1,110 @@
-import { useState, useEffect, Suspense, lazy } from "react";
-import { motion } from "framer-motion";
-import { format } from "date-fns";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Navigation, MapPin, Clock } from "lucide-react";
+import { Navigation, Route, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-
-const LeafletMap = lazy(() => import("@/components/LeafletMap"));
+import { format } from "date-fns";
+import { computeFilteredDistanceKm } from "@/utils/gpsDistance";
 
 interface GPSPoint {
   latitude: number;
   longitude: number;
   timestamp: string;
-  speed: number | null;
-  accuracy: number | null;
+  accuracy?: number | null;
+  speed?: number | null;
 }
 
 interface TodayGPSRouteProps {
-  userId: string | undefined;
-  checkInTime: string | null;
-  checkOutTime: string | null;
+  userId: string;
+  /** Final distance saved at check-out. When set, this value is shown as-is
+   *  and never recalculated — the day's distance is locked. */
+  lockedDistanceKm?: number | null;
 }
 
-const MapFallback = () => (
-  <div className="h-full w-full flex items-center justify-center bg-muted">
-    <p className="text-sm text-muted-foreground">Loading map...</p>
-  </div>
-);
-
-export default function TodayGPSRoute({ userId, checkInTime, checkOutTime }: TodayGPSRouteProps) {
-  const [gpsPoints, setGpsPoints] = useState<GPSPoint[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [totalDistance, setTotalDistance] = useState(0);
+export function TodayGPSRoute({ userId, lockedDistanceKm }: TodayGPSRouteProps) {
+  const [points, setPoints] = useState<GPSPoint[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId || !checkInTime) return;
+    // Distance is locked at check-out — no need to recompute from raw points
+    if (lockedDistanceKm != null) {
+      setLoading(false);
+      return;
+    }
 
-    const fetchTodayGPS = async () => {
-      setLoading(true);
-      try {
-        const today = format(new Date(), "yyyy-MM-dd");
-        const { data } = await supabase
-          .from("gps_tracking")
-          .select("latitude, longitude, timestamp, speed, accuracy")
-          .eq("user_id", userId)
-          .eq("date", today)
-          .or("accuracy.is.null,accuracy.lte.100")
-          .order("timestamp", { ascending: true });
+    const fetchRoute = async () => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { data } = await supabase
+        .from("gps_tracking")
+        .select("latitude, longitude, timestamp, accuracy, speed")
+        .eq("user_id", userId)
+        .eq("date", today)
+        .order("timestamp", { ascending: true });
 
-        if (data) {
-          setGpsPoints(data);
-
-          // Calculate total distance using Haversine formula
-          if (data.length > 1) {
-            let distance = 0;
-            for (let i = 1; i < data.length; i++) {
-              const prev = data[i - 1];
-              const curr = data[i];
-              const R = 6371;
-              const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180;
-              const dLon = ((curr.longitude - prev.longitude) * Math.PI) / 180;
-              const a =
-                Math.sin(dLat / 2) ** 2 +
-                Math.cos((prev.latitude * Math.PI) / 180) *
-                  Math.cos((curr.latitude * Math.PI) / 180) *
-                  Math.sin(dLon / 2) ** 2;
-              distance += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            }
-            setTotalDistance(distance);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching GPS data:", err);
-      } finally {
-        setLoading(false);
-      }
+      if (data) setPoints(data as GPSPoint[]);
+      setLoading(false);
     };
+    fetchRoute();
+  }, [userId, lockedDistanceKm]);
 
-    fetchTodayGPS();
-  }, [userId, checkInTime]);
+  const distanceKm =
+    lockedDistanceKm != null
+      ? lockedDistanceKm
+      : computeFilteredDistanceKm(points);
 
-  if (!checkInTime) {
-    return null;
-  }
+  const firstPoint = points[0];
+  const lastPoint = points[points.length - 1];
+
+  const durationMin =
+    firstPoint && lastPoint
+      ? Math.round(
+          (new Date(lastPoint.timestamp).getTime() -
+            new Date(firstPoint.timestamp).getTime()) /
+            60000
+        )
+      : 0;
+
+  if (loading) return null;
+  if (lockedDistanceKm == null && points.length < 2) return null;
 
   return (
-    <motion.div
-      className="space-y-4"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <div>
-        <h2 className="text-lg font-bold">Today's Route</h2>
-        <p className="text-sm text-muted-foreground">GPS tracking from check-in to check-out</p>
-      </div>
-
-      {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <Card className="shadow-card">
-          <CardContent className="p-3 text-center">
-            <Navigation className="h-4 w-4 mx-auto mb-1 text-primary" />
-            <p className="text-xs text-muted-foreground">Distance</p>
-            <p className="text-sm font-semibold">{totalDistance.toFixed(2)} km</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-3 text-center">
-            <MapPin className="h-4 w-4 mx-auto mb-1 text-primary" />
-            <p className="text-xs text-muted-foreground">Points</p>
-            <p className="text-sm font-semibold">{gpsPoints.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-3 text-center">
-            <Clock className="h-4 w-4 mx-auto mb-1 text-primary" />
-            <p className="text-xs text-muted-foreground">Duration</p>
-            <p className="text-sm font-semibold">
-              {checkOutTime
-                ? Math.round(
-                    (new Date(checkOutTime).getTime() - new Date(checkInTime).getTime()) /
-                      (1000 * 60)
-                  ) + " min"
-                : "Active"}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Timeline */}
-      <Card className="shadow-card">
-        <CardContent className="p-4 space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <div>
-              <p className="text-muted-foreground">Start</p>
-              <p className="font-medium">{format(new Date(checkInTime), "hh:mm a")}</p>
-            </div>
-            <div className="flex-1 mx-3 border-t border-dashed border-muted-foreground/30" />
-            <div className="text-right">
-              <p className="text-muted-foreground">{checkOutTime ? "End" : "Current"}</p>
-              <p className="font-medium">
-                {checkOutTime ? format(new Date(checkOutTime), "hh:mm a") : "Active"}
-              </p>
-            </div>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <Route className="h-4 w-4 text-primary" />
+          Today's Route
+          {lockedDistanceKm != null && (
+            <span className="text-xs font-normal text-muted-foreground">(final)</span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Navigation className="h-4 w-4 text-muted-foreground" />
+            <span className="text-2xl font-bold">{distanceKm.toFixed(1)} km</span>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Map */}
-      {gpsPoints.length > 0 && (
-        <Card className="shadow-card overflow-hidden">
-          <CardContent className="p-0">
-            <div className="h-[400px] relative">
-              {loading ? (
-                <MapFallback />
-              ) : (
-                <Suspense fallback={<MapFallback />}>
-                  <LeafletMap gpsPoints={gpsPoints} />
-                </Suspense>
-              )}
-              {totalDistance > 0 && (
-                <div className="absolute top-2 right-2 z-[400] bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
-                  Traveled: {totalDistance.toFixed(2)} km
-                </div>
-              )}
+          {durationMin > 0 && (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" />
+              {durationMin >= 60
+                ? `${Math.floor(durationMin / 60)}h ${durationMin % 60}m`
+                : `${durationMin}m`}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {gpsPoints.length === 0 && !loading && (
-        <Card className="shadow-card overflow-hidden">
-          <CardContent className="p-8 text-center">
-            <MapPin className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-            <p className="text-sm font-semibold text-muted-foreground">No GPS data yet</p>
-            <p className="text-xs text-muted-foreground mt-1">GPS tracking will appear here after you check in</p>
-          </CardContent>
-        </Card>
-      )}
-    </motion.div>
+          )}
+        </div>
+        {firstPoint && lastPoint && (
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>
+              Start: {format(new Date(firstPoint.timestamp), "h:mm a")} ·{" "}
+              {firstPoint.latitude.toFixed(4)}, {firstPoint.longitude.toFixed(4)}
+            </p>
+            <p>
+              Latest: {format(new Date(lastPoint.timestamp), "h:mm a")} ·{" "}
+              {lastPoint.latitude.toFixed(4)}, {lastPoint.longitude.toFixed(4)}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

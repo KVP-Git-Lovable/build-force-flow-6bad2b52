@@ -204,11 +204,30 @@ export function useAttendance(userId: string | undefined) {
     const checkInTime = new Date(todayRecord.check_in_time!);
     const totalHours = (new Date(now).getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
 
+    // Lock the day's final GPS distance at check-out so it never
+    // fluctuates afterwards (shared algorithm with Day Tracking page)
+    let lockedDistanceKm: number | null = null;
+    try {
+      const { data: track } = await supabase
+        .from("gps_tracking")
+        .select("latitude, longitude, timestamp, accuracy, speed")
+        .eq("user_id", userId)
+        .eq("date", today)
+        .order("timestamp", { ascending: true });
+      if (track && track.length >= 2) {
+        const { computeFilteredDistanceKm } = await import("@/utils/gpsDistance");
+        lockedDistanceKm = Math.round(computeFilteredDistanceKm(track as any) * 100) / 100;
+      }
+    } catch (e) {
+      console.warn("[Attendance] Could not compute final distance:", e);
+    }
+
     const updateData: any = {
       check_out_time: now,
       check_out_location: location,
       total_hours: Math.round(totalHours * 100) / 100,
     };
+    if (lockedDistanceKm != null) updateData.total_distance_km = lockedDistanceKm;
     
     if (data?.photoUrl) updateData.check_out_photo_url = data.photoUrl;
     if (data?.faceVerificationStatus) updateData.face_verification_status_out = data.faceVerificationStatus;

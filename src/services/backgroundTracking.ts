@@ -13,39 +13,15 @@ const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL
   : "/.netlify/functions";
 
 /**
- * Start background location tracking
- * Captures location every minute even when app is closed
+ * @deprecated Legacy auto-start tracker. GPS capture is now owned exclusively
+ * by `useGPSTracker` (gated on attendance check-in/check-out). This function
+ * is intentionally a no-op so stale callers cannot start untracked intervals.
  */
 export async function startBackgroundTracking(): Promise<void> {
-  // Store auth info for service worker background use
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (session) {
-    await storeAuthForServiceWorker(session.access_token);
-  }
-
-  // Register service worker for PWA background support
-  if ("serviceWorker" in navigator && "BackgroundSyncManager" in window) {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      console.log("Service Worker ready for background tracking");
-
-      // Queue initial background sync
-      if ("sync" in registration) {
-        try {
-          await (registration as any).sync.register("sync-location");
-        } catch (e) {
-          console.log("Background Sync API not available, will use polling");
-        }
-      }
-    } catch (error) {
-      console.error("Service Worker error:", error);
-    }
-  }
-
-  // Start foreground location capture (works when app is open)
-  startForegroundTracking();
+  console.warn(
+    "[BackgroundTracking] startBackgroundTracking() is deprecated and disabled. " +
+    "GPS tracking starts on attendance check-in via useGPSTracker."
+  );
 }
 
 /**

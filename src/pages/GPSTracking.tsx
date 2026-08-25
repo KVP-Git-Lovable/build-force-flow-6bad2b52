@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGPSTeamMembers } from "@/hooks/useGPSTeamMembers";
 import { getSnappedRoute, type SnappedRoute } from "@/utils/googleRoute";
+import { filterTrackPoints } from "@/utils/gpsDistance";
 
 
 const GoogleTrackMap = lazy(() =>
@@ -214,90 +215,10 @@ export default function GPSTracking() {
       let points = (pointsRes.data || []) as GPSPoint[];
       console.log("Total raw points:", points.length);
 
-      // Multi-layer filtering for accurate GPS tracking
-      // Accept good GPS accuracy (satellite + assisted GPS in urban areas)
-      const MAX_SPEED_KMH = 35; // Conservative: ~city speeds
-      const MAX_TIME_GAP_MINUTES = 5; // Gaps > 5 min = separate activity
-      const MAX_ACCURACY_METERS = 50; // Accept GPS with < 50m accuracy (includes urban/assisted GPS)
-      const cleanedPoints: GPSPoint[] = [];
-
-      // First pass: ONLY accept high-accuracy GPS points (satellite, not cell tower)
-      // Cell tower triangulation is 100-500m accuracy and creates phantom distances
-      const accuratePoints = points.filter((p) => {
-        if (!p.accuracy) {
-          // Unknown accuracy - reject to be safe
-          console.log("Rejected unknown accuracy point");
-          return false;
-        }
-        if (p.accuracy > MAX_ACCURACY_METERS) {
-          // Low accuracy = cell tower data, not real GPS
-          console.log("Rejected cell tower data (accuracy:", p.accuracy.toFixed(0) + "m)");
-          return false;
-        }
-        return true; // Good GPS accuracy
-      });
-
-      console.log("Filtered accuracy:", points.length, "→", accuratePoints.length, "points");
-
-      // Calculate straight-line distance between two points (in meters)
-      const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-        const R = 6371000; // Earth radius in meters
-        const dLat = ((lat2 - lat1) * Math.PI) / 180;
-        const dLon = ((lon2 - lon1) * Math.PI) / 180;
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      };
-
-      for (const curr of accuratePoints) {
-        if (cleanedPoints.length === 0) {
-          cleanedPoints.push(curr);
-          continue;
-        }
-
-        const prev = cleanedPoints[cleanedPoints.length - 1];
-
-        // Calculate distance using Haversine formula
-        const distanceMeters = haversineDistance(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
-        const distanceKm = distanceMeters / 1000;
-
-        // CRITICAL: Skip stationary points (GPS jitter while idle)
-        // If distance < 20m, user is likely stationary - don't record
-        if (distanceMeters < 20) {
-          console.log("Skipped stationary point (GPS jitter):", distanceMeters.toFixed(1) + "m");
-          continue;
-        }
-
-        // Calculate time difference
-        const prevTime = new Date(prev.timestamp).getTime();
-        const currTime = new Date(curr.timestamp).getTime();
-        const timeDiffMs = currTime - prevTime;
-        const timeDiffMinutes = timeDiffMs / (1000 * 60);
-        const timeDiffHours = timeDiffMinutes / 60;
-
-        // Reject if time gap too large (likely different activity/stopped)
-        if (timeDiffMinutes > MAX_TIME_GAP_MINUTES) {
-          console.log("Skipped large time gap:", timeDiffMinutes.toFixed(1) + " min");
-          cleanedPoints.push(curr); // Reset starting point
-          continue;
-        }
-
-        // Calculate implied speed (km/h)
-        const impliedSpeedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : 0;
-
-        // Accept if: very small distance (normal noise) OR implied speed is realistic
-        const isNoise = distanceKm < 0.02;
-        const isRealistic = timeDiffHours > 0 && impliedSpeedKmh <= MAX_SPEED_KMH;
-
-        if (isNoise || isRealistic) {
-          cleanedPoints.push(curr);
-        } else {
-          console.log("Rejected impossible speed:", {
-            distanceKm: distanceKm.toFixed(3),
-            timeSec: (timeDiffMs / 1000).toFixed(0),
-            impliedSpeedKmh: impliedSpeedKmh.toFixed(1),
-          });
-        }
-      }
+      // Shared filtering — identical algorithm on web, dashboard, and APK
+      // (accuracy ≤100m, 20m stationary jitter, 160 km/h jump, 5-min gap split)
+      const cleanedPoints = filterTrackPoints(points) as GPSPoint[];
+      console.log("Filtered track:", points.length, "→", cleanedPoints.length, "points");
 
       console.log("Filtered from", points.length, "to", cleanedPoints.length, "points");
       setGpsPoints(cleanedPoints);
