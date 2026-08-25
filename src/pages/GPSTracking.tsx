@@ -222,7 +222,9 @@ export default function GPSTracking() {
       const sessions = sessionsRes.data || [];
 
       // Check if GPS point timestamp is within an active session window
+      // Fallback: if no sessions exist yet, show all points (backward compatibility)
       const isInActiveSession = (timestamp: string): boolean => {
+        if (sessions.length === 0) return true; // Fallback: show all if no sessions
         const pointTime = new Date(timestamp).getTime();
         return sessions.some((session: any) => {
           const checkinTime = new Date(session.checked_in_at).getTime();
