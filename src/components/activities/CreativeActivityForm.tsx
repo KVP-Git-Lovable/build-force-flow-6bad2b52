@@ -480,14 +480,6 @@ export default function CreativeActivityForm({
         }
       }
 
-      // Start background GPS tracking for this activity
-      if (currentUserId) {
-        try {
-          await startCapacitorBackgroundTracking(currentUserId);
-        } catch (trackingError) {
-          console.warn("Background tracking not available:", trackingError);
-        }
-      }
 
       if (res?.within_site === true) toast.success(`Checked in · Within site (${res.distance_m}m)`);
       else if (res?.within_site === false) toast.warning(`Checked in · Outside site (${res.distance_m}m)`);
@@ -521,12 +513,6 @@ export default function CreativeActivityForm({
         }
       }
 
-      // Stop background GPS tracking
-      try {
-        await stopCapacitorBackgroundTracking();
-      } catch (trackingError) {
-        console.warn("Error stopping background tracking:", trackingError);
-      }
 
       toast.success("Checked out");
       onCreated?.();

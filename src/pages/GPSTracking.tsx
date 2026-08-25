@@ -238,17 +238,6 @@ export default function GPSTracking() {
       // (accuracy ≤100m, 20m stationary jitter, 160 km/h jump, 5-min gap split)
       const cleanedPoints = filterTrackPoints(sessionFilteredPoints) as GPSPoint[];
 
-        if (isNoise || isRealistic) {
-          cleanedPoints.push(curr);
-        } else {
-          // Rejected impossible speed
-            distanceKm: distanceKm.toFixed(3),
-            timeSec: (timeDiffMs / 1000).toFixed(0),
-            impliedSpeedKmh: impliedSpeedKmh.toFixed(1),
-          });
-        }
-      }
->>>>>>> e3162e1 (Implement GPS session tracking: validate points by check-in window)
 
       console.log("Filtered from", points.length, "to", cleanedPoints.length, "points");
       setGpsPoints(cleanedPoints);
