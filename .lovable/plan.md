@@ -1,33 +1,29 @@
-# Fix: show actual road route and real distance on GPS Tracking
+# Fix: inflated road distance on GPS Tracking (90.6 km for a local track)
 
-## Diagnosis (verified)
+## Diagnosis (verified against real data)
 
-- The Google Routes API integration is **working**: a live test of the `snap-gps-route` backend function returned a valid road-snapped polyline and `distanceMeters: 3842` for a 3-point route.
-- The page code already *prefers* road distance: `GPSTracking.tsx` calls `getSnappedRoute()` and uses `route.distanceMeters` when available, falling back to straight-line (Haversine) only when routing fails.
-- The "Traveled: 0.0 km" in the screenshot means the page silently fell back. Likely causes:
-  1. **Too few usable GPS points** — after session-window + accuracy/jitter filtering, fewer than 2 real movement points remain for that user/date (the pins visible on the map are activity/stop markers, not GPS track points). With <2 points, no route is requested and distance shows 0.0.
-  2. **Silent chunk failure** — if the routing call fails, `getSnappedRoute` returns `distanceMeters: null` and the page shows the straight-line estimate with no indication of what happened.
-  3. **Long tracks** — the route is sampled to ~200 points and chunked into ≤25-waypoint calls; multi-day ranges can produce many chunks, and any failure zeroes that chunk's distance.
+- The Google Routes API itself is **working correctly** — a live test of `snap-gps-route` returned a valid snapped polyline and distance.
+- For the screenshot case (Suyog, Aug 25, Mangaluru): 507 raw GPS points, ~1 point/minute, accuracy ~35 m. The track is a small local area (~1.4 km max span), and the straight-line sum over the filtered track is **~46.7 km** — already inflated by stationary jitter (1-min GPS drift of 20–50 m passes the 20 m filter).
+- The Routes API then turns that into **90.6 km**: every short jitter hop is sent as a waypoint, and Google snaps each hop onto the real road network — routing out to the nearest road and back for each tiny leg, roughly doubling the distance. So the API is "proper", but feeding it jitter waypoints produces an inflated number.
 
 ## What changes
 
-1. **Surface the route status instead of failing silently**
-   - Show a small label under the Distance card / map badge: "road distance" (already exists) vs "estimated (straight-line)" vs "no route — not enough GPS points".
-   - When routing fails, log the reason to the console and show a subtle "route unavailable" hint so it's diagnosable instead of looking like 0 km.
+1. **Don't route micro-legs through the Roads API**
+   - In `getSnappedRoute`, before calling the Routes API, collapse consecutive points that are closer than a minimum leg distance (~150 m): short hops keep their straight-line distance, only genuine movements (≥150 m) become routing waypoints.
+   - This removes the "snap out to the road and back" inflation for stationary drift while keeping real road distance for actual trips.
 
-2. **Handle sparse data gracefully**
-   - If filtering leaves <2 points but raw points exist, fall back to routing the raw (unfiltered) points so a route and distance still appear.
-   - If there are genuinely no GPS points for the period, show "No movement recorded" instead of "0.0 km".
+2. **Tighten the stationary-jitter filter**
+   - Raise the effective minimum movement threshold used for route building (the current 20 m is below the 35 m accuracy of this device's fixes), so standing-still drift never reaches the route builder. Keep the existing shared `filterTrackPoints` for display; apply the stronger threshold only when building route waypoints.
 
-3. **Make chunked routing distance robust**
-   - In `getSnappedRoute`, when some chunks snap and some fail, sum the road distance of snapped chunks plus the straight-line distance of failed chunks (instead of discarding the whole road distance), and mark the result as "partially estimated".
+3. **Keep the honest fallback + labeling**
+   - Distance card / map badge continues to show "road distance" when routing succeeded, "estimated" when it fell back to straight-line, and the route polyline on the map stays road-snapped for real movement.
 
-4. **Verify with real data**
-   - Query the actual `gps_tracking` rows for the affected user/date (e.g. Bhavik Rathor, Aug 25) to confirm how many points survive filtering, and validate the fix against that real track.
+4. **Verify with the same real track**
+   - Re-run the Aug 25 track through the new logic and confirm the displayed distance lands near the true traveled distance (small local loop), not 90.6 km.
 
 ## Technical details
 
-- `src/pages/GPSTracking.tsx`: add route-status state (`road` | `estimated` | `partial` | `none`), render the appropriate label, raw-point fallback when filtered points < 2.
-- `src/utils/googleRoute.ts`: per-chunk fallback distance (Haversine for failed chunks) instead of zeroing; return a `partial` flag.
-- No backend change needed — `snap-gps-route` already returns `distanceMeters` and is confirmed working.
-- No changes to GPS capture, filtering thresholds, or other pages.
+- `src/utils/googleRoute.ts`: add waypoint decimation — walk the sampled points, only emit a waypoint when accumulated distance from the last emitted waypoint exceeds ~150 m; add the skipped straight-line meters back into the total so no distance is lost.
+- `src/pages/GPSTracking.tsx`: no logic change needed beyond consuming the corrected `distanceMeters`; labels already exist.
+- No backend change — `snap-gps-route` stays as-is.
+- No changes to GPS capture, session gating, or other pages.
