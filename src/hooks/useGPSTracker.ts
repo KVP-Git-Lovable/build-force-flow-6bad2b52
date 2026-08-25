@@ -37,6 +37,7 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
 export function useGPSTracker(userId: string | null | undefined) {
   const activeRef = useRef(false);
   const lastPointRef = useRef<{ lat: number; lng: number; ts: number } | null>(null);
+  const pendingJumpRef = useRef<{ lat: number; lng: number; accuracy: number | null; ts: number } | null>(null);
   const timerRef = useRef<number | null>(null);
   const watcherIdRef = useRef<string | null>(null);
   const foregroundBusyRef = useRef(false);
@@ -58,6 +59,19 @@ export function useGPSTracker(userId: string | null | undefined) {
       return !!att?.check_in_time && !att?.check_out_time;
     }
 
+    async function persistPoint(lat: number, lng: number, accuracy: number | null, ts: number) {
+      lastPointRef.current = { lat, lng, ts };
+      const today = format(new Date(), "yyyy-MM-dd");
+      await supabase.from("gps_tracking").insert({
+        user_id: userId!,
+        latitude: lat,
+        longitude: lng,
+        accuracy,
+        timestamp: new Date(ts).toISOString(),
+        date: today,
+      });
+    }
+
     async function insertPoint(lat: number, lng: number, accuracy: number | null) {
       // Reject low-accuracy fixes (IP/Wi-Fi guesses can be 10s of km off)
       if (accuracy != null && accuracy > MAX_ACCURACY_M) {
@@ -74,18 +88,30 @@ export function useGPSTracker(userId: string | null | undefined) {
           console.debug("[GPSTracker] rejected teleport jump", dist, "m in", elapsed, "ms");
           return;
         }
+        // Ping-pong guard: on native, the background watcher and the heartbeat
+        // poll use different location providers — one can return a stale cached
+        // fix, producing alternating A→B→A jumps (seen as ~1.4km hops every
+        // minute, doubling the day's distance). Hold any sudden jump >300m
+        // within 90s until the NEXT fix confirms the new location; if the next
+        // fix lands back near the last good point, the held point was a stale
+        // outlier and is dropped.
+        if (dist > 300 && elapsed < 90_000) {
+          const pending = pendingJumpRef.current;
+          if (pending && haversineMeters(pending, { lat, lng }) <= 100) {
+            // Confirmed: genuine relocation — flush the held point first.
+            await persistPoint(pending.lat, pending.lng, pending.accuracy, pending.ts);
+            pendingJumpRef.current = null;
+          } else {
+            pendingJumpRef.current = { lat, lng, accuracy, ts: now };
+            return;
+          }
+        } else if (pendingJumpRef.current) {
+          // Returned near the last good point — drop the held outlier.
+          pendingJumpRef.current = null;
+        }
         if (dist < MIN_MOVE_METERS && elapsed < INTERVAL_MS) return;
       }
-      lastPointRef.current = { lat, lng, ts: now };
-      const today = format(new Date(), "yyyy-MM-dd");
-      await supabase.from("gps_tracking").insert({
-        user_id: userId!,
-        latitude: lat,
-        longitude: lng,
-        accuracy,
-        timestamp: new Date().toISOString(),
-        date: today,
-      });
+      await persistPoint(lat, lng, accuracy, now);
     }
 
     async function startNativeBackground() {

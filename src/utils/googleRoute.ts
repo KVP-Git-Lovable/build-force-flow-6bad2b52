@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { haversineMeters } from "@/utils/gpsDistance";
 
 interface RoutePoint {
   latitude: number;
@@ -24,6 +25,42 @@ export interface SnappedRoute {
  * Returns both the snapped path and the real road distance travelled.
  * Falls back to the raw straight-line track if routing fails.
  */
+// Minimum leg length sent to the Routes API. Shorter hops are almost always
+// stationary GPS drift (typical fix accuracy is ~35 m); routing them would snap
+// each micro-hop out to the nearest road and back, roughly doubling the total.
+const MIN_ROUTE_LEG_METERS = 150;
+
+/**
+ * Collapse micro-legs: emit a waypoint only when the accumulated distance from
+ * the last emitted waypoint exceeds MIN_ROUTE_LEG_METERS. Returns the decimated
+ * waypoints plus the straight-line meters that were skipped (so no distance is
+ * lost — it is added back to the routed total).
+ */
+function decimateWaypoints(points: RoutePoint[]): { waypoints: RoutePoint[]; skippedMeters: number } {
+  if (points.length < 2) return { waypoints: points.slice(), skippedMeters: 0 };
+  const waypoints: RoutePoint[] = [points[0]];
+  let skippedMeters = 0;
+  let pendingMeters = 0;
+  let prev = points[0];
+  for (let i = 1; i < points.length; i++) {
+    const curr = points[i];
+    const legM = haversineMeters(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
+    pendingMeters += legM;
+    if (pendingMeters >= MIN_ROUTE_LEG_METERS || i === points.length - 1) {
+      waypoints.push(curr);
+      skippedMeters += pendingMeters - haversineMeters(
+        waypoints[waypoints.length - 2].latitude,
+        waypoints[waypoints.length - 2].longitude,
+        curr.latitude,
+        curr.longitude
+      );
+      pendingMeters = 0;
+    }
+    prev = curr;
+  }
+  return { waypoints, skippedMeters: Math.max(0, skippedMeters) };
+}
+
 export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRoute> {
   if (points.length < 2) return { path: [], distanceMeters: null, snapped: false };
 
@@ -32,9 +69,20 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRout
   const sampleRate = Math.ceil(points.length / 200);
   const sampled = points.filter((_, i) => i % sampleRate === 0 || i === points.length - 1);
 
+  // Drop stationary-drift micro-legs before routing (see decimateWaypoints).
+  const { waypoints, skippedMeters } = decimateWaypoints(sampled);
+  if (waypoints.length < 2) {
+    // No genuine movement — total is just the straight-line sum.
+    return {
+      path: points.map((p) => ({ lat: p.latitude, lng: p.longitude })),
+      distanceMeters: null,
+      snapped: false,
+    };
+  }
+
   const chunks: RoutePoint[][] = [];
-  for (let i = 0; i < sampled.length - 1; i += MAX_PER_CALL - 1) {
-    const chunk = sampled.slice(i, i + MAX_PER_CALL);
+  for (let i = 0; i < waypoints.length - 1; i += MAX_PER_CALL - 1) {
+    const chunk = waypoints.slice(i, i + MAX_PER_CALL);
     if (chunk.length > 1) chunks.push(chunk);
   }
 
@@ -54,9 +102,19 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRout
           return { path, meters: Number.isFinite(meters) ? meters : 0, snapped: true };
         } catch (e) {
           // A single chunk failing (e.g. transient gateway 503) must not drop
-          // the whole trail — fall back to the raw track for this segment.
+          // the whole trail — fall back to the raw track for this segment and
+          // count its straight-line distance so the total isn't understated.
           console.warn("snap-gps-route chunk failed, using raw track", e);
-          return { path: raw, meters: 0, snapped: false };
+          let fallbackMeters = 0;
+          for (let i = 1; i < chunk.length; i++) {
+            fallbackMeters += haversineMeters(
+              chunk[i - 1].latitude,
+              chunk[i - 1].longitude,
+              chunk[i].latitude,
+              chunk[i].longitude
+            );
+          }
+          return { path: raw, meters: fallbackMeters, snapped: false };
         }
       })
     );
@@ -64,10 +122,14 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRout
     const path = results.flatMap((r) => r.path);
     if (path.length < 2) throw new Error("empty route");
     const allSnapped = results.every((r) => r.snapped);
-    const distanceMeters = results.reduce((sum, r) => sum + r.meters, 0);
+    const routedMeters = results.reduce((sum, r) => sum + r.meters, 0);
+    // Add back the straight-line meters of the micro-legs we didn't route.
+    // Failed chunks already contribute their straight-line distance, so the
+    // total is meaningful even when only part of the track snapped to roads.
+    const distanceMeters = routedMeters + skippedMeters;
     return {
       path,
-      distanceMeters: allSnapped && distanceMeters > 0 ? distanceMeters : null,
+      distanceMeters: distanceMeters > 0 ? distanceMeters : null,
       snapped: allSnapped,
     };
   } catch {
