@@ -2,11 +2,28 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
-const CACHE_KEY = "dashboard_cache_v1";
+const CACHE_PREFIX = "dashboard_cache_v2";
 
-function getCachedDashboard() {
+function cacheKeyFor(userId: string, date: string) {
+  return `${CACHE_PREFIX}_${userId}_${date}`;
+}
+
+/** Remove every stale dashboard cache entry (other users / other dates). */
+function sweepStaleCaches(keepKey: string) {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith(CACHE_PREFIX) && k !== keepKey)
+      .forEach((k) => localStorage.removeItem(k));
+    // Remove the legacy unscoped cache from older builds
+    localStorage.removeItem("dashboard_cache_v1");
+  } catch { /* ignore */ }
+}
+
+function getCachedDashboard(userId: string, date: string) {
+  try {
+    const key = cacheKeyFor(userId, date);
+    sweepStaleCaches(key);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -14,9 +31,9 @@ function getCachedDashboard() {
   }
 }
 
-function setCachedDashboard(data: any) {
+function setCachedDashboard(userId: string, date: string, data: any) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(cacheKeyFor(userId, date), JSON.stringify(data));
   } catch { /* quota exceeded */ }
 }
 
@@ -50,16 +67,18 @@ export function useDashboard(userId: string | undefined) {
     enabled: !!userId,
   });
 
-  // Secondary: single RPC call for all aggregate stats
-  const cached = getCachedDashboard();
+  // Secondary: single RPC call for all aggregate stats.
+  // Cache is scoped to user + date so a reload never shows yesterday's
+  // (or another user's) numbers.
+  const cached = userId ? getCachedDashboard(userId, today) : null;
   const summaryQuery = useQuery({
-    queryKey: ["dashboard-summary", userId, "v2"],
+    queryKey: ["dashboard-summary", userId, today, "v3"],
     queryFn: async () => {
       if (!userId) return null;
       const { data, error } = await supabase.rpc("get_dashboard_summary");
       if (error) throw error;
       const result = data as unknown as DashboardSummary;
-      setCachedDashboard(result);
+      setCachedDashboard(userId, today, result);
       return result;
     },
     enabled: !!userId,

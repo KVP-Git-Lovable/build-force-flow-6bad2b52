@@ -52,7 +52,7 @@ import { isNative, takeNativePhoto } from "@/utils/nativePermissions";
 import OpenGRNPicker from "@/components/procurement/OpenGRNPicker";
 import { receiptDrivenStatus } from "@/lib/procurement";
 import { ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
-import { startCapacitorBackgroundTracking, stopCapacitorBackgroundTracking } from "@/services/capacitorBackgroundTracking";
+
 
 interface GrnLineItem {
   id: string;
@@ -492,15 +492,6 @@ export default function CreativeActivityForm({
     setCheckingIn(true);
     try {
       await checkOutActivity(editActivity.id);
-
-      // Stop background GPS tracking
-      try {
-        await stopCapacitorBackgroundTracking();
-        console.log("Background tracking stopped for activity check-out");
-      } catch (trackingError) {
-        console.warn("Error stopping background tracking:", trackingError);
-        // Don't block check-out if tracking stop fails
-      }
 
       toast.success("Checked out");
       onCreated?.();
