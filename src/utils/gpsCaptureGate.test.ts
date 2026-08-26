@@ -25,18 +25,18 @@ describe("shouldAcceptMove", () => {
   });
 
   it("accepts a small real move under excellent accuracy", () => {
-    // ~25m apart, both fixes with 6m accuracy (combined gate: floor 30m still applies)
-    const last = { lat: 12.8777, lng: 74.8501, ts: 0, accuracy: 6 };
-    const candidate = { lat: 12.87793, lng: 74.8501, ts: 30_000, accuracy: 6 };
+    // ~25m apart, both fixes with 3m accuracy (combined gate: floor 10m still applies)
+    const last = { lat: 12.8777, lng: 74.8501, ts: 0, accuracy: 3 };
+    const candidate = { lat: 12.87793, lng: 74.8501, ts: 30_000, accuracy: 3 };
     const result = shouldAcceptMove(last, candidate);
-    expect(result.requiredMoveM).toBe(30); // floor, since 6+6=12 < 30
+    expect(result.requiredMoveM).toBe(10); // floor, since 3+3=6 < 10
   });
 
-  it("treats null accuracy as worst-case (100m) rather than best-case", () => {
+  it("treats null accuracy as worst-case (150m) rather than best-case", () => {
     const last = { lat: 12.8777, lng: 74.8501, ts: 0, accuracy: null };
     const candidate = { lat: 12.87824, lng: 74.8501, ts: 30_000, accuracy: null };
     const result = shouldAcceptMove(last, candidate);
-    expect(result.requiredMoveM).toBe(200); // 100 + 100
-    expect(result.isRealMove).toBe(false); // ~60m move doesn't clear 200m gate
+    expect(result.requiredMoveM).toBe(300); // 150 + 150
+    expect(result.isRealMove).toBe(false); // ~60m move doesn't clear 300m gate
   });
 });

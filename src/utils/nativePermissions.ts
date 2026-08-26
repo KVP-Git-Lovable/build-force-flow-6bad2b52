@@ -197,3 +197,26 @@ export async function requestNativePermissions() {
     console.warn('Native camera permission request skipped:', e);
   }
 }
+
+/**
+ * Open the device's app-info settings screen (Android: the same page reached
+ * via Settings > Apps > [App]). Android does not let an app silently disable
+ * its own battery optimisation or upgrade its location permission to "Allow
+ * all the time" — both require the user's explicit tap in Settings. This is
+ * the closest one-tap improvement available: it drops the user directly on
+ * the right screen instead of leaving them to find it themselves.
+ * No-ops on web (returns false).
+ */
+export async function openAppSettings(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const { registerPlugin } = await import('@capacitor/core');
+    const BackgroundGeolocation: any = registerPlugin('BackgroundGeolocation');
+    if (!BackgroundGeolocation?.openSettings) return false;
+    await BackgroundGeolocation.openSettings();
+    return true;
+  } catch (e) {
+    console.warn('Could not open app settings:', e);
+    return false;
+  }
+}
