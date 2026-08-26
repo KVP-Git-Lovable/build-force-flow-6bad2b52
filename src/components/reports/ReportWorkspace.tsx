@@ -11,6 +11,7 @@ import { ChartBuilder } from "./ChartBuilder";
 import { SavedReportBar } from "./SavedReportBar";
 import { generateReportPdf } from "./reportPdf";
 import { useSavedReports } from "@/hooks/useSavedReports";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { ChartConfig, ReportColumn, SavedReport } from "./reportTypes";
 
 interface Props<R> {
@@ -63,7 +64,9 @@ export function ReportWorkspace<R>({
   onGenerate,
 }: Props<R>) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { favourite, loading: savedLoading } = useSavedReports(module);
+  const cacheKey = `report-session:${module}`;
 
   const [visible, setVisible] = useState<string[]>(
     columns.filter((c) => !c.defaultHidden).map((c) => c.key)
@@ -72,7 +75,14 @@ export function ReportWorkspace<R>({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeName, setActiveName] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [cachedRows, setCachedRows] = useState<R[] | null>(null);
   const appliedFavourite = useRef(false);
+  const restored = useRef(false);
+
+  // Rows shown: freshly generated rows, or the session-restored ones when the
+  // user navigates into a record and comes back.
+  const shownRows = generated ? rows : cachedRows || [];
+  const isGenerated = generated || cachedRows !== null;
 
   const apply = (r: SavedReport) => {
     if (r.config.filters) onApplyFilterState(r.config.filters);
@@ -83,6 +93,48 @@ export function ReportWorkspace<R>({
     setActiveId(r.id);
     setActiveName(r.name);
   };
+
+  // Restore the last generated report for this module (e.g. after opening a
+  // record and navigating back).
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    try {
+      const raw = sessionStorage.getItem(cacheKey);
+      if (!raw) return;
+      const cached = JSON.parse(raw) as {
+        rows: R[];
+        visibleColumns?: string[];
+        charts?: ChartConfig[];
+        filters?: Record<string, unknown>;
+      };
+      if (!cached?.rows) return;
+      appliedFavourite.current = true;
+      if (cached.filters) onApplyFilterState(cached.filters);
+      if (cached.visibleColumns?.length) {
+        setVisible(cached.visibleColumns.filter((k) => columns.some((c) => c.key === k)));
+      }
+      if (cached.charts) setCharts(cached.charts);
+      setCachedRows(cached.rows);
+    } catch {
+      /* ignore malformed cache */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist the generated result so it survives a round-trip to a record page.
+  useEffect(() => {
+    if (!generated) return;
+    setCachedRows(null);
+    try {
+      sessionStorage.setItem(
+        cacheKey,
+        JSON.stringify({ rows, visibleColumns: visible, charts, filters: filterState })
+      );
+    } catch {
+      /* storage full / unavailable */
+    }
+  }, [generated, rows, visible, charts, filterState, cacheKey]);
 
   // Open the pinned report automatically on first load.
   useEffect(() => {
@@ -116,7 +168,7 @@ export function ReportWorkspace<R>({
           width: c.pdfWidth || 2,
           align: c.align === "right" ? "right" : "left",
         })),
-        rows: rows.map((r) => visibleColumns.map((c) => cellText(c, r))),
+        rows: shownRows.map((r) => visibleColumns.map((c) => cellText(c, r))),
         summary,
       });
       toast.success("PDF downloaded");
@@ -170,7 +222,7 @@ export function ReportWorkspace<R>({
             <Button
               variant="outline"
               onClick={download}
-              disabled={!generated || rows.length === 0 || downloading}
+              disabled={!isGenerated || shownRows.length === 0 || downloading}
             >
               {downloading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
