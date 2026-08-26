@@ -235,22 +235,59 @@ export function ReportWorkspace<R>({
         </CardContent>
       </Card>
 
-      {generated && (
+      {isGenerated && (
         <>
           {summary && summary.length > 0 && <SummaryCards items={summary} />}
 
-          <ChartBuilder columns={columns} rows={rows} charts={charts} onChange={setCharts} />
+          <ChartBuilder columns={columns} rows={shownRows} charts={charts} onChange={setCharts} />
 
           <p className="text-sm text-muted-foreground">
-            Showing {rows.length} record{rows.length !== 1 ? "s" : ""}
+            Showing {shownRows.length} record{shownRows.length !== 1 ? "s" : ""}
           </p>
 
-          {rows.length === 0 ? (
+          {shownRows.length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
                 No records found for the selected filters.
               </CardContent>
             </Card>
+          ) : isMobile ? (
+            <div className="space-y-2">
+              {shownRows.map((r) => {
+                const link = rowLink?.(r) || null;
+                const [primary, ...rest] = visibleColumns;
+                return (
+                  <Card
+                    key={rowKey(r)}
+                    onClick={() => link && navigate(link)}
+                    className={`shadow-card ${link ? "cursor-pointer active:bg-muted/60" : ""}`}
+                  >
+                    <CardContent className="p-3 space-y-2">
+                      {primary && (
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-sm font-semibold break-words">
+                            {primary.render ? primary.render(r) : cellText(primary, r)}
+                          </div>
+                          {link && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                        </div>
+                      )}
+                      <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                        {rest.map((c) => (
+                          <div key={c.key} className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                              {c.header}
+                            </dt>
+                            <dd className="text-sm break-words">
+                              {c.render ? c.render(r) : cellText(c, r)}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           ) : (
             <Card className="shadow-card">
               <CardContent className="p-0 overflow-auto">
@@ -266,7 +303,7 @@ export function ReportWorkspace<R>({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rows.map((r) => {
+                    {shownRows.map((r) => {
                       const link = rowLink?.(r) || null;
                       return (
                         <TableRow
@@ -292,6 +329,9 @@ export function ReportWorkspace<R>({
               </CardContent>
             </Card>
           )}
+        </>
+      )}
+
         </>
       )}
     </div>
