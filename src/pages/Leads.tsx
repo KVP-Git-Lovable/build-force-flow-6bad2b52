@@ -356,12 +356,25 @@ export default function Leads() {
                 {DATE_PRESETS.map((p) => <SelectItem key={p.value} value={p.value}>{p.value === "all" ? "Created: All time" : `Created: ${p.label}`}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={modifiedPreset} onValueChange={setModifiedPreset}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Last modified" /></SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                {DATE_PRESETS.map((p) => <SelectItem key={p.value} value={p.value}>{p.value === "all" ? "Modified: All time" : `Modified: ${p.label}`}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="h-9 text-xs"
+              placeholder="Min # productive activities"
+              value={minProductive}
+              onChange={(e) => setMinProductive(e.target.value)}
+            />
+            <Input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="h-9 text-xs"
+              placeholder="Min days since last activity"
+              value={minDaysSince}
+              onChange={(e) => setMinDaysSince(e.target.value)}
+            />
+
             <Select value={ownerFilter} onValueChange={setOwnerFilter}>
               <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Owner" /></SelectTrigger>
               <SelectContent className="bg-popover z-50">
