@@ -40,6 +40,9 @@ import {
   RefreshCw,
   Columns3,
   UserCheck,
+  Battery,
+  BatteryCharging,
+  BatteryLow,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -77,6 +80,9 @@ interface AppUser {
   reporting_manager_id: string | null;
   is_active: boolean;
   created_at: string;
+  battery_level: number | null;
+  battery_charging: boolean | null;
+  device_status_at: string | null;
   roles?: { id: string; name: string } | null;
 }
 
@@ -142,6 +148,30 @@ function useProfiles() {
       return (data || []) as { id: string; profile_picture_url: string | null; user_status: string }[];
     },
   });
+}
+
+// Battery display for the admin Users & Roles table — mirrors the icon/color
+// logic in DeviceStatusBadges but shows only the percentage (no network row).
+function BatteryCell({ level, charging, statusAt }: { level: number | null; charging: boolean | null; statusAt: string | null }) {
+  if (level == null) {
+    return (
+      <span className="text-sm text-muted-foreground" title="Battery not reported (e.g. iOS Safari, or device hasn't reported yet)">
+        —
+      </span>
+    );
+  }
+  const stale = !statusAt || (Date.now() - new Date(statusAt).getTime()) > 3 * 60 * 1000;
+  const Icon = charging ? BatteryCharging : level < 30 ? BatteryLow : Battery;
+  const color = level >= 50 ? "text-emerald-600" : level >= 30 ? "text-amber-600" : "text-red-600";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-sm ${stale ? "opacity-50" : ""}`}
+      title={`Battery ${level}%${charging ? " (charging)" : ""}${statusAt ? ` · updated ${new Date(statusAt).toLocaleString()}` : ""}`}
+    >
+      <Icon className={`h-4 w-4 ${color}`} />
+      {level}%
+    </span>
+  );
 }
 
 function useUserSecurityAssignments() {
@@ -739,6 +769,7 @@ export default function AdminUserManagement() {
     { key: "role", label: "Role", default: true },
     { key: "manager", label: "Reporting Manager", default: true },
     { key: "active", label: "Active", default: true },
+    { key: "battery", label: "Battery", default: true },
     { key: "full_name", label: "Full Name", default: false },
     { key: "phone", label: "Phone", default: false },
     { key: "email_status", label: "Email Status", default: false },
@@ -1077,6 +1108,7 @@ export default function AdminUserManagement() {
                           {isColVisible("email_status") && <TableHead>Email Status</TableHead>}
                           {isColVisible("joined") && <TableHead>Joined</TableHead>}
                           {isColVisible("active") && <TableHead>Active</TableHead>}
+                          {isColVisible("battery") && <TableHead>Battery</TableHead>}
                           {isColVisible("action") && <TableHead>Actions</TableHead>}
                         </TableRow>
                       </TableHeader>
@@ -1135,6 +1167,15 @@ export default function AdminUserManagement() {
                                   <Switch
                                     checked={user.is_active}
                                     onCheckedChange={(checked) => toggleActive.mutate({ userId: user.id, isActive: checked })}
+                                  />
+                                </TableCell>
+                              )}
+                              {isColVisible("battery") && (
+                                <TableCell>
+                                  <BatteryCell
+                                    level={user.battery_level ?? null}
+                                    charging={user.battery_charging ?? null}
+                                    statusAt={user.device_status_at ?? null}
                                   />
                                 </TableCell>
                               )}
@@ -1217,6 +1258,13 @@ export default function AdminUserManagement() {
                               {manager && (
                                 <span className="text-[10px] text-muted-foreground truncate">→ {manager.full_name || manager.email}</span>
                               )}
+                              <span className="ml-auto shrink-0">
+                                <BatteryCell
+                                  level={user.battery_level ?? null}
+                                  charging={user.battery_charging ?? null}
+                                  statusAt={user.device_status_at ?? null}
+                                />
+                              </span>
                             </div>
                           </div>
                         </div>
