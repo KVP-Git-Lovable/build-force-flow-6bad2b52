@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, Search, ChevronRight } from "lucide-react";
+import { Download, Loader2, Search, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { SummaryCards } from "./ReportShell";
 import { ColumnPicker } from "./ColumnPicker";
@@ -149,11 +149,42 @@ export function ReportWorkspace<R>({
     [columns, visible]
   );
 
+  // ---- Sorting (applies to both the desktop table and the mobile cards) ----
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+
+  const toggleSort = (key: string) =>
+    setSort((prev) =>
+      !prev || prev.key !== key
+        ? { key, dir: "asc" }
+        : prev.dir === "asc"
+          ? { key, dir: "desc" }
+          : null
+    );
+
+  const sortedRows = useMemo(() => {
+    if (!sort) return shownRows;
+    const col = columns.find((c) => c.key === sort.key);
+    if (!col) return shownRows;
+    const factor = sort.dir === "asc" ? 1 : -1;
+    return [...shownRows].sort((a, b) => {
+      const av = col.value(a);
+      const bv = col.value(b);
+      const aEmpty = av === null || av === undefined || av === "";
+      const bEmpty = bv === null || bv === undefined || bv === "";
+      if (aEmpty && bEmpty) return 0;
+      if (aEmpty) return 1;
+      if (bEmpty) return -1;
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * factor;
+      return String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: "base" }) * factor;
+    });
+  }, [shownRows, sort, columns]);
+
   const cellText = (col: ReportColumn<R>, row: R) => {
     const v = col.value(row);
     if (v === null || v === undefined || v === "") return "-";
     return typeof v === "number" ? v.toLocaleString("en-IN") : String(v);
   };
+
 
   const download = async () => {
     setDownloading(true);
@@ -168,7 +199,7 @@ export function ReportWorkspace<R>({
           width: c.pdfWidth || 2,
           align: c.align === "right" ? "right" : "left",
         })),
-        rows: shownRows.map((r) => visibleColumns.map((c) => cellText(c, r))),
+        rows: sortedRows.map((r) => visibleColumns.map((c) => cellText(c, r))),
         summary,
       });
       toast.success("PDF downloaded");
@@ -253,7 +284,33 @@ export function ReportWorkspace<R>({
             </Card>
           ) : isMobile ? (
             <div className="space-y-2">
-              {shownRows.map((r) => {
+              <div className="flex items-center gap-2">
+                <select
+                  value={sort?.key ?? ""}
+                  onChange={(e) =>
+                    setSort(e.target.value ? { key: e.target.value, dir: sort?.dir ?? "asc" } : null)
+                  }
+                  className="h-9 flex-1 rounded-md border bg-background px-2 text-xs"
+                  aria-label="Sort by"
+                >
+                  <option value="">Sort by…</option>
+                  {visibleColumns.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.header}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!sort}
+                  onClick={() => sort && setSort({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })}
+                >
+                  {sort?.dir === "desc" ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />}
+                </Button>
+              </div>
+
+              {sortedRows.map((r) => {
                 const link = rowLink?.(r) || null;
                 const [primary, ...rest] = visibleColumns;
                 return (
@@ -296,14 +353,32 @@ export function ReportWorkspace<R>({
                     <TableRow>
                       {visibleColumns.map((c) => (
                         <TableHead key={c.key} className={c.align === "right" ? "text-right" : ""}>
-                          {c.header}
+                          <button
+                            type="button"
+                            onClick={() => toggleSort(c.key)}
+                            title={`Sort by ${c.header}`}
+                            className={`inline-flex items-center gap-1 hover:text-foreground ${
+                              c.align === "right" ? "flex-row-reverse" : ""
+                            } ${sort?.key === c.key ? "text-foreground font-semibold" : ""}`}
+                          >
+                            {c.header}
+                            {sort?.key === c.key ? (
+                              sort.dir === "asc" ? (
+                                <ArrowUp className="h-3.5 w-3.5" />
+                              ) : (
+                                <ArrowDown className="h-3.5 w-3.5" />
+                              )
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-40" />
+                            )}
+                          </button>
                         </TableHead>
                       ))}
                       {rowLink && <TableHead className="w-8" />}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {shownRows.map((r) => {
+                    {sortedRows.map((r) => {
                       const link = rowLink?.(r) || null;
                       return (
                         <TableRow

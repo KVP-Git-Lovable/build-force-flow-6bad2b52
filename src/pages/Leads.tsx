@@ -18,6 +18,10 @@ import {
 } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { buildLeadRollups, EMPTY_ROLLUP } from "@/lib/leadActivityRollups";
+import { ColumnPicker } from "@/components/reports/ColumnPicker";
+import { SavedReportBar } from "@/components/reports/SavedReportBar";
+import type { ReportColumn, SavedReport } from "@/components/reports/reportTypes";
 
 const DATE_PRESETS = [
   { value: "all", label: "All time" },
@@ -69,14 +73,14 @@ function inRange(value?: string | null, range?: { start: Date; end: Date } | nul
   return isWithinInterval(d, range);
 }
 
-/** Activities recorded against leads — used for the completed KPIs */
+/** Activities recorded against leads — used for the completed KPIs and roll-ups */
 function useLeadActivityStats() {
   return useQuery({
     queryKey: ["lead-activity-stats"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("activity_events")
-        .select("id, status, activity_date, lead_id")
+        .select("id, status, outcome, activity_date, lead_id")
         .not("lead_id", "is", null);
       if (error) throw error;
       return (data || []) as any[];
@@ -84,6 +88,7 @@ function useLeadActivityStats() {
     staleTime: 60 * 1000,
   });
 }
+
 
 function KpiCard({ icon: Icon, label, value, sub, color }: any) {
   return (
@@ -111,9 +116,15 @@ export default function Leads() {
   const [leadOpen, setLeadOpen] = useState(false);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [createdPreset, setCreatedPreset] = useState("all");
-  const [modifiedPreset, setModifiedPreset] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [minProductive, setMinProductive] = useState("");
+  const [minDaysSince, setMinDaysSince] = useState("");
+
+  // Activity & effort roll-ups per lead
+  const rollups = useMemo(() => buildLeadRollups(leadActivities), [leadActivities]);
+  const rollupOf = (id: string) => rollups[id] ?? EMPTY_ROLLUP;
+
 
   useEffect(() => {
     const ids = Array.from(
@@ -142,37 +153,43 @@ export default function Leads() {
   }, [leads, userMap]);
 
   const createdRange = useMemo(() => presetRange(createdPreset), [createdPreset]);
-  const modifiedRange = useMemo(() => presetRange(modifiedPreset), [modifiedPreset]);
 
   const filteredLeads = useMemo(() => leads.filter((l: any) => {
     if (q && ![l.name, l.company, l.email, l.phone].some((v) => (v ?? "").toLowerCase().includes(q.toLowerCase()))) return false;
     if (!inRange(l.created_at, createdRange)) return false;
-    if (!inRange(l.updated_at || l.created_at, modifiedRange)) return false;
     if (ownerFilter !== "all" && ownerOf(l) !== ownerFilter) return false;
     if (statusFilter !== "all" && l.lead_status_id !== statusFilter) return false;
+    const ru = rollups[l.id] ?? EMPTY_ROLLUP;
+    if (minProductive !== "" && ru.productiveCount < Number(minProductive)) return false;
+    if (minDaysSince !== "" && (ru.daysSinceLastActivity == null || ru.daysSinceLastActivity < Number(minDaysSince))) return false;
     return true;
-  }), [leads, q, createdRange, modifiedRange, ownerFilter, statusFilter]);
+  }), [leads, q, createdRange, ownerFilter, statusFilter, rollups, minProductive, minDaysSince]);
 
-  const activeFilters = [createdPreset, modifiedPreset, ownerFilter, statusFilter].filter((v) => v !== "all").length;
+  const activeFilters =
+    [createdPreset, ownerFilter, statusFilter].filter((v) => v !== "all").length +
+    [minProductive, minDaysSince].filter((v) => v !== "").length;
 
   const clearAllFilters = () => {
-    setCreatedPreset("all"); setModifiedPreset("all"); setOwnerFilter("all"); setStatusFilter("all");
+    setCreatedPreset("all"); setOwnerFilter("all"); setStatusFilter("all");
+    setMinProductive(""); setMinDaysSince("");
   };
 
   const filterChips = useMemo(() => {
     const chips: { key: string; label: string; clear: () => void }[] = [];
     const presetLabel = (v: string) => DATE_PRESETS.find((p) => p.value === v)?.label ?? v;
     if (createdPreset !== "all") chips.push({ key: "created", label: `Created: ${presetLabel(createdPreset)}`, clear: () => setCreatedPreset("all") });
-    if (modifiedPreset !== "all") chips.push({ key: "modified", label: `Modified: ${presetLabel(modifiedPreset)}`, clear: () => setModifiedPreset("all") });
     if (ownerFilter !== "all") chips.push({ key: "owner", label: `Owner: ${ownerOptions.find((o) => o.id === ownerFilter)?.name ?? "Unknown"}`, clear: () => setOwnerFilter("all") });
     if (statusFilter !== "all") chips.push({ key: "status", label: `Status: ${statusMap[statusFilter]?.name ?? "Unknown"}`, clear: () => setStatusFilter("all") });
+    if (minProductive !== "") chips.push({ key: "prod", label: `Productive ≥ ${minProductive}`, clear: () => setMinProductive("") });
+    if (minDaysSince !== "") chips.push({ key: "days", label: `Days since activity ≥ ${minDaysSince}`, clear: () => setMinDaysSince("") });
     return chips;
-  }, [createdPreset, modifiedPreset, ownerFilter, statusFilter, ownerOptions, statusMap]);
+  }, [createdPreset, ownerFilter, statusFilter, minProductive, minDaysSince, ownerOptions, statusMap]);
 
   // Progressive rendering for large lists
   const PAGE_SIZE = 20;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [q, createdPreset, modifiedPreset, ownerFilter, statusFilter]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [q, createdPreset, ownerFilter, statusFilter, minProductive, minDaysSince]);
+
   const visibleLeads = useMemo(() => filteredLeads.slice(0, visibleCount), [filteredLeads, visibleCount]);
   const { rules: scoringRules } = useLeadScoringRules();
   const visibleIds = useMemo(() => visibleLeads.map((l: any) => l.id), [visibleLeads]);
@@ -210,6 +227,103 @@ export default function Leads() {
   const money = (n: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: n >= 100000 ? "compact" : "standard" }).format(n || 0);
 
+  // ---- Configurable list columns (fields to display) ----
+  const listColumns: ReportColumn<any>[] = useMemo(() => [
+    {
+      key: "name", header: "Name", value: (l) => l.name,
+      render: (l) => (
+        <span className="font-medium">
+          {l.name}
+          {l.converted_customer_id && <Badge variant="secondary" className="ml-2">Converted</Badge>}
+        </span>
+      ),
+    },
+    { key: "designation", header: "Designation", value: (l) => l.designation ?? l.title ?? "—" },
+    { key: "company", header: "Company", value: (l) => l.company ?? "—" },
+    {
+      key: "status", header: "Status", value: (l) => (l.lead_status_id ? statusMap[l.lead_status_id]?.name ?? "—" : "—"),
+      render: (l) => {
+        const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
+        return st ? <Badge className={statusColorClasses(st.color)}>{st.name}</Badge> : <>—</>;
+      },
+    },
+    { key: "owner", header: "Owner", value: (l) => (ownerOf(l) ? userMap[ownerOf(l) as string] || "—" : "—") },
+    {
+      key: "value", header: "Opp. Value", align: "right", numeric: true,
+      value: (l) => Number(l.opportunity_value) || 0,
+      render: (l) => <>{Number(l.opportunity_value) > 0 ? money(Number(l.opportunity_value)) : "—"}</>,
+    },
+    {
+      key: "close_date", header: "Close Date",
+      value: (l) => (l.opportunity_close_date ? format(new Date(l.opportunity_close_date), "dd MMM yyyy") : "—"),
+    },
+    {
+      key: "probability", header: "Win %", align: "right", numeric: true,
+      value: (l) => (l.opportunity_probability != null ? Number(l.opportunity_probability) : null),
+      render: (l) => <>{l.opportunity_probability != null ? `${l.opportunity_probability}%` : "—"}</>,
+    },
+    {
+      key: "productive_count", header: "# Productive Activities", align: "right", numeric: true,
+      value: (l) => rollupOf(l.id).productiveCount,
+    },
+    {
+      key: "days_since_last_activity", header: "Days Since Last Activity", align: "right", numeric: true,
+      value: (l) => rollupOf(l.id).daysSinceLastActivity,
+      render: (l) => <>{rollupOf(l.id).daysSinceLastActivity ?? "—"}</>,
+    },
+    {
+      key: "next_activity_date", header: "Next Activity Date",
+      value: (l) => {
+        const d = rollupOf(l.id).nextActivityDate;
+        return d ? format(new Date(d), "dd MMM yyyy") : "—";
+      },
+    },
+    {
+      key: "activity_count", header: "# Activities", align: "right", numeric: true, defaultHidden: true,
+      value: (l) => rollupOf(l.id).activityCount,
+    },
+    {
+      key: "last_activity_date", header: "Last Activity Date", defaultHidden: true,
+      value: (l) => {
+        const d = rollupOf(l.id).lastActivityDate;
+        return d ? format(new Date(d), "dd MMM yyyy") : "—";
+      },
+    },
+    { key: "phone", header: "Phone", value: (l) => l.phone ?? "—", defaultHidden: true },
+    { key: "email", header: "Email", value: (l) => l.email ?? "—", defaultHidden: true },
+    { key: "created_at", header: "Created", value: (l) => format(new Date(l.created_at), "dd MMM yyyy"), defaultHidden: true },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [statusMap, userMap, rollups]);
+
+  const [visibleCols, setVisibleCols] = useState<string[]>([]);
+  useEffect(() => {
+    if (visibleCols.length) return;
+    setVisibleCols(listColumns.filter((c) => !c.defaultHidden).map((c) => c.key));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listColumns]);
+  const shownCols = useMemo(
+    () => listColumns.filter((c) => visibleCols.includes(c.key)),
+    [listColumns, visibleCols],
+  );
+
+  // Saved views (same storage as saved reports, scoped to the leads list)
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const [activeViewName, setActiveViewName] = useState<string | null>(null);
+  const applyView = (r: SavedReport) => {
+    const f = (r.config.filters || {}) as Record<string, unknown>;
+    setCreatedPreset((f.createdPreset as string) || "all");
+    setOwnerFilter((f.ownerFilter as string) || "all");
+    setStatusFilter((f.statusFilter as string) || "all");
+    setMinProductive((f.minProductive as string) ?? "");
+    setMinDaysSince((f.minDaysSince as string) ?? "");
+    if (r.config.visibleColumns?.length) {
+      setVisibleCols(r.config.visibleColumns.filter((k) => listColumns.some((c) => c.key === k)));
+    }
+    setActiveViewId(r.id);
+    setActiveViewName(r.name);
+  };
+
+
   return (
     <motion.div className="p-3 md:p-6 space-y-4 max-w-7xl mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div>
@@ -235,19 +349,48 @@ export default function Leads() {
       {/* Filters */}
       <Card>
         <CardContent className="p-3 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <SavedReportBar
+              module="leads-list"
+              currentConfig={{
+                filters: { createdPreset, ownerFilter, statusFilter, minProductive, minDaysSince },
+                visibleColumns: visibleCols,
+              }}
+              activeId={activeViewId}
+              activeName={activeViewName}
+              onApply={applyView}
+              onSaved={(id, name) => { setActiveViewId(id); setActiveViewName(name); }}
+              onCleared={() => { setActiveViewId(null); setActiveViewName(null); }}
+            />
+            <ColumnPicker columns={listColumns} visible={visibleCols} onChange={setVisibleCols} />
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+
             <Select value={createdPreset} onValueChange={setCreatedPreset}>
               <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Created date" /></SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 {DATE_PRESETS.map((p) => <SelectItem key={p.value} value={p.value}>{p.value === "all" ? "Created: All time" : `Created: ${p.label}`}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={modifiedPreset} onValueChange={setModifiedPreset}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Last modified" /></SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                {DATE_PRESETS.map((p) => <SelectItem key={p.value} value={p.value}>{p.value === "all" ? "Modified: All time" : `Modified: ${p.label}`}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="h-9 text-xs"
+              placeholder="Min # productive activities"
+              value={minProductive}
+              onChange={(e) => setMinProductive(e.target.value)}
+            />
+            <Input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="h-9 text-xs"
+              placeholder="Min days since last activity"
+              value={minDaysSince}
+              onChange={(e) => setMinDaysSince(e.target.value)}
+            />
+
             <Select value={ownerFilter} onValueChange={setOwnerFilter}>
               <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Owner" /></SelectTrigger>
               <SelectContent className="bg-popover z-50">
@@ -360,33 +503,31 @@ export default function Leads() {
       <Card className="hidden md:block"><CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Name</TableHead><TableHead>Designation</TableHead><TableHead>Company</TableHead>
-            <TableHead>Status</TableHead><TableHead>Owner</TableHead>
-            <TableHead className="text-right">Opp. Value</TableHead><TableHead>Close Date</TableHead><TableHead className="text-right">Win %</TableHead>
+            {shownCols.map((c) => (
+              <TableHead key={c.key} className={c.align === "right" ? "text-right" : ""}>{c.header}</TableHead>
+            ))}
           </TableRow></TableHeader>
           <TableBody>
-            {visibleLeads.map((l: any) => {
-              const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
-              const owner = ownerOf(l);
-              const ownerName = owner ? (userMap[owner] || "—") : "—";
-              return (
-                <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads/${l.id}`)}>
-                  <TableCell className="font-medium">{l.name}{l.converted_customer_id && <Badge variant="secondary" className="ml-2">Converted</Badge>}</TableCell>
-                  <TableCell className="text-sm">{l.designation ?? "—"}</TableCell>
-                  <TableCell>{l.company ?? "—"}</TableCell>
-                  <TableCell>{st ? <Badge className={statusColorClasses(st.color)}>{st.name}</Badge> : "—"}</TableCell>
-                  <TableCell className="text-sm">{ownerName}</TableCell>
-                  <TableCell className="text-right text-sm font-medium">{Number(l.opportunity_value) > 0 ? money(Number(l.opportunity_value)) : "—"}</TableCell>
-                  <TableCell className="text-sm">{l.opportunity_close_date ? format(new Date(l.opportunity_close_date), "dd MMM yyyy") : "—"}</TableCell>
-                  <TableCell className="text-right text-sm">{l.opportunity_probability != null ? `${l.opportunity_probability}%` : "—"}</TableCell>
-                </TableRow>
-              );
-            })}
-            {filteredLeads.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No leads match the filters</TableCell></TableRow>}
-
+            {visibleLeads.map((l: any) => (
+              <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads/${l.id}`)}>
+                {shownCols.map((c) => (
+                  <TableCell key={c.key} className={`text-sm ${c.align === "right" ? "text-right" : ""}`}>
+                    {c.render ? c.render(l) : (c.value(l) ?? "—")}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+            {filteredLeads.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={Math.max(shownCols.length, 1)} className="text-center py-8 text-muted-foreground">
+                  No leads match the filters
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent></Card>
+
 
       {/* Infinite scroll sentinel */}
       {hasMore && (
