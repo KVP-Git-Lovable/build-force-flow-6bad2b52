@@ -23,7 +23,7 @@ import { LeadForm } from "@/components/leads/LeadForm";
 import { ConvertLeadDialog } from "@/components/leads/ConvertLeadDialog";
 import { LeadScoreTab } from "@/components/leads/LeadScoreTab";
 import { LeadSlaTab } from "@/components/leads/LeadSlaTab";
-import { format } from "date-fns";
+import { format, differenceInCalendarDays, parseISO } from "date-fns";
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
