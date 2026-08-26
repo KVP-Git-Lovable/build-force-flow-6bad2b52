@@ -154,7 +154,7 @@ export default function LeadDetail() {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 rounded-lg border bg-muted/30 p-3">
             <div>
               <div className="text-[11px] text-muted-foreground">BANT Score</div>
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -163,9 +163,16 @@ export default function LeadDetail() {
               </div>
             </div>
             <div>
-              <div className="text-[11px] text-muted-foreground">Lead SLA</div>
-              <Badge className={`${SLA_BADGE_CLASSES[slaStatus]} text-[10px] mt-1`}>{slaStatus}</Badge>
+              <div className="text-[11px] text-muted-foreground">Productive Visits</div>
+              <div className="text-sm font-semibold mt-0.5">{productiveCount}</div>
             </div>
+            <div>
+              <div className="text-[11px] text-muted-foreground">Days Since Last Visit</div>
+              <div className="text-sm font-semibold mt-0.5">
+                {daysSinceLastActivity != null ? `${daysSinceLastActivity} day${daysSinceLastActivity === 1 ? "" : "s"}` : "—"}
+              </div>
+            </div>
+
             <div>
               <div className="text-[11px] text-muted-foreground">Opportunity Value</div>
               <div className="text-sm font-semibold mt-0.5">
