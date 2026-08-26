@@ -33,7 +33,15 @@ const ReportContext = createContext<ReportContextValue | null>(null);
 export function ReportProvider({ children }: { children: ReactNode }) {
   const [from, setFrom] = useState(format(new Date(), "yyyy-MM-01"));
   const [to, setTo] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [tab, setTab] = useState<ReportTabKey>("overview");
+  const [tab, setTabState] = useState<ReportTabKey>(
+    () => (sessionStorage.getItem("analytics-tab") as ReportTabKey) || "overview"
+  );
+
+  // Remember the tab so returning from a record lands back on the same report.
+  const setTab = (t: ReportTabKey) => {
+    sessionStorage.setItem("analytics-tab", t);
+    setTabState(t);
+  };
   const [procurementPendingOnly, setProcurementPendingOnly] = useState(false);
 
   const goToPendingProcurement = () => {
