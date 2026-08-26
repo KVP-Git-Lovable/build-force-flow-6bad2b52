@@ -46,6 +46,7 @@ export function useGPSTracker(userId: string | null | undefined) {
   const watcherIdRef = useRef<string | null>(null);
   const foregroundBusyRef = useRef(false);
   const insertChainRef = useRef<Promise<void>>(Promise.resolve());
+  const lastWriteRef = useRef<number>(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -92,6 +93,7 @@ export function useGPSTracker(userId: string | null | undefined) {
       advanceAnchor: boolean
     ) {
       if (advanceAnchor) lastPointRef.current = { lat, lng, ts, accuracy };
+      lastWriteRef.current = Date.now();
       const today = format(new Date(), "yyyy-MM-dd");
       await supabase.from("gps_tracking").insert({
         user_id: userId!,
