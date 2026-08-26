@@ -595,15 +595,17 @@ export default function Activities() {
   // Stats for selected date
   const stats = useMemo(() => {
     const completed = dayActivities.filter((a) => a.status === "completed");
-    const pending = dayActivities.filter((a) => a.status !== "completed");
-    const totalHours = dayActivities.reduce((sum, a) => sum + (a.total_hours || 0), 0);
+    const productive = completed.filter((a) => ((a as any).outcome || "") === "Productive");
+    const unproductive = completed.filter((a) =>
+      UNPRODUCTIVE_OUTCOMES.includes(((a as any).outcome || "") as string)
+    );
     return {
-      total: dayActivities.length,
       completed: completed.length,
-      pending: pending.length,
-      totalHours: Math.round(totalHours * 10) / 10,
+      productive: productive.length,
+      unproductive: unproductive.length,
     };
   }, [dayActivities]);
+
 
   // Check which days have activities (green dot) — scoped to the active user selection
   const daysWithActivities = useMemo(() => {
