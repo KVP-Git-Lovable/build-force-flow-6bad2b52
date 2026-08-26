@@ -14,7 +14,7 @@ import {
   useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, useIndustries, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
 import { CONTACT_ROLE_LABELS, ContactRole, useLeadScoringRules } from "@/hooks/useLeadScoring";
-import { useLeadInsight, bantScore, BANT_LEVEL_CLASSES, SLA_BADGE_CLASSES } from "@/hooks/useLeadInsights";
+import { useLeadInsight, bantScore, BANT_LEVEL_CLASSES } from "@/hooks/useLeadInsights";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { LeadActivityComposer } from "@/components/leads/LeadActivityComposer";
 import { useLeadActivities } from "@/hooks/useLeadActivities";
@@ -23,7 +23,7 @@ import { LeadForm } from "@/components/leads/LeadForm";
 import { ConvertLeadDialog } from "@/components/leads/ConvertLeadDialog";
 import { LeadScoreTab } from "@/components/leads/LeadScoreTab";
 import { LeadSlaTab } from "@/components/leads/LeadSlaTab";
-import { format } from "date-fns";
+import { format, differenceInCalendarDays, parseISO } from "date-fns";
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
@@ -63,7 +63,24 @@ export default function LeadDetail() {
     },
     rules,
   );
-  const slaStatus = insight?.sla ?? "Not Started";
+  
+
+  // ==== Activity & Effort roll-ups (derived from this lead's activities) ====
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const actDates = activities
+    .map((a: any) => String(a.activity_date || "").slice(0, 10))
+    .filter(Boolean)
+    .sort();
+  const pastDates = actDates.filter((d) => d <= todayStr);
+  const lastActivityDate = pastDates.length ? pastDates[pastDates.length - 1] : null;
+  const nextActivityDate = actDates.find((d) => d > todayStr) ?? null;
+  const daysSinceLastActivity = lastActivityDate
+    ? differenceInCalendarDays(new Date(), parseISO(lastActivityDate))
+    : null;
+  const productiveCount = activities.filter(
+    (a: any) => String(a.outcome || "").trim().toLowerCase() === "productive",
+  ).length;
+
   const source = sources.find((s) => s.id === lead.lead_source_id);
   const event = events.find((e) => e.id === lead.related_event_id);
   const isConverted = !!lead.converted_customer_id;
@@ -137,7 +154,7 @@ export default function LeadDetail() {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 rounded-lg border bg-muted/30 p-3">
             <div>
               <div className="text-[11px] text-muted-foreground">BANT Score</div>
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -146,9 +163,16 @@ export default function LeadDetail() {
               </div>
             </div>
             <div>
-              <div className="text-[11px] text-muted-foreground">Lead SLA</div>
-              <Badge className={`${SLA_BADGE_CLASSES[slaStatus]} text-[10px] mt-1`}>{slaStatus}</Badge>
+              <div className="text-[11px] text-muted-foreground">Productive Visits</div>
+              <div className="text-sm font-semibold mt-0.5">{productiveCount}</div>
             </div>
+            <div>
+              <div className="text-[11px] text-muted-foreground">Days Since Last Visit</div>
+              <div className="text-sm font-semibold mt-0.5">
+                {daysSinceLastActivity != null ? `${daysSinceLastActivity} day${daysSinceLastActivity === 1 ? "" : "s"}` : "—"}
+              </div>
+            </div>
+
             <div>
               <div className="text-[11px] text-muted-foreground">Opportunity Value</div>
               <div className="text-sm font-semibold mt-0.5">
@@ -273,7 +297,42 @@ export default function LeadDetail() {
             </CardContent>
           </Card>
 
+          {lead.id && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Activity &amp; Effort Highlight</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground"># of Activities</div>
+                  <div className="font-semibold">{activities.length}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground"># of Productive Activities</div>
+                  <div className="font-semibold">{productiveCount}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Last Activity Date</div>
+                  <div className="font-semibold">
+                    {lastActivityDate ? format(parseISO(lastActivityDate), "dd MMM yyyy") : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Days Since Last Activity</div>
+                  <div className="font-semibold">
+                    {daysSinceLastActivity != null ? `${daysSinceLastActivity} day${daysSinceLastActivity === 1 ? "" : "s"}` : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Next Activity Date</div>
+                  <div className="font-semibold">
+                    {nextActivityDate ? format(parseISO(nextActivityDate), "dd MMM yyyy") : "—"}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
+
             <CardHeader><CardTitle className="text-base">Audit &amp; System Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
