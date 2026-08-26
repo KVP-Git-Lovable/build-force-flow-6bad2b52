@@ -598,6 +598,14 @@ export default function CreativeActivityForm({
       toast.error("Add an activity type or description to save");
       return;
     }
+    if (outcome && FOLLOW_UP_REQUIRED_OUTCOMES.includes(outcome) && !followUp) {
+      toast.error(`Select a next follow-up — it is mandatory when the outcome is "${outcome}"`);
+      return;
+    }
+    if (followUp === "Custom date" && !followUpDate) {
+      toast.error("Pick a date for the custom follow-up");
+      return;
+    }
     if (isEdit && !editActivity) return;
 
 
