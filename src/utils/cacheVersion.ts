@@ -111,8 +111,16 @@ export function checkAndBustCache(): boolean {
     return false;
   }
 
-  // New build detected at startup — but DON'T immediately trust it.
-  // If there's no guard yet, trigger a reload to force fresh assets.
+  // First-ever launch on this device: there's no prior build to be stale
+  // against, so just adopt the current build silently — no reload needed.
+  if (lastBuild === null) {
+    localStorage.setItem(BUILD_KEY, currentBuild);
+    return false;
+  }
+
+  // New build detected at startup (this device HAS run an older build
+  // before) — but DON'T immediately trust it. If there's no guard yet,
+  // trigger a reload to force fresh assets.
   if (!guard) {
     forceReload(currentBuild, "New build detected at startup");
     return true;
