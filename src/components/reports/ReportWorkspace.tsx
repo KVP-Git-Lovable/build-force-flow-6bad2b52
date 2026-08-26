@@ -327,7 +327,25 @@ export function ReportWorkspace<R>({
                     <TableRow>
                       {visibleColumns.map((c) => (
                         <TableHead key={c.key} className={c.align === "right" ? "text-right" : ""}>
-                          {c.header}
+                          <button
+                            type="button"
+                            onClick={() => toggleSort(c.key)}
+                            title={`Sort by ${c.header}`}
+                            className={`inline-flex items-center gap-1 hover:text-foreground ${
+                              c.align === "right" ? "flex-row-reverse" : ""
+                            } ${sort?.key === c.key ? "text-foreground font-semibold" : ""}`}
+                          >
+                            {c.header}
+                            {sort?.key === c.key ? (
+                              sort.dir === "asc" ? (
+                                <ArrowUp className="h-3.5 w-3.5" />
+                              ) : (
+                                <ArrowDown className="h-3.5 w-3.5" />
+                              )
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-40" />
+                            )}
+                          </button>
                         </TableHead>
                       ))}
                       {rowLink && <TableHead className="w-8" />}
