@@ -267,9 +267,47 @@ export default function LeadReport() {
         pdfWidth: 1.6,
         defaultHidden: true,
       },
+      // ---- Activity & effort highlight roll-ups ----
+      {
+        key: "activity_count",
+        header: "# Activities",
+        value: (r) => r.activity_count,
+        numeric: true,
+        align: "right",
+        pdfWidth: 1.2,
+      },
+      {
+        key: "productive_count",
+        header: "# Productive Activities",
+        value: (r) => r.productive_count,
+        numeric: true,
+        align: "right",
+        pdfWidth: 1.4,
+      },
+      {
+        key: "last_activity_date",
+        header: "Last Activity Date",
+        value: (r) => (r.last_activity_date ? format(new Date(r.last_activity_date), "dd MMM yyyy") : "-"),
+        pdfWidth: 1.6,
+      },
+      {
+        key: "days_since_last_activity",
+        header: "Days Since Last Activity",
+        value: (r) => r.days_since_last_activity,
+        numeric: true,
+        align: "right",
+        pdfWidth: 1.4,
+      },
+      {
+        key: "next_activity_date",
+        header: "Next Activity Date",
+        value: (r) => (r.next_activity_date ? format(new Date(r.next_activity_date), "dd MMM yyyy") : "-"),
+        pdfWidth: 1.6,
+      },
     ],
     []
   );
+
 
   const summary = useMemo(() => {
     const pipeline = rows.reduce((s, r) => s + r.value, 0);
