@@ -8,6 +8,7 @@ import { useReportScope } from "./useReportScope";
 import { ReportWorkspace } from "./ReportWorkspace";
 import type { ReportColumn } from "./reportTypes";
 import { DateFieldOption, PresetKey, presetLabel, useDateScope } from "./dateScope";
+import { useOutcomes } from "@/hooks/useOutcomes";
 
 const DATE_FIELDS: DateFieldOption[] = [
   { value: "activity_date", label: "Activity Date" },
@@ -26,6 +27,7 @@ interface Row {
   description: string;
   total_hours: number | null;
   status: string;
+  outcome: string;
 }
 
 const statusBadge = (s: string) => {
@@ -44,8 +46,10 @@ export default function ActivityReport() {
   const [site, setSite] = useState("all");
   const [milestone, setMilestone] = useState("all");
   const [actType, setActType] = useState("all");
+  const [outcome, setOutcome] = useState("all");
   const [sites, setSites] = useState<{ value: string; label: string }[]>([]);
   const [milestones, setMilestones] = useState<{ value: string; label: string; site_id: string }[]>([]);
+  const { data: outcomes = [] } = useOutcomes(true);
   const [actTypes, setActTypes] = useState<{ value: string; label: string }[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -83,7 +87,7 @@ export default function ActivityReport() {
     try {
       let q = supabase
         .from("activity_events")
-        .select("id, user_id, lead_id, activity_date, site_id, milestone_id, activity_type, description, total_hours, status")
+        .select("id, user_id, lead_id, activity_date, site_id, milestone_id, activity_type, description, total_hours, status, outcome")
         .order("activity_date", { ascending: false });
 
       if (state.field === "activity_date") {
@@ -98,6 +102,7 @@ export default function ActivityReport() {
       if (site !== "all") q = q.eq("site_id", site);
       if (milestone !== "all") q = q.eq("milestone_id", milestone);
       if (actType !== "all") q = q.eq("activity_type", actType);
+      if (outcome !== "all") q = q.eq("outcome", outcome);
 
       const { data, error } = await q;
       if (error) throw error;
@@ -124,6 +129,7 @@ export default function ActivityReport() {
           description: r.description || "-",
           total_hours: r.total_hours,
           status: r.status,
+          outcome: (r as { outcome?: string | null }).outcome || "-",
         }))
       );
       setGenerated(true);
@@ -174,6 +180,12 @@ export default function ActivityReport() {
         pdfWidth: 1,
       },
       {
+        key: "outcome",
+        header: "Outcome",
+        value: (r) => r.outcome,
+        pdfWidth: 2,
+      },
+      {
         key: "status",
         header: "Status",
         value: (r) => r.status.replace(/_/g, " "),
@@ -219,8 +231,15 @@ export default function ActivityReport() {
           groupBy: "activity_type",
           measure: "count",
         },
+        {
+          id: "default-outcome",
+          title: "Activities by Outcome",
+          type: "pie",
+          groupBy: "outcome",
+          measure: "count",
+        },
       ]}
-      filterState={{ ...state, employee, site, milestone, actType }}
+      filterState={{ ...state, employee, site, milestone, actType, outcome }}
       onApplyFilterState={(s) => {
         patch({
           field: (s.field as string) || state.field,
@@ -232,11 +251,13 @@ export default function ActivityReport() {
         setSite((s.site as string) || "all");
         setMilestone((s.milestone as string) || "all");
         setActType((s.actType as string) || "all");
+        setOutcome((s.outcome as string) || "all");
       }}
       filterSummary={[
         `${fieldLabel}: ${presetLabel(state.preset)} (${from} to ${to})`,
         `Employee: ${employee === "all" ? "All" : scope.users.find((u) => u.id === employee)?.full_name || "-"}`,
         `Activity Type: ${actType === "all" ? "All" : actType}`,
+        `Outcome: ${outcome === "all" ? "All" : outcome}`,
       ]}
       filters={
         <>
@@ -256,6 +277,13 @@ export default function ActivityReport() {
             options={scope.users.map((u) => ({ value: u.id, label: u.full_name }))}
           />
           <SelectField label="Activity Type" value={actType} onChange={setActType} allLabel="All Types" options={actTypes} />
+          <SelectField
+            label="Outcome"
+            value={outcome}
+            onChange={setOutcome}
+            allLabel="All Outcomes"
+            options={outcomes.map((o) => ({ value: o.name, label: o.name }))}
+          />
         </>
       }
     />
