@@ -2049,11 +2049,47 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
                 </Row>
               )}
 
-              {/* Highlighted activity comment */}
-              <div className="rounded-lg border border-amber-200 bg-amber-50/80 dark:bg-amber-500/10 dark:border-amber-500/30 px-2.5 py-2 mt-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-0.5">Comment</p>
-                <p className="text-xs text-foreground/90 line-clamp-3 break-words">{a.description || "No comment added"}</p>
+              {/* Highlighted activity comment — inline editable */}
+              <div
+                className="rounded-lg border border-amber-200 bg-amber-50/80 dark:bg-amber-500/10 dark:border-amber-500/30 px-2.5 py-2 mt-1.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between gap-2 mb-0.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">Comment</p>
+                  {!editingComment && (
+                    <button
+                      type="button"
+                      className="text-amber-700 dark:text-amber-400"
+                      aria-label="Edit comment"
+                      onClick={() => { setCommentDraft(a.description || ""); setEditingComment(true); }}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {editingComment ? (
+                  <div className="space-y-1.5">
+                    <Textarea
+                      rows={3}
+                      value={commentDraft}
+                      onChange={(e) => setCommentDraft(e.target.value)}
+                      className="text-xs bg-background"
+                      placeholder="Update the comment"
+                    />
+                    <div className="flex gap-1.5 justify-end">
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingComment(false)} disabled={savingComment}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" className="h-7 text-xs" onClick={saveComment} disabled={savingComment}>
+                        {savingComment ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-foreground/90 line-clamp-3 break-words">{a.description || "No comment added"}</p>
+                )}
               </div>
+
 
               {audioUrls.length > 0 && (
                 <div className="pt-1">
