@@ -105,7 +105,7 @@ export function CreateProjectModal({ open, onClose }: Props) {
             <Input
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="e.g. Quickapp v2.0 Launch"
+              placeholder="e.g. QuickLocate v2.0 Launch"
               required
             />
           </div>

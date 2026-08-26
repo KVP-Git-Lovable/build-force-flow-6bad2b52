@@ -1,7 +1,7 @@
 {
-  "name": "Quickapp - Field Operations",
-  "short_name": "Quickapp",
-  "description": "Quickapp field force management, GPS tracking, activities and operations platform",
+  "name": "QuickLocate - Field Operations",
+  "short_name": "QuickLocate",
+  "description": "QuickLocate field force management, GPS tracking, activities and operations platform",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

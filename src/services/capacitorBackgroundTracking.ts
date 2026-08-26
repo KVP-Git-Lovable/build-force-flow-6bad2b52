@@ -45,7 +45,7 @@ export async function startCapacitorBackgroundTracking(userId: string): Promise<
       minDisplacement: 2,
       // High accuracy
       enableHighAccuracy: true,
-      notificationTitle: "SBEE Cables",
+      notificationTitle: "QuickLocate",
       notificationText: "Tracking your location",
       notificationIconColor: "#FFA500",
     });

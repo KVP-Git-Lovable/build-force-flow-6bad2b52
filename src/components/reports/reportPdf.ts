@@ -100,7 +100,7 @@ export async function generateReportPdf(args: GenerateReportPdfArgs): Promise<vo
   const usableW = pageW - margin * 2;
 
   const company = await getCompany();
-  const companyName = company?.company_name || "Quickapp";
+  const companyName = company?.company_name || "QuickLocate";
 
   let y = margin;
 

@@ -22,7 +22,7 @@ const USE_REMOTE = process.env.CAP_REMOTE === '1';
 
 const config: CapacitorConfig = {
   appId: 'ai.quickapp.fieldforce',
-  appName: 'Quickapp',
+  appName: 'QuickLocate',
   webDir: 'dist',
   ...(USE_REMOTE
     ? {
