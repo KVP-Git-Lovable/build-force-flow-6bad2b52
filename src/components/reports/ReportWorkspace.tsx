@@ -11,6 +11,7 @@ import { ChartBuilder } from "./ChartBuilder";
 import { SavedReportBar } from "./SavedReportBar";
 import { generateReportPdf } from "./reportPdf";
 import { useSavedReports } from "@/hooks/useSavedReports";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { ChartConfig, ReportColumn, SavedReport } from "./reportTypes";
 
 interface Props<R> {
@@ -63,7 +64,9 @@ export function ReportWorkspace<R>({
   onGenerate,
 }: Props<R>) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { favourite, loading: savedLoading } = useSavedReports(module);
+  const cacheKey = `report-session:${module}`;
 
   const [visible, setVisible] = useState<string[]>(
     columns.filter((c) => !c.defaultHidden).map((c) => c.key)
@@ -72,7 +75,14 @@ export function ReportWorkspace<R>({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeName, setActiveName] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [cachedRows, setCachedRows] = useState<R[] | null>(null);
   const appliedFavourite = useRef(false);
+  const restored = useRef(false);
+
+  // Rows shown: freshly generated rows, or the session-restored ones when the
+  // user navigates into a record and comes back.
+  const shownRows = generated ? rows : cachedRows || [];
+  const isGenerated = generated || cachedRows !== null;
 
   const apply = (r: SavedReport) => {
     if (r.config.filters) onApplyFilterState(r.config.filters);
@@ -83,6 +93,48 @@ export function ReportWorkspace<R>({
     setActiveId(r.id);
     setActiveName(r.name);
   };
+
+  // Restore the last generated report for this module (e.g. after opening a
+  // record and navigating back).
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    try {
+      const raw = sessionStorage.getItem(cacheKey);
+      if (!raw) return;
+      const cached = JSON.parse(raw) as {
+        rows: R[];
+        visibleColumns?: string[];
+        charts?: ChartConfig[];
+        filters?: Record<string, unknown>;
+      };
+      if (!cached?.rows) return;
+      appliedFavourite.current = true;
+      if (cached.filters) onApplyFilterState(cached.filters);
+      if (cached.visibleColumns?.length) {
+        setVisible(cached.visibleColumns.filter((k) => columns.some((c) => c.key === k)));
+      }
+      if (cached.charts) setCharts(cached.charts);
+      setCachedRows(cached.rows);
+    } catch {
+      /* ignore malformed cache */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist the generated result so it survives a round-trip to a record page.
+  useEffect(() => {
+    if (!generated) return;
+    setCachedRows(null);
+    try {
+      sessionStorage.setItem(
+        cacheKey,
+        JSON.stringify({ rows, visibleColumns: visible, charts, filters: filterState })
+      );
+    } catch {
+      /* storage full / unavailable */
+    }
+  }, [generated, rows, visible, charts, filterState, cacheKey]);
 
   // Open the pinned report automatically on first load.
   useEffect(() => {
@@ -116,7 +168,7 @@ export function ReportWorkspace<R>({
           width: c.pdfWidth || 2,
           align: c.align === "right" ? "right" : "left",
         })),
-        rows: rows.map((r) => visibleColumns.map((c) => cellText(c, r))),
+        rows: shownRows.map((r) => visibleColumns.map((c) => cellText(c, r))),
         summary,
       });
       toast.success("PDF downloaded");
@@ -170,7 +222,7 @@ export function ReportWorkspace<R>({
             <Button
               variant="outline"
               onClick={download}
-              disabled={!generated || rows.length === 0 || downloading}
+              disabled={!isGenerated || shownRows.length === 0 || downloading}
             >
               {downloading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -183,22 +235,59 @@ export function ReportWorkspace<R>({
         </CardContent>
       </Card>
 
-      {generated && (
+      {isGenerated && (
         <>
           {summary && summary.length > 0 && <SummaryCards items={summary} />}
 
-          <ChartBuilder columns={columns} rows={rows} charts={charts} onChange={setCharts} />
+          <ChartBuilder columns={columns} rows={shownRows} charts={charts} onChange={setCharts} />
 
           <p className="text-sm text-muted-foreground">
-            Showing {rows.length} record{rows.length !== 1 ? "s" : ""}
+            Showing {shownRows.length} record{shownRows.length !== 1 ? "s" : ""}
           </p>
 
-          {rows.length === 0 ? (
+          {shownRows.length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
                 No records found for the selected filters.
               </CardContent>
             </Card>
+          ) : isMobile ? (
+            <div className="space-y-2">
+              {shownRows.map((r) => {
+                const link = rowLink?.(r) || null;
+                const [primary, ...rest] = visibleColumns;
+                return (
+                  <Card
+                    key={rowKey(r)}
+                    onClick={() => link && navigate(link)}
+                    className={`shadow-card ${link ? "cursor-pointer active:bg-muted/60" : ""}`}
+                  >
+                    <CardContent className="p-3 space-y-2">
+                      {primary && (
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-sm font-semibold break-words">
+                            {primary.render ? primary.render(r) : cellText(primary, r)}
+                          </div>
+                          {link && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                        </div>
+                      )}
+                      <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                        {rest.map((c) => (
+                          <div key={c.key} className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                              {c.header}
+                            </dt>
+                            <dd className="text-sm break-words">
+                              {c.render ? c.render(r) : cellText(c, r)}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           ) : (
             <Card className="shadow-card">
               <CardContent className="p-0 overflow-auto">
@@ -214,7 +303,7 @@ export function ReportWorkspace<R>({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rows.map((r) => {
+                    {shownRows.map((r) => {
                       const link = rowLink?.(r) || null;
                       return (
                         <TableRow
