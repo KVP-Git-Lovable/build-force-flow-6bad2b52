@@ -239,10 +239,19 @@ export function useGPSTracker(userId: string | null | undefined) {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
+    // Re-evaluate immediately when useAttendance signals a successful
+    // check-in/check-out, instead of waiting for the next visibility-change
+    // or the 30s recheck loop. evaluate() only ever stops tracking when the
+    // day is closed — it never starts a watcher on its own — so this can't
+    // start a second tracking path.
+    const onAttendanceChanged = () => evaluate();
+    window.addEventListener("attendance-changed", onAttendanceChanged);
+
     return () => {
       cancelled = true;
       activeRef.current = false;
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("attendance-changed", onAttendanceChanged);
       if (timerRef.current) window.clearInterval(timerRef.current);
       if (pollTimer) window.clearInterval(pollTimer);
       if (stopBackground) stopBackground();

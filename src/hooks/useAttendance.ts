@@ -236,6 +236,10 @@ export function useAttendance(userId: string | undefined) {
     const { error } = await supabase.from("attendance").update(updateData).eq("id", todayRecord.id);
     if (error) throw error;
 
+    // Let useGPSTracker know check-out succeeded so it can stop tracking
+    // immediately instead of waiting for the next visibility-change re-check.
+    window.dispatchEvent(new Event("attendance-changed"));
+
     await fetchData();
 
     // Notify ALL active users about check-out / Day End (broadcast)
