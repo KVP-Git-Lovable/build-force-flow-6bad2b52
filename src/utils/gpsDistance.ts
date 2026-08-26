@@ -14,8 +14,9 @@ export interface TrackPoint {
   accuracy?: number | null;
 }
 
-const MAX_ACCURACY_METERS = 100;     // reject cell-tower / Wi-Fi guesses
-const MIN_MOVE_METERS_FLOOR = 20;    // absolute floor even with excellent accuracy
+const MAX_ACCURACY_METERS = 150;     // reject cell-tower / Wi-Fi guesses (relaxed so dense
+                                     // urban breadcrumbs reach the road snapper)
+const MIN_MOVE_METERS_FLOOR = 10;    // absolute floor even with excellent accuracy
 const MAX_SPEED_KMH = 160;       // reject impossible jumps (highway upper bound)
 const MAX_TIME_GAP_MINUTES = 5;  // longer gap = separate segment (no phantom line)
 

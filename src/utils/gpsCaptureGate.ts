@@ -7,10 +7,10 @@ export interface GateFix {
   accuracy: number | null;
 }
 
-const MIN_MOVE_METERS_FLOOR = 30; // floor — only throttles capture-side writes;
+const MIN_MOVE_METERS_FLOOR = 10; // floor — only throttles capture-side writes;
                                    // gpsDistance.ts is the authoritative arbiter
                                    // of counted distance for display
-const MAX_ACCURACY_M = 100;        // same worst-case fallback used for accuracy gating
+const MAX_ACCURACY_M = 150;        // same worst-case fallback used for accuracy gating
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   return haversineMetersLatLng(a.lat, a.lng, b.lat, b.lng);

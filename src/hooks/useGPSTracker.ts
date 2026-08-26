@@ -4,9 +4,11 @@ import { getCurrentPosition, isNative } from "@/utils/nativePermissions";
 import { shouldAcceptMove } from "@/utils/gpsCaptureGate";
 import { format } from "date-fns";
 
-const INTERVAL_MS = 30_000;          // sample at least every 30s
-const FOREGROUND_POLL_MS = 30_000;   // web / non-native fallback
-const MAX_ACCURACY_M = 100;          // reject fixes worse than 100m (cell-tower guesses create phantom distance)
+const INTERVAL_MS = 15_000;          // safety heartbeat: sample at least every 15s
+const FOREGROUND_POLL_MS = 15_000;   // web / non-native fallback
+const WATCHDOG_MS = 5 * 60_000;      // no point written for 5 min while the day is
+                                     // open ⇒ the OS killed the watcher: re-register
+const MAX_ACCURACY_M = 150;          // reject fixes worse than 150m (cell-tower guesses create phantom distance)
 const MAX_JUMP_METERS = 10000;       // reject teleport jumps >10km between consecutive samples
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
@@ -194,7 +196,7 @@ export function useGPSTracker(userId: string | null | undefined) {
             requestPermissions: false,
 
             stale: false,
-            distanceFilter: 10, // OS-level filter; we further throttle in insertPoint (reduced from 25)
+            distanceFilter: 5, // OS-level filter; we further throttle in insertPoint
           },
           async (location: any, error: any) => {
             if (error || !location) return;
