@@ -503,33 +503,31 @@ export default function Leads() {
       <Card className="hidden md:block"><CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Name</TableHead><TableHead>Designation</TableHead><TableHead>Company</TableHead>
-            <TableHead>Status</TableHead><TableHead>Owner</TableHead>
-            <TableHead className="text-right">Opp. Value</TableHead><TableHead>Close Date</TableHead><TableHead className="text-right">Win %</TableHead>
+            {shownCols.map((c) => (
+              <TableHead key={c.key} className={c.align === "right" ? "text-right" : ""}>{c.header}</TableHead>
+            ))}
           </TableRow></TableHeader>
           <TableBody>
-            {visibleLeads.map((l: any) => {
-              const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
-              const owner = ownerOf(l);
-              const ownerName = owner ? (userMap[owner] || "—") : "—";
-              return (
-                <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads/${l.id}`)}>
-                  <TableCell className="font-medium">{l.name}{l.converted_customer_id && <Badge variant="secondary" className="ml-2">Converted</Badge>}</TableCell>
-                  <TableCell className="text-sm">{l.designation ?? "—"}</TableCell>
-                  <TableCell>{l.company ?? "—"}</TableCell>
-                  <TableCell>{st ? <Badge className={statusColorClasses(st.color)}>{st.name}</Badge> : "—"}</TableCell>
-                  <TableCell className="text-sm">{ownerName}</TableCell>
-                  <TableCell className="text-right text-sm font-medium">{Number(l.opportunity_value) > 0 ? money(Number(l.opportunity_value)) : "—"}</TableCell>
-                  <TableCell className="text-sm">{l.opportunity_close_date ? format(new Date(l.opportunity_close_date), "dd MMM yyyy") : "—"}</TableCell>
-                  <TableCell className="text-right text-sm">{l.opportunity_probability != null ? `${l.opportunity_probability}%` : "—"}</TableCell>
-                </TableRow>
-              );
-            })}
-            {filteredLeads.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No leads match the filters</TableCell></TableRow>}
-
+            {visibleLeads.map((l: any) => (
+              <TableRow key={l.id} className="cursor-pointer" onClick={() => nav(`/leads/${l.id}`)}>
+                {shownCols.map((c) => (
+                  <TableCell key={c.key} className={`text-sm ${c.align === "right" ? "text-right" : ""}`}>
+                    {c.render ? c.render(l) : (c.value(l) ?? "—")}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+            {filteredLeads.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={Math.max(shownCols.length, 1)} className="text-center py-8 text-muted-foreground">
+                  No leads match the filters
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent></Card>
+
 
       {/* Infinite scroll sentinel */}
       {hasMore && (
