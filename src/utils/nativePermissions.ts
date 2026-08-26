@@ -34,6 +34,8 @@ async function nativeGetPosition(opts: { enableHighAccuracy: boolean; timeout: n
   const pos = await Geolocation.getCurrentPosition({
     enableHighAccuracy: opts.enableHighAccuracy,
     timeout: opts.timeout,
+    maximumAge: 0, // never accept an OS-cached fix — matches webGetPosition's
+                    // explicit anti-cache behavior below
   });
   return {
     latitude: pos.coords.latitude,

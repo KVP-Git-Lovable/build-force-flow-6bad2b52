@@ -14,8 +14,8 @@ export interface TrackPoint {
   accuracy?: number | null;
 }
 
-const MAX_ACCURACY_METERS = 100; // reject cell-tower / Wi-Fi guesses
-const MIN_MOVE_METERS = 20;      // stationary jitter threshold
+const MAX_ACCURACY_METERS = 100;     // reject cell-tower / Wi-Fi guesses
+const MIN_MOVE_METERS_FLOOR = 20;    // absolute floor even with excellent accuracy
 const MAX_SPEED_KMH = 160;       // reject impossible jumps (highway upper bound)
 const MAX_TIME_GAP_MINUTES = 5;  // longer gap = separate segment (no phantom line)
 
@@ -61,8 +61,15 @@ export function filterTrackPoints(points: TrackPoint[]): TrackPoint[] {
       curr.longitude
     );
 
-    // Stationary jitter — user hasn't really moved
-    if (distM < MIN_MOVE_METERS) continue;
+    // Stationary jitter — user hasn't really moved. Gate on the combined
+    // declared error radius of both fixes (not a flat constant) so a noisy
+    // fix (accuracy up to MAX_ACCURACY_METERS is accepted above) can't clear
+    // a too-low bar and get counted — and anchored — as real movement.
+    const requiredMoveM = Math.max(
+      MIN_MOVE_METERS_FLOOR,
+      (prev.accuracy ?? MAX_ACCURACY_METERS) + (curr.accuracy ?? MAX_ACCURACY_METERS)
+    );
+    if (distM < requiredMoveM) continue;
 
     const timeDiffMs =
       new Date(curr.timestamp).getTime() - new Date(prev.timestamp).getTime();

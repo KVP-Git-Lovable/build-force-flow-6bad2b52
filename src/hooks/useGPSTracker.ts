@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentPosition, isNative } from "@/utils/nativePermissions";
+import { shouldAcceptMove } from "@/utils/gpsCaptureGate";
 import { format } from "date-fns";
 
 const INTERVAL_MS = 30_000;          // sample at least every 30s
-const MIN_MOVE_METERS = 30;          // OR every 30m of movement
 const FOREGROUND_POLL_MS = 30_000;   // web / non-native fallback
 const MAX_ACCURACY_M = 100;          // reject fixes worse than 100m (cell-tower guesses create phantom distance)
 const MAX_JUMP_METERS = 10000;       // reject teleport jumps >10km between consecutive samples
@@ -31,16 +31,19 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
  *
  * On web it falls back to foreground polling.
  *
- * Sampling rule: insert a point when EITHER 60s has elapsed OR the user has
- * moved ≥100m since the last stored point (whichever fires first).
+ * Sampling rule: a point is written whenever the accuracy-aware movement
+ * gate (see gpsCaptureGate.ts) confirms real movement, or forced every 30s
+ * for trail density (without moving the gating anchor if it wasn't a
+ * confirmed real move).
  */
 export function useGPSTracker(userId: string | null | undefined) {
   const activeRef = useRef(false);
-  const lastPointRef = useRef<{ lat: number; lng: number; ts: number } | null>(null);
+  const lastPointRef = useRef<{ lat: number; lng: number; ts: number; accuracy: number | null } | null>(null);
   const pendingJumpRef = useRef<{ lat: number; lng: number; accuracy: number | null; ts: number } | null>(null);
   const timerRef = useRef<number | null>(null);
   const watcherIdRef = useRef<string | null>(null);
   const foregroundBusyRef = useRef(false);
+  const insertChainRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (!userId) return;
@@ -59,8 +62,34 @@ export function useGPSTracker(userId: string | null | undefined) {
       return !!att?.check_in_time && !att?.check_out_time;
     }
 
-    async function persistPoint(lat: number, lng: number, accuracy: number | null, ts: number) {
-      lastPointRef.current = { lat, lng, ts };
+    async function bootstrapLastPoint() {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { data } = await supabase
+        .from("gps_tracking")
+        .select("latitude, longitude, timestamp, accuracy")
+        .eq("user_id", userId!)
+        .eq("date", today)
+        .order("timestamp", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data && !lastPointRef.current) {
+        lastPointRef.current = {
+          lat: data.latitude,
+          lng: data.longitude,
+          ts: new Date(data.timestamp).getTime(),
+          accuracy: data.accuracy ?? null,
+        };
+      }
+    }
+
+    async function persistPoint(
+      lat: number,
+      lng: number,
+      accuracy: number | null,
+      ts: number,
+      advanceAnchor: boolean
+    ) {
+      if (advanceAnchor) lastPointRef.current = { lat, lng, ts, accuracy };
       const today = format(new Date(), "yyyy-MM-dd");
       await supabase.from("gps_tracking").insert({
         user_id: userId!,
@@ -99,7 +128,7 @@ export function useGPSTracker(userId: string | null | undefined) {
           const pending = pendingJumpRef.current;
           if (pending && haversineMeters(pending, { lat, lng }) <= 100) {
             // Confirmed: genuine relocation — flush the held point first.
-            await persistPoint(pending.lat, pending.lng, pending.accuracy, pending.ts);
+            await persistPoint(pending.lat, pending.lng, pending.accuracy, pending.ts, true);
             pendingJumpRef.current = null;
           } else {
             pendingJumpRef.current = { lat, lng, accuracy, ts: now };
@@ -109,9 +138,32 @@ export function useGPSTracker(userId: string | null | undefined) {
           // Returned near the last good point — drop the held outlier.
           pendingJumpRef.current = null;
         }
-        if (dist < MIN_MOVE_METERS && elapsed < INTERVAL_MS) return;
+        // Accuracy-aware movement gate: don't credit — or anchor on — a jump
+        // smaller than the combined declared error radius of both fixes.
+        // Ordinary GPS jitter (accuracy up to MAX_ACCURACY_M is accepted
+        // above) can otherwise silently drift the anchor every heartbeat,
+        // making each subsequent noisy fix measure from an already-drifted
+        // point instead of the last confirmed real position.
+        const { isRealMove } = shouldAcceptMove(last, { lat, lng, ts: now, accuracy });
+        if (!isRealMove) {
+          if (elapsed < INTERVAL_MS) return; // too soon, no real movement — skip write entirely
+          // Heartbeat-forced sample: keep the trail dense, but don't move the
+          // gating anchor — it wasn't a confirmed real move.
+          await persistPoint(lat, lng, accuracy, now, false);
+          return;
+        }
       }
-      await persistPoint(lat, lng, accuracy, now);
+      await persistPoint(lat, lng, accuracy, now, true);
+    }
+
+    function queueInsert(lat: number, lng: number, accuracy: number | null) {
+      // Native has two independent producers (background watcher + heartbeat
+      // poll) calling insertPoint; serialize them so they can't interleave
+      // across insertPoint's await boundaries and race pendingJumpRef/lastPointRef.
+      insertChainRef.current = insertChainRef.current
+        .catch(() => {})
+        .then(() => insertPoint(lat, lng, accuracy));
+      return insertChainRef.current;
     }
 
     async function startNativeBackground() {
@@ -149,7 +201,7 @@ export function useGPSTracker(userId: string | null | undefined) {
             if (!activeRef.current) return;
             if (cancelled) return;
             try {
-              await insertPoint(location.latitude, location.longitude, location.accuracy ?? null);
+              await queueInsert(location.latitude, location.longitude, location.accuracy ?? null);
             } catch { /* ignore */ }
           }
         );
@@ -160,7 +212,7 @@ export function useGPSTracker(userId: string | null | undefined) {
           if (!activeRef.current || cancelled) return;
           try {
             const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
-            await insertPoint(pos.latitude, pos.longitude, pos.accuracy ?? null);
+            await queueInsert(pos.latitude, pos.longitude, pos.accuracy ?? null);
           } catch { /* ignore */ }
         }, INTERVAL_MS);
 
@@ -186,7 +238,7 @@ export function useGPSTracker(userId: string | null | undefined) {
         foregroundBusyRef.current = true;
         try {
           const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
-          await insertPoint(pos.latitude, pos.longitude, pos.accuracy ?? null);
+          await queueInsert(pos.latitude, pos.longitude, pos.accuracy ?? null);
         } catch { /* ignore */ } finally {
           foregroundBusyRef.current = false;
         }
@@ -207,6 +259,7 @@ export function useGPSTracker(userId: string | null | undefined) {
     }
 
     (async () => {
+      await bootstrapLastPoint();
       await evaluate();
       if (!activeRef.current) {
         // Re-check periodically in case user checks in later
