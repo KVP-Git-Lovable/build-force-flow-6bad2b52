@@ -187,6 +187,8 @@ export function useActivities() {
           milestone_status: msInfo?.status || "",
           lead_name: leadInfo?.name || "",
           lead_company: leadInfo?.company || "",
+          lead_designation: leadInfo?.designation || "",
+
         };
       });
 
