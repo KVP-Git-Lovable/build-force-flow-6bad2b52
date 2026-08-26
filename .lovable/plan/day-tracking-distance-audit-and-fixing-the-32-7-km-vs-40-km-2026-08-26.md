@@ -24,12 +24,14 @@ Two secondary contributors, both in our own code:
 
 ## Routes API vs Google Maps Timeline — why they differ by design
 
-| | Routes API (what we use now) | Roads API "snap to roads" | Maps Timeline |
-|---|---|---|---|
-| Question it answers | "What is the best road path from A to B via these stops?" | "Which road segments did this breadcrumb trail actually cover?" | "Where did this phone physically go?" |
-| Input | Sparse waypoints (max 25 intermediates per call) | Dense raw breadcrumbs, 100+ per call | Continuous OS sensor fusion |
-| Gaps | Bridged with the *optimal* route — usually shorter than reality | Bridged only if `interpolate=true`, along real roads | Filled by dead reckoning from accelerometer/gyro |
-| Detours, U-turns, parking loops | Lost unless a waypoint happens to sit on them | Preserved when breadcrumbs are dense | Fully preserved |
+
+| &nbsp;                          | Routes API (what we use now)                                    | Roads API "snap to roads"                                       | Maps Timeline                                    |
+| ------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
+| Question it answers             | "What is the best road path from A to B via these stops?"       | "Which road segments did this breadcrumb trail actually cover?" | "Where did this phone physically go?"            |
+| Input                           | Sparse waypoints (max 25 intermediates per call)                | Dense raw breadcrumbs, 100+ per call                            | Continuous OS sensor fusion                      |
+| Gaps                            | Bridged with the *optimal* route — usually shorter than reality | Bridged only if `interpolate=true`, along real roads            | Filled by dead reckoning from accelerometer/gyro |
+| Detours, U-turns, parking loops | Lost unless a waypoint happens to sit on them                   | Preserved when breadcrumbs are dense                            | Fully preserved                                  |
+
 
 Timeline will always read higher. Our target is not to match it exactly, but to close the gap from ~20% down to a few percent.
 
@@ -37,7 +39,7 @@ Timeline will always read higher. Our target is not to match it exactly, but to 
 
 ### 1. Capture — make pings actually arrive (the real fix)
 
-- Increase capture rate: OS distance filter from 10 m to 5 m, heartbeat from 30 s to 15 s.
+- Enable background Watcher and Increase capture rate: OS distance filter from 10 m to 5 m, heartbeat from 30 s to 15 s.
 - Detect the failure that hit this user: if no point has been written for more than 5 minutes while the day is open, re-register the background watcher.
 - Add a diagnostics surface so this is visible rather than invisible: on the Day Tracking page, show points captured today, longest gap, and a clear warning banner when a gap over 15 minutes exists, with guidance to grant "Allow all the time" location and exclude the app from battery optimisation.
 - Verify the Android manifest declares background location and a foreground service type of `location`, and that the app asks for the always-on upgrade after the initial grant.
