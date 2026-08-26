@@ -24,6 +24,13 @@ import jsPDF from "jspdf";
 import { toast } from "sonner";
 import { downloadPDF as downloadPDFNative } from "@/utils/nativeDownload";
 import ActivityDetailsDialog from "@/components/activities/ActivityDetailsDialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Search, Filter } from "lucide-react";
+import { useActivityTypeOptions, ACTIVITY_OUTCOMES } from "@/hooks/useLeadActivities";
+import { UNPRODUCTIVE_OUTCOMES } from "@/pages/Activities";
 
 const statusColors: Record<string, string> = {
   planned: "bg-muted text-muted-foreground",
@@ -38,13 +45,21 @@ const statusLabels: Record<string, string> = {
 
 export default function ActivityTimeline() {
   const navigate = useNavigate();
-  const { activities, loading, fetchAttendanceForDate } = useActivities();
+  const { activities, loading, users, fetchAttendanceForDate, fetchDropdowns } = useActivities();
+  const { data: activityTypes = [] } = useActivityTypeOptions();
   const { isAdmin } = useUserProfile();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentUserId, setCurrentUserId] = useState("");
   const [attendance, setAttendance] = useState<{ check_in_time: string | null; check_out_time: string | null } | null>(null);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [detailActivity, setDetailActivity] = useState<ActivityType | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [outcomeFilter, setOutcomeFilter] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [userFilter, setUserFilter] = useState("all");
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
@@ -63,16 +78,41 @@ export default function ActivityTimeline() {
     });
   }, [currentUserId, dateStr, fetchAttendanceForDate]);
 
+  useEffect(() => { fetchDropdowns(); }, [fetchDropdowns]);
+
   const dayActivities = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return activities
       .filter((a) => a.activity_date === dateStr)
+      .filter((a) => {
+        if (q) {
+          const hay = [a.activity_name, a.activity_type, a.user_full_name, (a as any).lead_name, (a as any).lead_company]
+            .filter(Boolean).join(" ").toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        if (typeFilter !== "all" && (a.activity_type || "") !== typeFilter) return false;
+        if (outcomeFilter !== "all" && ((a as any).outcome || "") !== outcomeFilter) return false;
+        if (riskFilter !== "all" && (((a as any).risk as string) || "green") !== riskFilter) return false;
+        if (statusFilter !== "all" && a.status !== statusFilter) return false;
+        if (userFilter !== "all" && a.user_id !== userFilter) return false;
+        return true;
+      })
       .sort((a, b) => {
         if (!a.start_time && !b.start_time) return 0;
         if (!a.start_time) return 1;
         if (!b.start_time) return -1;
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
       });
-  }, [activities, dateStr]);
+  }, [activities, dateStr, searchQuery, typeFilter, outcomeFilter, riskFilter, statusFilter, userFilter]);
+
+  const stats = useMemo(() => {
+    const completed = dayActivities.filter((a) => a.status === "completed");
+    return {
+      completed: completed.length,
+      productive: completed.filter((a) => ((a as any).outcome || "") === "Productive").length,
+      unproductive: completed.filter((a) => UNPRODUCTIVE_OUTCOMES.includes(((a as any).outcome || "") as string)).length,
+    };
+  }, [dayActivities]);
 
   const handleDownloadPDF = useCallback(async () => {
     try {
@@ -169,6 +209,116 @@ export default function ActivityTimeline() {
         </div>
       </div>
 
+
+      {/* Roll-up summaries */}
+      <div className="px-4 grid grid-cols-3 gap-2">
+        <div className="bg-card rounded-xl p-3 text-center shadow-card border">
+          <p className="text-lg font-bold text-emerald-600">{stats.completed}</p>
+          <p className="text-[10px] text-muted-foreground">Completed</p>
+        </div>
+        <div className="bg-card rounded-xl p-3 text-center shadow-card border">
+          <p className="text-lg font-bold text-sky-600">{stats.productive}</p>
+          <p className="text-[10px] text-muted-foreground">Productive</p>
+        </div>
+        <div className="bg-card rounded-xl p-3 text-center shadow-card border">
+          <p className="text-lg font-bold text-rose-600">{stats.unproductive}</p>
+          <p className="text-[10px] text-muted-foreground">Unproductive</p>
+        </div>
+      </div>
+
+      {/* Search + Filters */}
+      <div className="px-4 pt-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search..." className="pl-9 w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          </div>
+          <Button
+            variant={moreFiltersOpen ? "secondary" : "outline"}
+            size="icon"
+            className="shrink-0 h-10 w-10 relative"
+            onClick={() => setMoreFiltersOpen((open) => !open)}
+            aria-label="More filters"
+          >
+            <Filter className="h-4 w-4" />
+            {(statusFilter !== "all" || userFilter !== "all") && (
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary" />
+            )}
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {activityTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue placeholder="Outcome" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All outcomes</SelectItem>
+              {ACTIVITY_OUTCOMES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={riskFilter} onValueChange={setRiskFilter}>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue placeholder="Risk" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All risk</SelectItem>
+              <SelectItem value="green">On Track</SelectItem>
+              <SelectItem value="orange">Attention</SelectItem>
+              <SelectItem value="red">Critical</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Collapsible open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
+          <CollapsibleContent>
+            <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                {isAdmin && (
+                  <div className="space-y-1 min-w-0">
+                    <Label className="text-[10px] text-muted-foreground">Team member</Label>
+                    <Select value={userFilter} onValueChange={setUserFilter}>
+                      <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All users</SelectItem>
+                        {users.map((u: any) => (
+                          <SelectItem key={u.id} value={u.id}>{u.full_name || "Unknown"}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-1 min-w-0">
+                  <Label className="text-[10px] text-muted-foreground">Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All statuses</SelectItem>
+                      <SelectItem value="planned">Planned</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs w-full"
+                onClick={() => {
+                  setTypeFilter("all"); setOutcomeFilter("all"); setRiskFilter("all");
+                  setStatusFilter("all"); setUserFilter("all");
+                }}
+              >
+                Clear all filters
+              </Button>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
 
       {/* Timeline Content */}
       <div className="px-4 pb-24">
