@@ -138,17 +138,17 @@ export default function ActivityTimeline() {
 
       {/* Timeline Header + Controls */}
       <div className="px-4 pt-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 space-y-3">
           <div>
             <h2 className="text-xl font-extrabold tracking-tight">TIMELINE</h2>
             <div className="h-1 w-16 bg-foreground rounded-full mt-1" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2 text-sm">
-                  <CalendarDays className="h-4 w-4" />
-                  {format(selectedDate, "MMMM do, yyyy")}
+                <Button variant="outline" className="gap-2 text-xs flex-1 min-w-0 justify-start">
+                  <CalendarDays className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{format(selectedDate, "MMM d, yyyy")}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
@@ -160,13 +160,13 @@ export default function ActivityTimeline() {
                 />
               </PopoverContent>
             </Popover>
-            <Button variant="outline" className="gap-2 text-sm" onClick={handleDownloadPDF}>
+            <Button variant="outline" size="icon" className="shrink-0" onClick={handleDownloadPDF} aria-label="Download PDF">
               <Download className="h-4 w-4" />
-              Download PDF
             </Button>
           </div>
         </div>
       </div>
+
 
       {/* Timeline Content */}
       <div className="px-4 pb-24">
