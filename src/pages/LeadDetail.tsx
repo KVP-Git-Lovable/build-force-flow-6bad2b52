@@ -64,6 +64,23 @@ export default function LeadDetail() {
     rules,
   );
   const slaStatus = insight?.sla ?? "Not Started";
+
+  // ==== Activity & Effort roll-ups (derived from this lead's activities) ====
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const actDates = activities
+    .map((a: any) => String(a.activity_date || "").slice(0, 10))
+    .filter(Boolean)
+    .sort();
+  const pastDates = actDates.filter((d) => d <= todayStr);
+  const lastActivityDate = pastDates.length ? pastDates[pastDates.length - 1] : null;
+  const nextActivityDate = actDates.find((d) => d > todayStr) ?? null;
+  const daysSinceLastActivity = lastActivityDate
+    ? differenceInCalendarDays(new Date(), parseISO(lastActivityDate))
+    : null;
+  const productiveCount = activities.filter(
+    (a: any) => String(a.outcome || "").trim().toLowerCase() === "productive",
+  ).length;
+
   const source = sources.find((s) => s.id === lead.lead_source_id);
   const event = events.find((e) => e.id === lead.related_event_id);
   const isConverted = !!lead.converted_customer_id;
