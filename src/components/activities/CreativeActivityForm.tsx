@@ -758,6 +758,17 @@ export default function CreativeActivityForm({
 
   const handleStatusChange = async (newStatus: string) => {
     if (!isEdit || !editActivity || !updateActivity || newStatus === status) return;
+    if (newStatus === "completed") {
+      const missing: string[] = [];
+      if (!description.trim()) missing.push("activity comment");
+      if (!activityType) missing.push("activity type");
+      if (!outcome) missing.push("outcome");
+      if (missing.length) {
+        toast.error(`Add ${missing.join(", ")} before completing`);
+        return;
+      }
+    }
+
     setChangingStatus(true);
     try {
       const now = new Date().toISOString();
