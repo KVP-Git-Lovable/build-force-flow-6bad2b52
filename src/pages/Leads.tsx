@@ -349,7 +349,23 @@ export default function Leads() {
       {/* Filters */}
       <Card>
         <CardContent className="p-3 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <SavedReportBar
+              module="leads-list"
+              currentConfig={{
+                filters: { createdPreset, ownerFilter, statusFilter, minProductive, minDaysSince },
+                visibleColumns: visibleCols,
+              }}
+              activeId={activeViewId}
+              activeName={activeViewName}
+              onApply={applyView}
+              onSaved={(id, name) => { setActiveViewId(id); setActiveViewName(name); }}
+              onCleared={() => { setActiveViewId(null); setActiveViewName(null); }}
+            />
+            <ColumnPicker columns={listColumns} visible={visibleCols} onChange={setVisibleCols} />
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+
             <Select value={createdPreset} onValueChange={setCreatedPreset}>
               <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Created date" /></SelectTrigger>
               <SelectContent className="bg-popover z-50">
