@@ -1874,6 +1874,23 @@ function GPSTrackView({
 function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGoods, onStatusChanged, updateActivity, getStatusUpdateTargetId, selectedDateStr }: { a: ActivityType; isAdmin: boolean; onEdit: (a: ActivityType) => void; onDelete: (id: string) => void; onOpenDetails: (a: ActivityType) => void; onReceiveGoods: (poId: string) => void; onStatusChanged: () => void; updateActivity: (id: string, updates: Partial<ActivityType>) => Promise<void>; getStatusUpdateTargetId: (activity: ActivityType, targetDate: string) => Promise<string>; selectedDateStr: string }) {
   const [changingStatus, setChangingStatus] = useState(false);
   const navigate = useNavigate();
+  const [editingComment, setEditingComment] = useState(false);
+  const [commentDraft, setCommentDraft] = useState(a.description || "");
+  const [savingComment, setSavingComment] = useState(false);
+
+  const saveComment = async () => {
+    setSavingComment(true);
+    try {
+      await updateActivity(a.id, { description: commentDraft.trim() || null } as Partial<ActivityType>);
+      setEditingComment(false);
+      onStatusChanged();
+      toast.success("Comment updated");
+    } catch {
+      toast.error("Could not update the comment");
+    } finally {
+      setSavingComment(false);
+    }
+  };
 
 
   const handleStatusChange = async (newStatus: string) => {
