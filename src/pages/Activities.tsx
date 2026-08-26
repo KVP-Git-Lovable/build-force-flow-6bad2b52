@@ -228,7 +228,10 @@ export default function Activities() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [outcomeFilter, setOutcomeFilter] = useState("all");
   const [riskFilter, setRiskFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [reportFiltersOpen, setReportFiltersOpen] = useState(false);
+
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
