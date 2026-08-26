@@ -69,14 +69,14 @@ function inRange(value?: string | null, range?: { start: Date; end: Date } | nul
   return isWithinInterval(d, range);
 }
 
-/** Activities recorded against leads — used for the completed KPIs */
+/** Activities recorded against leads — used for the completed KPIs and roll-ups */
 function useLeadActivityStats() {
   return useQuery({
     queryKey: ["lead-activity-stats"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("activity_events")
-        .select("id, status, activity_date, lead_id")
+        .select("id, status, outcome, activity_date, lead_id")
         .not("lead_id", "is", null);
       if (error) throw error;
       return (data || []) as any[];
@@ -84,6 +84,7 @@ function useLeadActivityStats() {
     staleTime: 60 * 1000,
   });
 }
+
 
 function KpiCard({ icon: Icon, label, value, sub, color }: any) {
   return (
