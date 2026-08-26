@@ -223,6 +223,103 @@ export default function Leads() {
   const money = (n: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: n >= 100000 ? "compact" : "standard" }).format(n || 0);
 
+  // ---- Configurable list columns (fields to display) ----
+  const listColumns: ReportColumn<any>[] = useMemo(() => [
+    {
+      key: "name", header: "Name", value: (l) => l.name,
+      render: (l) => (
+        <span className="font-medium">
+          {l.name}
+          {l.converted_customer_id && <Badge variant="secondary" className="ml-2">Converted</Badge>}
+        </span>
+      ),
+    },
+    { key: "designation", header: "Designation", value: (l) => l.designation ?? l.title ?? "—" },
+    { key: "company", header: "Company", value: (l) => l.company ?? "—" },
+    {
+      key: "status", header: "Status", value: (l) => (l.lead_status_id ? statusMap[l.lead_status_id]?.name ?? "—" : "—"),
+      render: (l) => {
+        const st = l.lead_status_id ? statusMap[l.lead_status_id] : null;
+        return st ? <Badge className={statusColorClasses(st.color)}>{st.name}</Badge> : <>—</>;
+      },
+    },
+    { key: "owner", header: "Owner", value: (l) => (ownerOf(l) ? userMap[ownerOf(l) as string] || "—" : "—") },
+    {
+      key: "value", header: "Opp. Value", align: "right", numeric: true,
+      value: (l) => Number(l.opportunity_value) || 0,
+      render: (l) => <>{Number(l.opportunity_value) > 0 ? money(Number(l.opportunity_value)) : "—"}</>,
+    },
+    {
+      key: "close_date", header: "Close Date",
+      value: (l) => (l.opportunity_close_date ? format(new Date(l.opportunity_close_date), "dd MMM yyyy") : "—"),
+    },
+    {
+      key: "probability", header: "Win %", align: "right", numeric: true,
+      value: (l) => (l.opportunity_probability != null ? Number(l.opportunity_probability) : null),
+      render: (l) => <>{l.opportunity_probability != null ? `${l.opportunity_probability}%` : "—"}</>,
+    },
+    {
+      key: "productive_count", header: "# Productive Activities", align: "right", numeric: true,
+      value: (l) => rollupOf(l.id).productiveCount,
+    },
+    {
+      key: "days_since_last_activity", header: "Days Since Last Activity", align: "right", numeric: true,
+      value: (l) => rollupOf(l.id).daysSinceLastActivity,
+      render: (l) => <>{rollupOf(l.id).daysSinceLastActivity ?? "—"}</>,
+    },
+    {
+      key: "next_activity_date", header: "Next Activity Date",
+      value: (l) => {
+        const d = rollupOf(l.id).nextActivityDate;
+        return d ? format(new Date(d), "dd MMM yyyy") : "—";
+      },
+    },
+    {
+      key: "activity_count", header: "# Activities", align: "right", numeric: true, defaultHidden: true,
+      value: (l) => rollupOf(l.id).activityCount,
+    },
+    {
+      key: "last_activity_date", header: "Last Activity Date", defaultHidden: true,
+      value: (l) => {
+        const d = rollupOf(l.id).lastActivityDate;
+        return d ? format(new Date(d), "dd MMM yyyy") : "—";
+      },
+    },
+    { key: "phone", header: "Phone", value: (l) => l.phone ?? "—", defaultHidden: true },
+    { key: "email", header: "Email", value: (l) => l.email ?? "—", defaultHidden: true },
+    { key: "created_at", header: "Created", value: (l) => format(new Date(l.created_at), "dd MMM yyyy"), defaultHidden: true },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [statusMap, userMap, rollups]);
+
+  const [visibleCols, setVisibleCols] = useState<string[]>([]);
+  useEffect(() => {
+    if (visibleCols.length) return;
+    setVisibleCols(listColumns.filter((c) => !c.defaultHidden).map((c) => c.key));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listColumns]);
+  const shownCols = useMemo(
+    () => listColumns.filter((c) => visibleCols.includes(c.key)),
+    [listColumns, visibleCols],
+  );
+
+  // Saved views (same storage as saved reports, scoped to the leads list)
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const [activeViewName, setActiveViewName] = useState<string | null>(null);
+  const applyView = (r: SavedReport) => {
+    const f = (r.config.filters || {}) as Record<string, unknown>;
+    setCreatedPreset((f.createdPreset as string) || "all");
+    setOwnerFilter((f.ownerFilter as string) || "all");
+    setStatusFilter((f.statusFilter as string) || "all");
+    setMinProductive((f.minProductive as string) ?? "");
+    setMinDaysSince((f.minDaysSince as string) ?? "");
+    if (r.config.visibleColumns?.length) {
+      setVisibleCols(r.config.visibleColumns.filter((k) => listColumns.some((c) => c.key === k)));
+    }
+    setActiveViewId(r.id);
+    setActiveViewName(r.name);
+  };
+
+
   return (
     <motion.div className="p-3 md:p-6 space-y-4 max-w-7xl mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div>
