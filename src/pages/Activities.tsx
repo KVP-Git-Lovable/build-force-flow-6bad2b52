@@ -947,46 +947,47 @@ export default function Activities() {
       </motion.div>
 
       {/* Search + Filters + New Button */}
-      <motion.div variants={item} className="px-4 space-y-3">
+      <motion.div variants={item} className="px-4 space-y-2">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search..." className="pl-9 w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-          {(isAdmin || hasSubordinates) && (
-            <Button
-              variant={reportFiltersOpen ? "secondary" : "outline"}
-              size="sm"
-              className="shrink-0 px-2.5 sm:px-3"
-              onClick={() => setReportFiltersOpen((open) => !open)}
-            >
-              <Filter className="h-4 w-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Filters</span>
-            </Button>
-          )}
-          <Button className="gradient-hero text-primary-foreground shrink-0 px-3 sm:px-4" onClick={handleOpenCreate}>
-            <Plus className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">New</span>
+          <Button
+            variant={moreFiltersOpen ? "secondary" : "outline"}
+            size="icon"
+            className="shrink-0 h-10 w-10 relative"
+            onClick={() => setMoreFiltersOpen((open) => !open)}
+            aria-label="More filters"
+          >
+            <Filter className="h-4 w-4" />
+            {(statusFilter !== "all" || (selectedUserId && selectedUserId !== "")) && (
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary" />
+            )}
+          </Button>
+          <Button className="gradient-hero text-primary-foreground shrink-0 px-3" onClick={handleOpenCreate}>
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Activity type / Outcome / Risk filters */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 py-1.5">
+        {/* Activity type / Outcome / Risk filters — fit inside the mobile width */}
+        <div className="grid grid-cols-3 gap-2">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs shrink-0"><SelectValue placeholder="Type" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
               {activityTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
-            <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs shrink-0"><SelectValue placeholder="Outcome" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue placeholder="Outcome" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All outcomes</SelectItem>
               {ACTIVITY_OUTCOMES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={riskFilter} onValueChange={setRiskFilter}>
-            <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs shrink-0"><SelectValue placeholder="Risk" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue placeholder="Risk" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All risk</SelectItem>
               <SelectItem value="green">On Track</SelectItem>
@@ -994,14 +995,55 @@ export default function Activities() {
               <SelectItem value="red">Critical</SelectItem>
             </SelectContent>
           </Select>
-          {(typeFilter !== "all" || outcomeFilter !== "all" || riskFilter !== "all") && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0"
-              onClick={() => { setTypeFilter("all"); setOutcomeFilter("all"); setRiskFilter("all"); }}>
-              Clear
-            </Button>
-          )}
         </div>
+
+        {/* Collapsible advanced filters */}
+        <Collapsible open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
+          <CollapsibleContent>
+            <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                {(isAdmin || hasSubordinates) && (
+                  <div className="space-y-1 min-w-0">
+                    <Label className="text-[10px] text-muted-foreground">Team member</Label>
+                    <Select value={selectedUserId || "me"} onValueChange={(v) => setSelectedUserId(v === "me" ? "" : v)}>
+                      <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="me">My activities</SelectItem>
+                        <SelectItem value="all">All users</SelectItem>
+                        {selectableUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.full_name || "Unknown"}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-1 min-w-0">
+                  <Label className="text-[10px] text-muted-foreground">Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All statuses</SelectItem>
+                      {statusOptions.map((s) => <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs w-full"
+                onClick={() => {
+                  setTypeFilter("all"); setOutcomeFilter("all"); setRiskFilter("all");
+                  setStatusFilter("all"); setSelectedUserId("");
+                }}
+              >
+                Clear all filters
+              </Button>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </motion.div>
+
 
       {/* Activity Report Generator - hidden from UI */}
       {false && (isAdmin || hasSubordinates) && (
