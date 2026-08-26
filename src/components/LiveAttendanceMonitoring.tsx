@@ -28,7 +28,7 @@ interface AttendanceData {
   check_in_address: string | null; check_out_address: string | null;
   check_in_photo_url: string | null; check_out_photo_url: string | null;
   face_match_confidence: number | null; face_match_confidence_out: number | null;
-  profiles?: { full_name: string; username: string } | null;
+  profiles?: { full_name: string; username: string; email: string } | null;
   active_market_hours?: number | null;
   signed_photo_url?: string | null;
 }
@@ -56,9 +56,15 @@ const LiveAttendanceMonitoring = () => {
   const [modalPage, setModalPage] = useState(1);
   const MODAL_PAGE_SIZE = 10;
 
-  // Get display name with fallback chain
+  // Get display name with fallback chain: full_name → username → email prefix → User
   const getDisplayName = (profile: any): string => {
-    return profile?.full_name || profile?.username || 'User';
+    if (profile?.full_name) return profile.full_name;
+    if (profile?.username) return profile.username;
+    if (profile?.email) {
+      const emailPrefix = profile.email.split('@')[0];
+      return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+    }
+    return 'User';
   };
 
   useEffect(() => {
@@ -108,7 +114,7 @@ const LiveAttendanceMonitoring = () => {
     try {
       setIsLoading(true);
       const { data: attendance } = await supabase.from('attendance').select('*').gte('date', format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd')).order('date', { ascending: false });
-      const { data: allUsers } = await supabase.from('users').select('id, full_name, username');
+      const { data: allUsers } = await supabase.from('users').select('id, full_name, username, email');
 
       if (allUsers) {
         const result: AttendanceData[] = [];
@@ -123,7 +129,7 @@ const LiveAttendanceMonitoring = () => {
           if (record.check_in_time && record.check_out_time) {
             activeMarketHours = (new Date(record.check_out_time).getTime() - new Date(record.check_in_time).getTime()) / (1000 * 60 * 60);
           }
-          const entry: AttendanceData = { ...record, profiles: { full_name: profile.full_name, username: profile.username }, active_market_hours: activeMarketHours, signed_photo_url: null };
+          const entry: AttendanceData = { ...record, profiles: { full_name: profile.full_name, username: profile.username, email: profile.email }, active_market_hours: activeMarketHours, signed_photo_url: null };
           result.push(entry);
 
           if (record.check_in_photo_url) {
