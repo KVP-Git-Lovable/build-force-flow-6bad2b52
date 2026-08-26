@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, Search, ChevronRight } from "lucide-react";
+import { Download, Loader2, Search, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { SummaryCards } from "./ReportShell";
 import { ColumnPicker } from "./ColumnPicker";
