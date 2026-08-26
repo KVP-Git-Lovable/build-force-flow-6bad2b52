@@ -19,7 +19,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { MapPin, AlertTriangle, RefreshCw, Clock, Navigation, CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentPosition, openAppSettings, isNative } from "@/utils/nativePermissions";
+import { getCurrentPosition, openAppSettings, isNative, prepareNativeLocationSettings } from "@/utils/nativePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useGPSTeamMembers } from "@/hooks/useGPSTeamMembers";
@@ -343,6 +343,15 @@ export default function GPSTracking() {
   // in Settings. This opens the app's settings screen directly instead of
   // leaving the user to find Battery/Permissions themselves.
   const handleFixTrackingGap = async () => {
+    if (isNative()) {
+      await prepareNativeLocationSettings();
+      toast({
+        title: "Device settings opened",
+        description: "Allow the battery prompt if shown, then set Location to \"Allow all the time\" and Battery to Unrestricted.",
+      });
+      return;
+    }
+
     const opened = await openAppSettings();
     if (!opened) {
       toast({

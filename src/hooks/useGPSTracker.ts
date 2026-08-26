@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentPosition, isNative } from "@/utils/nativePermissions";
+import { getCurrentPosition, isNative, prepareNativeLocationSettings } from "@/utils/nativePermissions";
 import { shouldAcceptMove } from "@/utils/gpsCaptureGate";
 import { format } from "date-fns";
 
@@ -172,6 +172,8 @@ export function useGPSTracker(userId: string | null | undefined) {
 
     async function startNativeBackground() {
       try {
+        await prepareNativeLocationSettings();
+
         // Only register the watcher once the OS has actually granted location.
         // Requesting here too would race the startup permission request and
         // Android would abandon one of the callbacks, leaving location denied.
