@@ -1878,7 +1878,19 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
 
   const handleStatusChange = async (newStatus: string) => {
     if (newStatus === a.status) return;
+    if (newStatus === "completed") {
+      const missing: string[] = [];
+      if (!a.description?.trim()) missing.push("activity comment");
+      if (!a.activity_type) missing.push("activity type");
+      if (!(a as any).outcome) missing.push("outcome");
+      if (missing.length) {
+        toast.error(`Add ${missing.join(", ")} before completing`);
+        onOpenDetails(a);
+        return;
+      }
+    }
     setChangingStatus(true);
+
     try {
       const now = new Date().toISOString();
       const updates: Partial<ActivityType> = {
