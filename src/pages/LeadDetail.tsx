@@ -63,7 +63,7 @@ export default function LeadDetail() {
     },
     rules,
   );
-  const slaStatus = insight?.sla ?? "Not Started";
+  
 
   // ==== Activity & Effort roll-ups (derived from this lead's activities) ====
   const todayStr = format(new Date(), "yyyy-MM-dd");
