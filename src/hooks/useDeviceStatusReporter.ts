@@ -48,13 +48,32 @@ export function useDeviceStatusReporter(userId: string | null | undefined) {
     let cancelled = false;
 
     const platform = detectPlatform();
+    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+
+    const readNativeBattery = async (): Promise<{ level: number | null; charging: boolean | null }> => {
+      try {
+        const { Device } = await import("@capacitor/device");
+        const info = await Device.getBatteryInfo();
+        return {
+          level: typeof info.batteryLevel === "number" ? Math.round(info.batteryLevel * 100) : null,
+          charging: typeof info.isCharging === "boolean" ? info.isCharging : null,
+        };
+      } catch {
+        return { level: null, charging: null };
+      }
+    };
 
     const send = async () => {
       if (cancelled || document.visibilityState !== "visible") return;
       let batteryLevel: number | null = null;
       let charging: boolean | null = null;
+      if (isNative) {
+        const nat = await readNativeBattery();
+        batteryLevel = nat.level;
+        charging = nat.charging;
+      }
       const bat = batteryRef.current;
-      if (bat) {
+      if (batteryLevel == null && bat) {
         batteryLevel = Math.round((bat.level ?? 0) * 100);
         charging = !!bat.charging;
       }
@@ -70,6 +89,7 @@ export function useDeviceStatusReporter(userId: string | null | undefined) {
         /* ignore transient failures */
       }
     };
+
 
     const start = async () => {
       try {
