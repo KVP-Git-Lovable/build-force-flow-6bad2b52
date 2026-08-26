@@ -8,13 +8,12 @@ const RELEASE_TOKEN = '20260821-1';
 //
 //   default          -> bundles the local `dist` build into the APK.
 //                       Always the code in this repo. Needs a new APK per change.
-//   CAP_REMOTE=1     -> loads https://bb.quickapp.ai instead, so web fixes ship
-//                       without a new APK.
+//   CAP_REMOTE=1     -> loads https://locate.quickapp.ai instead, so web fixes
+//                       ship without a new APK.
 //
-// Remote is OFF by default because bb.quickapp.ai currently serves an older
-// build than this repo, and that build white-screens inside the Android
-// WebView (TypeError: ...reading 'toLowerCase'). Re-enable it once the site
-// has been republished from this codebase:
+// Remote is OFF by default. Before enabling it, confirm locate.quickapp.ai has
+// actually been republished from this codebase (a stale remote build can
+// white-screen inside the Android WebView):
 //
 //   CAP_REMOTE=1 npm run sync:android
 //
@@ -27,9 +26,9 @@ const config: CapacitorConfig = {
   ...(USE_REMOTE
     ? {
         server: {
-          url: `https://bb.quickapp.ai?v=${RELEASE_TOKEN}&forceHideBadge=true`,
+          url: `https://locate.quickapp.ai?v=${RELEASE_TOKEN}&forceHideBadge=true`,
           androidScheme: 'https',
-          allowNavigation: ['bb.quickapp.ai', '*.quickapp.ai'],
+          allowNavigation: ['locate.quickapp.ai', '*.quickapp.ai'],
         },
       }
     : {}),
