@@ -112,9 +112,15 @@ export default function Leads() {
   const [leadOpen, setLeadOpen] = useState(false);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [createdPreset, setCreatedPreset] = useState("all");
-  const [modifiedPreset, setModifiedPreset] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [minProductive, setMinProductive] = useState("");
+  const [minDaysSince, setMinDaysSince] = useState("");
+
+  // Activity & effort roll-ups per lead
+  const rollups = useMemo(() => buildLeadRollups(leadActivities), [leadActivities]);
+  const rollupOf = (id: string) => rollups[id] ?? EMPTY_ROLLUP;
+
 
   useEffect(() => {
     const ids = Array.from(
