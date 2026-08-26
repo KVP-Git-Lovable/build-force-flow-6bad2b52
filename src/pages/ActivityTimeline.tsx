@@ -23,6 +23,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
 import { downloadPDF as downloadPDFNative } from "@/utils/nativeDownload";
+import ActivityDetailsDialog from "@/components/activities/ActivityDetailsDialog";
 
 const statusColors: Record<string, string> = {
   planned: "bg-muted text-muted-foreground",
@@ -334,6 +335,13 @@ export default function ActivityTimeline() {
           </div>
         )}
       </div>
+
+      <ActivityDetailsDialog
+        activity={detailActivity}
+        open={!!detailActivity}
+        onClose={() => setDetailActivity(null)}
+        attendance={attendance}
+      />
     </div>
   );
 }
