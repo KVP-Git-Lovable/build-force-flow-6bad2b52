@@ -586,14 +586,19 @@ export default function CreativeActivityForm({
     }
   }, [clearRecording, isFinalizing, isRecording, isStartingRecording, isTranscribing, startRecording, stopRecording]);
 
-  const canPost = !!description.trim() || !!activityType || !!leadId;
+  const canPost = !!leadId && (!!description.trim() || !!activityType);
 
   const handlePost = async () => {
+    if (!leadId) {
+      toast.error("Select a lead — it is mandatory for an activity");
+      return;
+    }
     if (!canPost) {
-      toast.error("Add a lead, type, or description to post");
+      toast.error("Add an activity type or description to save");
       return;
     }
     if (isEdit && !editActivity) return;
+
 
     // GRN validation — only enforced for GRN activity type on new posts
     let grnRowsToInsert: { it: GrnLineItem; received: number; remarks: string }[] = [];
