@@ -56,6 +56,11 @@ const LiveAttendanceMonitoring = () => {
   const [modalPage, setModalPage] = useState(1);
   const MODAL_PAGE_SIZE = 10;
 
+  // Get display name with fallback chain
+  const getDisplayName = (profile: any): string => {
+    return profile?.full_name || profile?.username || 'User';
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchAttendanceData();
@@ -177,7 +182,7 @@ const LiveAttendanceMonitoring = () => {
   const handleClearSelection = () => setSelectedUsers([]);
 
   const exportData = () => {
-    const csv = ['Employee,Date,Check In,Check Out,Hours,Status,Face Match In', ...filteredData.map(r => [r.profiles?.full_name || 'Unknown', r.date, r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--', r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--', r.active_market_hours ? `${r.active_market_hours.toFixed(1)}h` : '--', r.status, r.face_match_confidence != null ? `${Math.round(r.face_match_confidence)}%` : '--'].join(','))].join('\n');
+    const csv = ['Employee,Date,Check In,Check Out,Hours,Status,Face Match In', ...filteredData.map(r => [getDisplayName(r.profiles), r.date, r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--', r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--', r.active_market_hours ? `${r.active_market_hours.toFixed(1)}h` : '--', r.status, r.face_match_confidence != null ? `${Math.round(r.face_match_confidence)}%` : '--'].join(','))].join('\n');
     downloadCSVString(csv, `attendance-report-${format(new Date(), 'yyyy-MM-dd')}.csv`);
   };
 
@@ -255,7 +260,7 @@ const LiveAttendanceMonitoring = () => {
   const exportModalExcel = async () => {
     try {
       const rows = modalRecords.map(r => ({
-        Employee: r.profiles?.full_name || 'Unknown',
+        Employee: getDisplayName(r.profiles),
         Username: r.profiles?.username || '',
         Date: r.date,
         'Check In': r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--',
@@ -289,7 +294,7 @@ const LiveAttendanceMonitoring = () => {
       modalRecords.forEach(r => {
         if (y > 285) { doc.addPage(); y = 20; }
         const vals = [
-          (r.profiles?.full_name || 'Unknown').slice(0, 28),
+          (getDisplayName(r.profiles)).slice(0, 28),
           r.date,
           r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--',
           r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--',
@@ -437,7 +442,7 @@ const LiveAttendanceMonitoring = () => {
                   {displayData.map(r => (
                     <TableRow key={r.id} className="cursor-pointer hover:bg-muted/70" onClick={() => setDetailRecord(r)}>
                       <TableCell className="font-medium text-xs sm:text-sm py-2 sm:py-3">
-                        <span className="text-primary hover:underline">{r.profiles?.full_name || 'Unknown'}</span>
+                        <span className="text-primary hover:underline">{getDisplayName(r.profiles)}</span>
                       </TableCell>
                       <TableCell className="text-xs sm:text-sm py-2 sm:py-3">{format(new Date(r.date), 'MMM dd')}</TableCell>
                       <TableCell className="py-2 sm:py-3">
@@ -658,7 +663,7 @@ const LiveAttendanceMonitoring = () => {
                   {modalPageRecords.map(r => (
                     <TableRow key={r.id} className="cursor-pointer hover:bg-muted/70" onClick={() => openUserDetail(r)}>
                       <TableCell className="font-medium text-xs sm:text-sm py-2">
-                        <span className="text-primary hover:underline">{r.profiles?.full_name || 'Unknown'}</span>
+                        <span className="text-primary hover:underline">{getDisplayName(r.profiles)}</span>
                       </TableCell>
                       {modalType === 'hours' ? (
                         <>
