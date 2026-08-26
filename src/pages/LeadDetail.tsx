@@ -297,7 +297,42 @@ export default function LeadDetail() {
             </CardContent>
           </Card>
 
+          {lead.id && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Activity &amp; Effort Highlight</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground"># of Activities</div>
+                  <div className="font-semibold">{activities.length}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground"># of Productive Activities</div>
+                  <div className="font-semibold">{productiveCount}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Last Activity Date</div>
+                  <div className="font-semibold">
+                    {lastActivityDate ? format(parseISO(lastActivityDate), "dd MMM yyyy") : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Days Since Last Activity</div>
+                  <div className="font-semibold">
+                    {daysSinceLastActivity != null ? `${daysSinceLastActivity} day${daysSinceLastActivity === 1 ? "" : "s"}` : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Next Activity Date</div>
+                  <div className="font-semibold">
+                    {nextActivityDate ? format(parseISO(nextActivityDate), "dd MMM yyyy") : "—"}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
+
             <CardHeader><CardTitle className="text-base">Audit &amp; System Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
