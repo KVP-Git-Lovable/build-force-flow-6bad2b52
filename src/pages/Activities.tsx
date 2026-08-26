@@ -576,9 +576,11 @@ export default function Activities() {
       if (typeFilter !== "all" && (a.activity_type || "") !== typeFilter) return false;
       if (outcomeFilter !== "all" && ((a as any).outcome || "") !== outcomeFilter) return false;
       if (riskFilter !== "all" && (((a as any).risk as string) || "green") !== riskFilter) return false;
+      if (statusFilter !== "all" && a.status !== statusFilter) return false;
       return true;
     });
-  }, [dayActivities, searchQuery, typeFilter, outcomeFilter, riskFilter]);
+  }, [dayActivities, searchQuery, typeFilter, outcomeFilter, riskFilter, statusFilter]);
+
 
   // Sort by start_time for timeline
   const timelineSorted = useMemo(() => {
