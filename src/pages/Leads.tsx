@@ -18,6 +18,10 @@ import {
 } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { buildLeadRollups, EMPTY_ROLLUP } from "@/lib/leadActivityRollups";
+import { ColumnPicker } from "@/components/reports/ColumnPicker";
+import { SavedReportBar } from "@/components/reports/SavedReportBar";
+import type { ReportColumn, SavedReport } from "@/components/reports/reportTypes";
 
 const DATE_PRESETS = [
   { value: "all", label: "All time" },
