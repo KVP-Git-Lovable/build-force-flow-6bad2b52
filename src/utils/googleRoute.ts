@@ -91,7 +91,7 @@ async function snapBatch(batch: RoutePoint[]): Promise<{ path: LatLng[]; meters:
     const path = (data?.path ?? []) as LatLng[];
     const meters = Number(data?.distanceMeters);
     if (path.length < 2 || !Number.isFinite(meters)) throw new Error("empty snap");
-    return { path, meters, snapped: true };
+    return { path, meters, snapped: data?.snapped === true };
   } catch (e) {
     console.warn("snap-roads batch failed, using raw track", e);
     return { path: raw, meters: legMeters(batch), snapped: false };
