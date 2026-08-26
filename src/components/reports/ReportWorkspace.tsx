@@ -284,6 +284,32 @@ export function ReportWorkspace<R>({
             </Card>
           ) : isMobile ? (
             <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <select
+                  value={sort?.key ?? ""}
+                  onChange={(e) =>
+                    setSort(e.target.value ? { key: e.target.value, dir: sort?.dir ?? "asc" } : null)
+                  }
+                  className="h-9 flex-1 rounded-md border bg-background px-2 text-xs"
+                  aria-label="Sort by"
+                >
+                  <option value="">Sort by…</option>
+                  {visibleColumns.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.header}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!sort}
+                  onClick={() => sort && setSort({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })}
+                >
+                  {sort?.dir === "desc" ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />}
+                </Button>
+              </div>
+
               {sortedRows.map((r) => {
                 const link = rowLink?.(r) || null;
                 const [primary, ...rest] = visibleColumns;
