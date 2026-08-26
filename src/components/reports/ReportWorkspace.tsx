@@ -199,7 +199,7 @@ export function ReportWorkspace<R>({
           width: c.pdfWidth || 2,
           align: c.align === "right" ? "right" : "left",
         })),
-        rows: shownRows.map((r) => visibleColumns.map((c) => cellText(c, r))),
+        rows: sortedRows.map((r) => visibleColumns.map((c) => cellText(c, r))),
         summary,
       });
       toast.success("PDF downloaded");
@@ -284,7 +284,7 @@ export function ReportWorkspace<R>({
             </Card>
           ) : isMobile ? (
             <div className="space-y-2">
-              {shownRows.map((r) => {
+              {sortedRows.map((r) => {
                 const link = rowLink?.(r) || null;
                 const [primary, ...rest] = visibleColumns;
                 return (
@@ -334,7 +334,7 @@ export function ReportWorkspace<R>({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {shownRows.map((r) => {
+                    {sortedRows.map((r) => {
                       const link = rowLink?.(r) || null;
                       return (
                         <TableRow
