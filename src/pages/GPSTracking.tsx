@@ -524,7 +524,7 @@ export default function GPSTracking() {
                   <p className="text-xs text-muted-foreground">Distance</p>
                   <p className="text-sm font-semibold">{totalDistance.toFixed(1)} km</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {isRoadDistance ? "road distance" : "estimated"}
+                    {isRoadDistance ? (route?.snapped ? "road-snapped" : "part estimated") : "estimated"}
                   </p>
 
                 </CardContent>
@@ -545,6 +545,23 @@ export default function GPSTracking() {
               </Card>
             </div>
           )}
+
+          {/* Tracking-gap warning: recorded distance can only be as complete as the trail */}
+          {gpsPoints.length > 1 && longestGapMinutes > 15 && (
+            <Card className="shadow-card border-destructive/40 bg-destructive/5">
+              <CardContent className="p-3">
+                <p className="text-xs font-semibold text-destructive">
+                  Tracking gap detected — {Math.round(longestGapMinutes)} min without a location fix
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Distance travelled during the gap could not be recorded. Disable battery
+                  optimisation for the app and allow location "Always" to capture the full route.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+
 
           {/* Timeline info */}
           {firstPoint && lastPoint && (
