@@ -2100,7 +2100,9 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
               )}
 
               <div className="pt-1.5 text-[10px] text-muted-foreground space-y-1">
-                <p>📷 {a.photo_urls?.length || 0} photo{(a.photo_urls?.length || 0) === 1 ? "" : "s"}</p>
+                {(a.photo_urls?.length || 0) > 0 && (
+                  <p>📷 {a.photo_urls!.length} photo{a.photo_urls!.length === 1 ? "" : "s"}</p>
+                )}
                 <p>
                   🕘 {a.status_changed_at
                     ? `Status updated ${format(parseISO(a.status_changed_at), "h:mm a, MMM d")}`
