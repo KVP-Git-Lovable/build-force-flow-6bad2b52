@@ -172,6 +172,7 @@ export default function CreativeActivityForm({
   const [leadOptions, setLeadOptions] = useState<{ id: string; name: string; company: string | null }[]>([]);
   const [outcome, setOutcome] = useState("");
   const [description, setDescription] = useState("");
+  const [enrichingComment, setEnrichingComment] = useState(false);
   const [activityType, setActivityType] = useState("");
   const [activityDate, setActivityDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
