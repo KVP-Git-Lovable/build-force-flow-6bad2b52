@@ -149,11 +149,42 @@ export function ReportWorkspace<R>({
     [columns, visible]
   );
 
+  // ---- Sorting (applies to both the desktop table and the mobile cards) ----
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+
+  const toggleSort = (key: string) =>
+    setSort((prev) =>
+      !prev || prev.key !== key
+        ? { key, dir: "asc" }
+        : prev.dir === "asc"
+          ? { key, dir: "desc" }
+          : null
+    );
+
+  const sortedRows = useMemo(() => {
+    if (!sort) return shownRows;
+    const col = columns.find((c) => c.key === sort.key);
+    if (!col) return shownRows;
+    const factor = sort.dir === "asc" ? 1 : -1;
+    return [...shownRows].sort((a, b) => {
+      const av = col.value(a);
+      const bv = col.value(b);
+      const aEmpty = av === null || av === undefined || av === "";
+      const bEmpty = bv === null || bv === undefined || bv === "";
+      if (aEmpty && bEmpty) return 0;
+      if (aEmpty) return 1;
+      if (bEmpty) return -1;
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * factor;
+      return String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: "base" }) * factor;
+    });
+  }, [shownRows, sort, columns]);
+
   const cellText = (col: ReportColumn<R>, row: R) => {
     const v = col.value(row);
     if (v === null || v === undefined || v === "") return "-";
     return typeof v === "number" ? v.toLocaleString("en-IN") : String(v);
   };
+
 
   const download = async () => {
     setDownloading(true);
