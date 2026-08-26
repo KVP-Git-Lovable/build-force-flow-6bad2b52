@@ -42,7 +42,8 @@ import { uploadActivityFile, resolveActivityPhotoUrl } from "@/utils/activityPho
 import type { Activity as ActivityType, ActivityPhotoEntry, ActivityStatusEntry } from "@/hooks/useActivities";
 import { format, parseISO, addDays } from "date-fns";
 
-const FOLLOW_UP_OPTIONS = ["Later today", "Tomorrow", "Day-after", "Next week", "Custom date"] as const;
+const FOLLOW_UP_OPTIONS = ["Later today", "Tomorrow", "Day-after", "Next week", "Custom date", "Not fixed"] as const;
+const FOLLOW_UP_REQUIRED_OUTCOMES = ["Visited but not available", "Postponed", "Cancelled"];
 
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { supabase } from "@/integrations/supabase/client";
