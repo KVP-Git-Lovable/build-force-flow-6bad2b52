@@ -324,9 +324,21 @@ export default function GPSTracking() {
       }, 0)
     : 0;
 
-  // Real road distance from the Google Routes API (falls back to straight-line)
+  // Real road distance snapped onto actual roads (falls back to straight-line)
   const isRoadDistance = route?.distanceMeters != null;
   const totalDistance = isRoadDistance ? (route!.distanceMeters as number) / 1000 : haversineDistance;
+
+  // Capture diagnostics — a long hole in the trail means the phone stopped
+  // reporting (Doze / battery optimisation), and no route API can recover
+  // kilometres that were never recorded.
+  const longestGapMinutes = gpsPoints.reduce((max, p, i) => {
+    if (i === 0) return 0;
+    const gap =
+      (new Date(p.timestamp).getTime() - new Date(gpsPoints[i - 1].timestamp).getTime()) / 60000;
+    return Math.max(max, gap);
+  }, 0);
+
+
 
 
   const firstPoint = gpsPoints.length > 0 ? gpsPoints[0] : null;
