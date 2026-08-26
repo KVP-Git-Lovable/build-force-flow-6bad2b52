@@ -394,6 +394,34 @@ export default function CreativeActivityForm({
     }
   };
 
+  const handleEnrichComment = async () => {
+    const raw = description.trim();
+    if (!raw) {
+      toast.error("Write a comment first");
+      return;
+    }
+    setEnrichingComment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("summarize-activity-comment", {
+        body: {
+          text: raw,
+          activityType: activityType || null,
+          lead: selectedLead ? `${selectedLead.name}${selectedLead.company ? ` (${selectedLead.company})` : ""}` : null,
+        },
+      });
+      if (error) throw error;
+      const summary = (data as any)?.summary?.trim();
+      if (!summary) throw new Error("No summary returned");
+      setDescription(summary);
+      toast.success("Comment summarised");
+    } catch (err: any) {
+      toast.error(err?.message || "Could not enrich the comment");
+    } finally {
+      setEnrichingComment(false);
+    }
+  };
+
+
   const uploaderName = currentProfile?.full_name || currentProfile?.username || null;
 
   const uploadPhotoBlob = useCallback(async (blob: Blob) => {
