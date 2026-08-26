@@ -35,13 +35,8 @@ export default function CompanyProfile() {
 
   const saveMutation = useMutation({
     mutationFn: async (formData: any) => {
-      if (formData.id) {
-        const { error } = await supabase.from("company_profile").update(formData).eq("id", formData.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("company_profile").insert(formData);
-        if (error) throw error;
-      }
+      const { error } = await (supabase as any).rpc("upsert_company_profile", { _payload: formData });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-profile"] });
