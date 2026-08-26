@@ -149,37 +149,43 @@ export default function Leads() {
   }, [leads, userMap]);
 
   const createdRange = useMemo(() => presetRange(createdPreset), [createdPreset]);
-  const modifiedRange = useMemo(() => presetRange(modifiedPreset), [modifiedPreset]);
 
   const filteredLeads = useMemo(() => leads.filter((l: any) => {
     if (q && ![l.name, l.company, l.email, l.phone].some((v) => (v ?? "").toLowerCase().includes(q.toLowerCase()))) return false;
     if (!inRange(l.created_at, createdRange)) return false;
-    if (!inRange(l.updated_at || l.created_at, modifiedRange)) return false;
     if (ownerFilter !== "all" && ownerOf(l) !== ownerFilter) return false;
     if (statusFilter !== "all" && l.lead_status_id !== statusFilter) return false;
+    const ru = rollups[l.id] ?? EMPTY_ROLLUP;
+    if (minProductive !== "" && ru.productiveCount < Number(minProductive)) return false;
+    if (minDaysSince !== "" && (ru.daysSinceLastActivity == null || ru.daysSinceLastActivity < Number(minDaysSince))) return false;
     return true;
-  }), [leads, q, createdRange, modifiedRange, ownerFilter, statusFilter]);
+  }), [leads, q, createdRange, ownerFilter, statusFilter, rollups, minProductive, minDaysSince]);
 
-  const activeFilters = [createdPreset, modifiedPreset, ownerFilter, statusFilter].filter((v) => v !== "all").length;
+  const activeFilters =
+    [createdPreset, ownerFilter, statusFilter].filter((v) => v !== "all").length +
+    [minProductive, minDaysSince].filter((v) => v !== "").length;
 
   const clearAllFilters = () => {
-    setCreatedPreset("all"); setModifiedPreset("all"); setOwnerFilter("all"); setStatusFilter("all");
+    setCreatedPreset("all"); setOwnerFilter("all"); setStatusFilter("all");
+    setMinProductive(""); setMinDaysSince("");
   };
 
   const filterChips = useMemo(() => {
     const chips: { key: string; label: string; clear: () => void }[] = [];
     const presetLabel = (v: string) => DATE_PRESETS.find((p) => p.value === v)?.label ?? v;
     if (createdPreset !== "all") chips.push({ key: "created", label: `Created: ${presetLabel(createdPreset)}`, clear: () => setCreatedPreset("all") });
-    if (modifiedPreset !== "all") chips.push({ key: "modified", label: `Modified: ${presetLabel(modifiedPreset)}`, clear: () => setModifiedPreset("all") });
     if (ownerFilter !== "all") chips.push({ key: "owner", label: `Owner: ${ownerOptions.find((o) => o.id === ownerFilter)?.name ?? "Unknown"}`, clear: () => setOwnerFilter("all") });
     if (statusFilter !== "all") chips.push({ key: "status", label: `Status: ${statusMap[statusFilter]?.name ?? "Unknown"}`, clear: () => setStatusFilter("all") });
+    if (minProductive !== "") chips.push({ key: "prod", label: `Productive ≥ ${minProductive}`, clear: () => setMinProductive("") });
+    if (minDaysSince !== "") chips.push({ key: "days", label: `Days since activity ≥ ${minDaysSince}`, clear: () => setMinDaysSince("") });
     return chips;
-  }, [createdPreset, modifiedPreset, ownerFilter, statusFilter, ownerOptions, statusMap]);
+  }, [createdPreset, ownerFilter, statusFilter, minProductive, minDaysSince, ownerOptions, statusMap]);
 
   // Progressive rendering for large lists
   const PAGE_SIZE = 20;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [q, createdPreset, modifiedPreset, ownerFilter, statusFilter]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [q, createdPreset, ownerFilter, statusFilter, minProductive, minDaysSince]);
+
   const visibleLeads = useMemo(() => filteredLeads.slice(0, visibleCount), [filteredLeads, visibleCount]);
   const { rules: scoringRules } = useLeadScoringRules();
   const visibleIds = useMemo(() => visibleLeads.map((l: any) => l.id), [visibleLeads]);
