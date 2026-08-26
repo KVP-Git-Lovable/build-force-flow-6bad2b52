@@ -42,7 +42,8 @@ import { uploadActivityFile, resolveActivityPhotoUrl } from "@/utils/activityPho
 import type { Activity as ActivityType, ActivityPhotoEntry, ActivityStatusEntry } from "@/hooks/useActivities";
 import { format, parseISO, addDays } from "date-fns";
 
-const FOLLOW_UP_OPTIONS = ["Later today", "Tomorrow", "Day-after", "Next week", "Custom date"] as const;
+const FOLLOW_UP_OPTIONS = ["Later today", "Tomorrow", "Day-after", "Next week", "Custom date", "Not fixed"] as const;
+const FOLLOW_UP_REQUIRED_OUTCOMES = ["Visited but not available", "Postponed", "Cancelled"];
 
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { supabase } from "@/integrations/supabase/client";
@@ -171,6 +172,7 @@ export default function CreativeActivityForm({
   const [leadOptions, setLeadOptions] = useState<{ id: string; name: string; company: string | null }[]>([]);
   const [outcome, setOutcome] = useState("");
   const [description, setDescription] = useState("");
+  const [enrichingComment, setEnrichingComment] = useState(false);
   const [activityType, setActivityType] = useState("");
   const [activityDate, setActivityDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
@@ -392,6 +394,34 @@ export default function CreativeActivityForm({
     }
   };
 
+  const handleEnrichComment = async () => {
+    const raw = description.trim();
+    if (!raw) {
+      toast.error("Write a comment first");
+      return;
+    }
+    setEnrichingComment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("summarize-activity-comment", {
+        body: {
+          text: raw,
+          activityType: activityType || null,
+          lead: selectedLead ? `${selectedLead.name}${selectedLead.company ? ` (${selectedLead.company})` : ""}` : null,
+        },
+      });
+      if (error) throw error;
+      const summary = (data as any)?.summary?.trim();
+      if (!summary) throw new Error("No summary returned");
+      setDescription(summary);
+      toast.success("Comment summarised");
+    } catch (err: any) {
+      toast.error(err?.message || "Could not enrich the comment");
+    } finally {
+      setEnrichingComment(false);
+    }
+  };
+
+
   const uploaderName = currentProfile?.full_name || currentProfile?.username || null;
 
   const uploadPhotoBlob = useCallback(async (blob: Blob) => {
@@ -595,6 +625,14 @@ export default function CreativeActivityForm({
     }
     if (!canPost) {
       toast.error("Add an activity type or description to save");
+      return;
+    }
+    if (outcome && FOLLOW_UP_REQUIRED_OUTCOMES.includes(outcome) && !followUp) {
+      toast.error(`Select a next follow-up — it is mandatory when the outcome is "${outcome}"`);
+      return;
+    }
+    if (followUp === "Custom date" && !followUpDate) {
+      toast.error("Pick a date for the custom follow-up");
       return;
     }
     if (isEdit && !editActivity) return;
@@ -1183,6 +1221,24 @@ export default function CreativeActivityForm({
                     className="min-w-0 flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 shadow-none px-0 text-[15px] placeholder:text-muted-foreground/70 break-words [overflow-wrap:anywhere]"
                   />
                 </div>
+
+                {/* AI enrich — summarise the comment */}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleEnrichComment}
+                    disabled={enrichingComment || !description.trim()}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 dark:border-fuchsia-900/60 bg-gradient-to-r from-indigo-50 to-fuchsia-50 dark:from-indigo-950/40 dark:to-fuchsia-950/40 px-3 py-1 text-[11px] font-semibold text-fuchsia-700 dark:text-fuchsia-300 transition",
+                      (enrichingComment || !description.trim()) && "opacity-50"
+                    )}
+                  >
+                    {enrichingComment ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    Enrich with AI
+                  </button>
+                </div>
+
+
 
                 {/* Icon action rail — under description */}
                 <div className="mt-2 pt-2 border-t border-border/60 flex flex-wrap items-center gap-1 min-w-0 max-w-full">
