@@ -208,40 +208,111 @@ export default function ActivityTimeline() {
             )}
 
             {/* Activity nodes */}
-            {dayActivities.map((a) => (
-              <div key={a.id} className="flex gap-4 mb-5 relative">
-                <div className="z-10 shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-primary/15 border-2 border-primary/30 flex items-center justify-center">
-                    <Activity className="h-4 w-4 text-primary" />
+            {dayActivities.map((a) => {
+              const leadCompany = (a as any).lead_company as string | undefined;
+              const leadName = (a as any).lead_name as string | undefined;
+              const leadDesignation = (a as any).lead_designation as string | undefined;
+              const outcome = (a as any).outcome as string | undefined;
+              const followUp = (a as any).next_follow_up_date as string | undefined;
+              const label = a.activity_type || a.activity_name || "Activity";
+              const context = leadCompany || leadName || a.site_name || a.project_name || "";
+              const headline = context ? `${label} - ${context}` : label;
+              const subLine = [leadName, leadDesignation].filter(Boolean).join(" - ");
+              const lat = a.status_change_lat ?? a.location_lat;
+              const lng = a.status_change_lng ?? a.location_lng;
+              const mapsUrl =
+                lat && lng
+                  ? `https://www.google.com/maps/search/?api=1&query=${Number(lat)},${Number(lng)}`
+                  : a.location_address
+                    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.location_address)}`
+                    : "";
+              const accent =
+                a.status === "completed" ? "border-l-emerald-500"
+                  : a.status === "in_progress" ? "border-l-sky-500"
+                    : "border-l-amber-400";
+
+              return (
+                <div key={a.id} className="flex gap-4 mb-5 relative">
+                  <div className="z-10 shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-primary/15 border-2 border-primary/30 flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-primary" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <Card
+                      className={`shadow-sm cursor-pointer border-l-4 ${accent}`}
+                      onClick={() => setDetailActivity(a)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm break-words">{headline}</p>
+                            {subLine && <p className="text-[11px] text-muted-foreground truncate">{subLine}</p>}
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <Badge variant="outline" className={`text-[10px] py-0 ${statusColors[a.status]}`}>
+                              {statusLabels[a.status] || a.status}
+                            </Badge>
+                            {outcome && (
+                              <span className="rounded-full border bg-muted px-2 py-0.5 text-[10px] font-medium max-w-[96px] truncate">
+                                {outcome}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground">
+                          🕒 {a.start_time ? format(parseISO(a.start_time), "h:mm a") : "--:--"}
+                          {a.end_time && ` - ${format(parseISO(a.end_time), "h:mm a")}`}
+                          {a.total_hours ? ` (${a.total_hours}h)` : ""}
+                        </p>
+
+                        {followUp && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            📅 Next follow-up: {format(parseISO(String(followUp).slice(0, 10)), "MMM d, yyyy")}
+                          </p>
+                        )}
+
+                        {a.milestone_name && (
+                          <p className="text-xs text-muted-foreground mt-0.5">🎯 {a.milestone_name}</p>
+                        )}
+
+                        <div className="rounded-lg border border-amber-200 bg-amber-50/80 dark:bg-amber-500/10 dark:border-amber-500/30 px-2.5 py-2 mt-1.5">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-0.5">Comment</p>
+                          <p className="text-xs text-foreground/90 line-clamp-3 break-words">{a.description || "No comment added"}</p>
+                        </div>
+
+                        <div className="pt-1.5 text-[10px] text-muted-foreground space-y-1">
+                          {(a.photo_urls?.length || 0) > 0 && (
+                            <p>📷 {a.photo_urls!.length} photo{a.photo_urls!.length === 1 ? "" : "s"}</p>
+                          )}
+                          <p>
+                            🕘 {a.status_changed_at
+                              ? `Status updated ${format(parseISO(a.status_changed_at), "h:mm a, MMM d")}`
+                              : "No status update yet"}
+                            {a.user_full_name ? ` by ${a.user_full_name}` : ""}
+                          </p>
+                          {mapsUrl && (
+                            <button
+                              type="button"
+                              className="flex items-start gap-1 text-left text-sky-600 dark:text-sky-400 underline underline-offset-2"
+                              onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
+                            >
+                              <MapPin className="h-3 w-3 mt-[1px] shrink-0" />
+                              <span className="break-words">
+                                {a.location_address || "View location"}
+                                {lat && lng ? ` (${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})` : ""}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
-                <div className="flex-1 pt-0.5">
-                  <Card className="shadow-sm">
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-sm">{a.activity_name}</span>
-                        <Badge variant="outline" className={`text-[10px] py-0 ${statusColors[a.status]}`}>
-                          {statusLabels[a.status] || a.status}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {a.start_time ? format(parseISO(a.start_time), "h:mm a") : "--:--"}
-                        {a.end_time && ` - ${format(parseISO(a.end_time), "h:mm a")}`}
-                      </p>
-                      {a.site_name && (
-                        <p className="text-xs text-muted-foreground mt-0.5">📁 {a.site_name}</p>
-                      )}
-                      {a.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{a.description}</p>
-                      )}
-                      {isAdmin && a.user_full_name && (
-                        <p className="text-xs text-muted-foreground mt-0.5">👤 {a.user_full_name}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            ))}
+              );
+            })}
+
 
             {/* Day End */}
             {hasCheckOut && (
