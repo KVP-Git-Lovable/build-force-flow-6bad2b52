@@ -146,8 +146,25 @@ export default function LeadReport() {
       const statusMap = new Map(statuses.map((s) => [s.value, s.label]));
       const sourceMap = new Map(sources.map((s) => [s.value, s.label]));
 
-      setRows(
-        (data || []).map((r) => ({
+      // Activity & effort roll-ups for the returned leads.
+      const leadIds = (data || []).map((r) => r.id);
+      let rollups: Record<string, ReturnType<typeof buildLeadRollups>[string]> = {};
+      if (leadIds.length) {
+        const { data: acts } = await supabase
+          .from("activity_events")
+          .select("lead_id, status, outcome, activity_date")
+          .in("lead_id", leadIds);
+        rollups = buildLeadRollups(acts || []);
+      }
+
+      const minP = minProductive === "" ? null : Number(minProductive);
+      const maxP = maxProductive === "" ? null : Number(maxProductive);
+      const minD = minDaysSince === "" ? null : Number(minDaysSince);
+      const maxD = maxDaysSince === "" ? null : Number(maxDaysSince);
+
+      const mapped: Row[] = (data || []).map((r) => {
+        const ru = rollups[r.id] ?? EMPTY_ROLLUP;
+        return {
           id: r.id,
           name: r.name,
           company: r.company || "-",
@@ -161,9 +178,25 @@ export default function LeadReport() {
           close_date: r.opportunity_close_date,
           created_at: r.created_at,
           updated_at: r.updated_at,
-        }))
+          activity_count: ru.activityCount,
+          productive_count: ru.productiveCount,
+          last_activity_date: ru.lastActivityDate,
+          days_since_last_activity: ru.daysSinceLastActivity,
+          next_activity_date: ru.nextActivityDate,
+        };
+      });
+
+      setRows(
+        mapped.filter((r) => {
+          if (minP != null && r.productive_count < minP) return false;
+          if (maxP != null && r.productive_count > maxP) return false;
+          if (minD != null && (r.days_since_last_activity == null || r.days_since_last_activity < minD)) return false;
+          if (maxD != null && (r.days_since_last_activity == null || r.days_since_last_activity > maxD)) return false;
+          return true;
+        })
       );
       setGenerated(true);
+
     } catch {
       toast.error("Failed to generate report");
     } finally {
