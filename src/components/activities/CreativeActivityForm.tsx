@@ -586,14 +586,19 @@ export default function CreativeActivityForm({
     }
   }, [clearRecording, isFinalizing, isRecording, isStartingRecording, isTranscribing, startRecording, stopRecording]);
 
-  const canPost = !!description.trim() || !!activityType || !!leadId;
+  const canPost = !!leadId && (!!description.trim() || !!activityType);
 
   const handlePost = async () => {
+    if (!leadId) {
+      toast.error("Select a lead — it is mandatory for an activity");
+      return;
+    }
     if (!canPost) {
-      toast.error("Add a lead, type, or description to post");
+      toast.error("Add an activity type or description to save");
       return;
     }
     if (isEdit && !editActivity) return;
+
 
     // GRN validation — only enforced for GRN activity type on new posts
     let grnRowsToInsert: { it: GrnLineItem; received: number; remarks: string }[] = [];
@@ -753,6 +758,17 @@ export default function CreativeActivityForm({
 
   const handleStatusChange = async (newStatus: string) => {
     if (!isEdit || !editActivity || !updateActivity || newStatus === status) return;
+    if (newStatus === "completed") {
+      const missing: string[] = [];
+      if (!description.trim()) missing.push("activity comment");
+      if (!activityType) missing.push("activity type");
+      if (!outcome) missing.push("outcome");
+      if (missing.length) {
+        toast.error(`Add ${missing.join(", ")} before completing`);
+        return;
+      }
+    }
+
     setChangingStatus(true);
     try {
       const now = new Date().toISOString();

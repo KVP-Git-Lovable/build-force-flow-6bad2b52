@@ -228,7 +228,10 @@ export default function Activities() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [outcomeFilter, setOutcomeFilter] = useState("all");
   const [riskFilter, setRiskFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [reportFiltersOpen, setReportFiltersOpen] = useState(false);
+
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -573,9 +576,11 @@ export default function Activities() {
       if (typeFilter !== "all" && (a.activity_type || "") !== typeFilter) return false;
       if (outcomeFilter !== "all" && ((a as any).outcome || "") !== outcomeFilter) return false;
       if (riskFilter !== "all" && (((a as any).risk as string) || "green") !== riskFilter) return false;
+      if (statusFilter !== "all" && a.status !== statusFilter) return false;
       return true;
     });
-  }, [dayActivities, searchQuery, typeFilter, outcomeFilter, riskFilter]);
+  }, [dayActivities, searchQuery, typeFilter, outcomeFilter, riskFilter, statusFilter]);
+
 
   // Sort by start_time for timeline
   const timelineSorted = useMemo(() => {
@@ -947,46 +952,47 @@ export default function Activities() {
       </motion.div>
 
       {/* Search + Filters + New Button */}
-      <motion.div variants={item} className="px-4 space-y-3">
+      <motion.div variants={item} className="px-4 space-y-2">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search..." className="pl-9 w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-          {(isAdmin || hasSubordinates) && (
-            <Button
-              variant={reportFiltersOpen ? "secondary" : "outline"}
-              size="sm"
-              className="shrink-0 px-2.5 sm:px-3"
-              onClick={() => setReportFiltersOpen((open) => !open)}
-            >
-              <Filter className="h-4 w-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Filters</span>
-            </Button>
-          )}
-          <Button className="gradient-hero text-primary-foreground shrink-0 px-3 sm:px-4" onClick={handleOpenCreate}>
-            <Plus className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">New</span>
+          <Button
+            variant={moreFiltersOpen ? "secondary" : "outline"}
+            size="icon"
+            className="shrink-0 h-10 w-10 relative"
+            onClick={() => setMoreFiltersOpen((open) => !open)}
+            aria-label="More filters"
+          >
+            <Filter className="h-4 w-4" />
+            {(statusFilter !== "all" || (selectedUserId && selectedUserId !== "")) && (
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary" />
+            )}
+          </Button>
+          <Button className="gradient-hero text-primary-foreground shrink-0 px-3" onClick={handleOpenCreate}>
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Activity type / Outcome / Risk filters */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 py-1.5">
+        {/* Activity type / Outcome / Risk filters — fit inside the mobile width */}
+        <div className="grid grid-cols-3 gap-2">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs shrink-0"><SelectValue placeholder="Type" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
               {activityTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
-            <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs shrink-0"><SelectValue placeholder="Outcome" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue placeholder="Outcome" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All outcomes</SelectItem>
               {ACTIVITY_OUTCOMES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={riskFilter} onValueChange={setRiskFilter}>
-            <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs shrink-0"><SelectValue placeholder="Risk" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue placeholder="Risk" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All risk</SelectItem>
               <SelectItem value="green">On Track</SelectItem>
@@ -994,14 +1000,55 @@ export default function Activities() {
               <SelectItem value="red">Critical</SelectItem>
             </SelectContent>
           </Select>
-          {(typeFilter !== "all" || outcomeFilter !== "all" || riskFilter !== "all") && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs shrink-0"
-              onClick={() => { setTypeFilter("all"); setOutcomeFilter("all"); setRiskFilter("all"); }}>
-              Clear
-            </Button>
-          )}
         </div>
+
+        {/* Collapsible advanced filters */}
+        <Collapsible open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
+          <CollapsibleContent>
+            <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                {(isAdmin || hasSubordinates) && (
+                  <div className="space-y-1 min-w-0">
+                    <Label className="text-[10px] text-muted-foreground">Team member</Label>
+                    <Select value={selectedUserId || "me"} onValueChange={(v) => setSelectedUserId(v === "me" ? "" : v)}>
+                      <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="me">My activities</SelectItem>
+                        <SelectItem value="all">All users</SelectItem>
+                        {selectableUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.full_name || "Unknown"}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-1 min-w-0">
+                  <Label className="text-[10px] text-muted-foreground">Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All statuses</SelectItem>
+                      {statusOptions.map((s) => <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs w-full"
+                onClick={() => {
+                  setTypeFilter("all"); setOutcomeFilter("all"); setRiskFilter("all");
+                  setStatusFilter("all"); setSelectedUserId("");
+                }}
+              >
+                Clear all filters
+              </Button>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </motion.div>
+
 
       {/* Activity Report Generator - hidden from UI */}
       {false && (isAdmin || hasSubordinates) && (
@@ -1831,7 +1878,19 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
 
   const handleStatusChange = async (newStatus: string) => {
     if (newStatus === a.status) return;
+    if (newStatus === "completed") {
+      const missing: string[] = [];
+      if (!a.description?.trim()) missing.push("activity comment");
+      if (!a.activity_type) missing.push("activity type");
+      if (!(a as any).outcome) missing.push("outcome");
+      if (missing.length) {
+        toast.error(`Add ${missing.join(", ")} before completing`);
+        onOpenDetails(a);
+        return;
+      }
+    }
     setChangingStatus(true);
+
     try {
       const now = new Date().toISOString();
       const updates: Partial<ActivityType> = {
@@ -1892,11 +1951,40 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
   const leadId = (a as any).lead_id as string | undefined;
   const leadName = (a as any).lead_name as string | undefined;
   const leadCompany = (a as any).lead_company as string | undefined;
-  const leadTitle = leadName ? `${leadName}${leadCompany && leadCompany !== leadName ? ` · ${leadCompany}` : ""}` : "";
-  const headline = leadTitle || a.site_name || a.project_name || a.activity_name || a.activity_type || "Activity";
-  const linkedName = leadTitle || a.site_name || a.project_name || "";
+  const leadDesignation = (a as any).lead_designation as string | undefined;
+  const outcome = (a as any).outcome as string | undefined;
+  const activityLabel = a.activity_type || a.activity_name || "Activity";
+  const contextName = leadCompany || leadName || a.site_name || a.project_name || "";
+  const headline = contextName ? `${activityLabel} - ${contextName}` : activityLabel;
+  const subLine = [leadName, leadDesignation].filter(Boolean).join(" - ");
   const followUpDate = (a as any).next_follow_up_date as string | undefined;
   const audioUrls = (a.attachment_urls || []).filter((url: string) => url.includes("activity-audio"));
+
+  const lat = a.status_change_lat ?? a.location_lat;
+  const lng = a.status_change_lng ?? a.location_lng;
+  const mapsUrl =
+    lat && lng
+      ? `https://www.google.com/maps/search/?api=1&query=${Number(lat)},${Number(lng)}`
+      : a.location_address
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.location_address)}`
+        : "";
+
+  const accent =
+    a.status === "completed"
+      ? "border-l-emerald-500"
+      : a.status === "in_progress"
+        ? "border-l-sky-500"
+        : "border-l-amber-400";
+
+  const outcomeStyles: Record<string, { icon: React.ReactNode; cls: string }> = {
+    "Productive": { icon: <CheckCircle2 className="h-3 w-3" />, cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    "Unproductive": { icon: <AlertCircle className="h-3 w-3" />, cls: "bg-rose-50 text-rose-700 border-rose-200" },
+    "Visited but not available": { icon: <Octagon className="h-3 w-3" />, cls: "bg-orange-50 text-orange-700 border-orange-200" },
+    "Postponed": { icon: <Timer className="h-3 w-3" />, cls: "bg-amber-50 text-amber-700 border-amber-200" },
+    "Cancelled": { icon: <X className="h-3 w-3" />, cls: "bg-slate-100 text-slate-600 border-slate-200" },
+    "Not started": { icon: <Clock className="h-3 w-3" />, cls: "bg-violet-50 text-violet-700 border-violet-200" },
+  };
+  const outcomeStyle = outcome ? outcomeStyles[outcome] : undefined;
 
   const Row = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
     <div className="flex items-start gap-1.5 text-xs text-muted-foreground min-w-0">
@@ -1906,55 +1994,53 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
   );
 
   return (
-    <Card className="shadow-card">
-      <CardContent className="p-4">
+    <Card className={`shadow-card overflow-hidden border-l-4 ${accent}`}>
+      <CardContent className="p-3.5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpenDetails(a)}>
 
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
-              {leadId ? (
-                <button
-                  type="button"
-                  className="font-semibold text-sm truncate text-primary underline underline-offset-2 text-left"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/leads/${leadId}`); }}
-                >
-                  {headline}
-                </button>
-              ) : (
-                <span className="font-semibold text-sm truncate">{headline}</span>
-              )}
+            <div className="flex items-start gap-2 mb-1">
+              <span className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Activity className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                {leadId ? (
+                  <button
+                    type="button"
+                    className="font-semibold text-sm text-primary text-left break-words"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/leads/${leadId}`); }}
+                  >
+                    {headline}
+                  </button>
+                ) : (
+                  <span className="font-semibold text-sm break-words">{headline}</span>
+                )}
+                {subLine && (
+                  <p className="text-[11px] text-muted-foreground truncate">{subLine}</p>
+                )}
+              </div>
               {!leadId && a.site_flag && (
-                <span className={`inline-block h-2 w-2 rounded-full ${a.site_flag === "red" ? "bg-red-500" : a.site_flag === "orange" ? "bg-orange-500" : "bg-emerald-500"}`} />
+                <span className={`mt-1 inline-block h-2 w-2 rounded-full shrink-0 ${a.site_flag === "red" ? "bg-red-500" : a.site_flag === "orange" ? "bg-orange-500" : "bg-emerald-500"}`} />
               )}
               {(a as any)._pending && (
-                <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 text-amber-700 border-amber-300">
+                <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 text-amber-700 border-amber-300 shrink-0">
                   {(a as any)._sync_error ? "Sync failed" : "Pending sync"}
                 </Badge>
               )}
             </div>
 
-            <div className="ml-6 space-y-0.5">
-              <Row icon={<Activity className="h-3 w-3" />}>
-                {a.activity_name || a.activity_type || "—"}
-                {(a as any).outcome && <span className="ml-1.5 text-[10px]">• {(a as any).outcome}</span>}
-              </Row>
-
-              <Row icon={<Clock className="h-3 w-3" />}>
+            <div className="ml-9 space-y-1">
+              <Row icon={<Clock className="h-3 w-3 text-sky-500" />}>
                 {a.start_time
                   ? `${format(parseISO(a.start_time), "h:mm a")}${a.end_time ? ` - ${format(parseISO(a.end_time), "h:mm a")}` : ""}${a.total_hours ? ` (${a.total_hours}h)` : ""}`
                   : "—"}
               </Row>
 
               {followUpDate && (
-                <Row icon={<CalendarDays className="h-3 w-3" />}>
+                <Row icon={<CalendarDays className="h-3 w-3 text-violet-500" />}>
                   Next follow-up: {format(parseISO(String(followUpDate).slice(0, 10)), "MMM d, yyyy")}
                 </Row>
               )}
-
-              <Row icon={<MapPin className="h-3 w-3" />}>{a.location_address || "—"}</Row>
-
-              <Row icon={<span>👤</span>}>{a.user_full_name || "—"}</Row>
 
               {a.milestone_name && (
                 <Row icon={<span>🎯</span>}>
@@ -1963,9 +2049,11 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
                 </Row>
               )}
 
-              <Row icon={<span>📝</span>}>
-                <span className="line-clamp-2">{a.description || "—"}</span>
-              </Row>
+              {/* Highlighted activity comment */}
+              <div className="rounded-lg border border-amber-200 bg-amber-50/80 dark:bg-amber-500/10 dark:border-amber-500/30 px-2.5 py-2 mt-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-0.5">Comment</p>
+                <p className="text-xs text-foreground/90 line-clamp-3 break-words">{a.description || "No comment added"}</p>
+              </div>
 
               {audioUrls.length > 0 && (
                 <div className="pt-1">
@@ -1975,21 +2063,41 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
                 </div>
               )}
 
-              <div className="pt-1 text-[10px] text-muted-foreground space-y-0.5">
+              <div className="pt-1.5 text-[10px] text-muted-foreground space-y-1">
                 <p>📷 {a.photo_urls?.length || 0} photo{(a.photo_urls?.length || 0) === 1 ? "" : "s"}</p>
                 <p>
                   🕘 {a.status_changed_at
-                    ? `Status updated ${format(parseISO(a.status_changed_at), "h:mm a, MMM d")}${a.status_change_lat && a.status_change_lng ? ` • ${Number(a.status_change_lat).toFixed(4)}, ${Number(a.status_change_lng).toFixed(4)}` : ""}`
+                    ? `Status updated ${format(parseISO(a.status_changed_at), "h:mm a, MMM d")}`
                     : "No status update yet"}
+                  {a.user_full_name ? ` by ${a.user_full_name}` : ""}
                 </p>
+                {mapsUrl && (
+                  <button
+                    type="button"
+                    className="flex items-start gap-1 text-left text-sky-600 dark:text-sky-400 underline underline-offset-2"
+                    onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
+                  >
+                    <MapPin className="h-3 w-3 mt-[1px] shrink-0" />
+                    <span className="break-words">
+                      {a.location_address || "View location"}
+                      {lat && lng ? ` (${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})` : ""}
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
             <Badge variant="outline" className={statusColors[a.status] || ""}>
               {statusLabels[a.status] || a.status}
             </Badge>
+            {outcome && (
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${outcomeStyle?.cls || "bg-muted text-muted-foreground"}`}>
+                {outcomeStyle?.icon}
+                <span className="max-w-[86px] truncate">{outcome}</span>
+              </span>
+            )}
             {a.activity_type?.trim().toLowerCase().includes("grn") && (a as any).grn_po_id && (
               <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => onReceiveGoods((a as any).grn_po_id)}>
                 <Route className="h-3.5 w-3.5" />
@@ -1999,7 +2107,7 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
             {a.status === "planned" && (
               <Button size="sm" className="h-8 gap-1.5" onClick={() => handleStatusChange("in_progress")} disabled={changingStatus}>
                 {changingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
-                Start / Check-In
+                Start
               </Button>
             )}
             {a.status === "in_progress" && (
@@ -2023,6 +2131,7 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
     </Card>
   );
 }
+
 
 
 // ---- Haversine distance calculation (km) ----

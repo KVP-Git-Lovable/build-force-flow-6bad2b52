@@ -75,6 +75,8 @@ export interface Activity {
   lead_id?: string | null;
   lead_name?: string;
   lead_company?: string;
+  lead_designation?: string;
+
   outcome?: string | null;
   risk?: string | null;
   next_follow_up_date?: string | null;
@@ -161,13 +163,14 @@ export function useActivities() {
 
       // Fetch lead names
       const leadIds = [...new Set((data || []).filter((a: any) => a.lead_id).map((a: any) => a.lead_id))];
-      let leadMap: Record<string, { name: string; company: string }> = {};
+      let leadMap: Record<string, { name: string; company: string; designation: string }> = {};
       if (leadIds.length > 0) {
-        const { data: leadData } = await supabase.from("leads").select("id, company_name, contact_name").in("id", leadIds);
+        const { data: leadData } = await supabase.from("leads").select("id, company, name, title").in("id", leadIds);
         (leadData || []).forEach((l: any) => {
-          leadMap[l.id] = { name: l.contact_name || l.company_name || "Lead", company: l.company_name || "" };
+          leadMap[l.id] = { name: l.name || l.company || "Lead", company: l.company || "", designation: l.title || "" };
         });
       }
+
 
       const mapped: Activity[] = (data || []).map((a: any) => {
         const siteInfo = a.site_id ? siteMap[a.site_id] : null;
@@ -186,6 +189,8 @@ export function useActivities() {
           milestone_status: msInfo?.status || "",
           lead_name: leadInfo?.name || "",
           lead_company: leadInfo?.company || "",
+          lead_designation: leadInfo?.designation || "",
+
         };
       });
 
