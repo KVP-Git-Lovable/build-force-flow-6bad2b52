@@ -14,7 +14,7 @@ import {
   useLead, useLeadStatuses, useSaveLead, useLeadAuditLog, useLeadSources, useEvents, useDeleteLead, useIndustries, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
 import { CONTACT_ROLE_LABELS, ContactRole, useLeadScoringRules } from "@/hooks/useLeadScoring";
-import { useLeadInsight, bantScore, BANT_LEVEL_CLASSES, SLA_BADGE_CLASSES } from "@/hooks/useLeadInsights";
+import { useLeadInsight, bantScore, BANT_LEVEL_CLASSES } from "@/hooks/useLeadInsights";
 import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { LeadActivityComposer } from "@/components/leads/LeadActivityComposer";
 import { useLeadActivities } from "@/hooks/useLeadActivities";
