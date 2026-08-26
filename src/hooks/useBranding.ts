@@ -8,33 +8,12 @@ export interface Branding {
   logo_url: string | null;
 }
 
-const CACHE_KEY = "company_branding_cache_v1";
-
-function readCache(): Branding | undefined {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? (JSON.parse(raw) as Branding) : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function writeCache(b: Branding) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(b));
-  } catch {
-    /* quota */
-  }
-}
-
 /**
  * Company branding (name + logo) shared by the app header and the login page.
- * Uses a localStorage cache for instant first paint, then refreshes from the
- * backend so a changed name/logo never stays stale.
+ * In-memory React Query cache only — always refetched from the backend so a
+ * changed name/logo (or a different device) never shows a stale value.
  */
 export function useBranding() {
-  const cached = readCache();
-
   const { data, isLoading } = useQuery({
     queryKey: ["company-profile-public"],
     queryFn: async () => {
@@ -48,10 +27,8 @@ export function useBranding() {
         company_name: data?.company_name ?? null,
         logo_url: data?.logo_url ?? null,
       };
-      writeCache(branding);
       return branding;
     },
-    initialData: cached,
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
@@ -82,6 +59,6 @@ export function useBranding() {
   return {
     companyName: data?.company_name ?? null,
     logoUrl,
-    loading: isLoading && !cached,
+    loading: isLoading,
   };
 }

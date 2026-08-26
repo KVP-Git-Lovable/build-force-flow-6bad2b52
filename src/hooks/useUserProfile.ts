@@ -20,8 +20,6 @@ interface UserProfileState {
   displayRole: string | null;
 }
 
-const PROFILE_CACHE_KEY = "user_profile_cache_v2";
-
 const ADMIN_PROFILE_NAMES = ["administrator", "system administrator"];
 
 function isAdminProfileName(name?: string | null): boolean {
@@ -32,31 +30,15 @@ function isAdminRoleName(name?: string | null): boolean {
   return !!name && ["admin", "administrator"].includes(name.trim().toLowerCase());
 }
 
-function readCache(userId: string | undefined): { profile: UserProfile; role: string; displayRole: string | null } | undefined {
-  if (!userId) return undefined;
-  try {
-    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw);
-    if (parsed?.userId !== userId) return undefined;
-    return { profile: parsed.profile, role: parsed.role, displayRole: parsed.displayRole ?? null };
-  } catch {
-    return undefined;
-  }
-}
-
-function writeCache(userId: string, profile: UserProfile, role: string) {
-  try {
-    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ userId, profile, role }));
-  } catch { /* quota */ }
-}
-
 export function useUserProfile(): UserProfileState {
   const { user } = useCurrentUser();
-  const cached = readCache(user?.id);
 
-  // Primary query — only the data needed for first paint (name, avatar, role flag)
-  const { data, isLoading } = useQuery({
+  // Primary query — only the data needed for first paint (name, avatar, role flag).
+  // Use isPending (not isLoading): this query is `enabled: !!user`, and while
+  // useCurrentUser() is still resolving, isLoading is false (nothing is
+  // actively fetching yet) even though we have no profile data — which made
+  // callers render the "no name yet" fallback as if it were real.
+  const { data, isPending } = useQuery({
     queryKey: ["user-profile-core", user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -106,7 +88,6 @@ export function useUserProfile(): UserProfileState {
           role = "admin";
         }
 
-        writeCache(user.id, profile, role);
         if (import.meta.env.DEV) {
           console.log("User profile loaded:", {
             userId: user.id,
@@ -124,7 +105,6 @@ export function useUserProfile(): UserProfileState {
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
-    initialData: cached,
   });
 
   // Secondary query — check security profile for additional admin detection
@@ -181,7 +161,7 @@ export function useUserProfile(): UserProfileState {
       displayRole,
       secProfileName,
       isAdmin,
-      loading: isLoading
+      loading: isPending
     });
   }
 
@@ -190,7 +170,7 @@ export function useUserProfile(): UserProfileState {
     role,
     roleName: displayRole,
     isAdmin,
-    loading: isLoading,
+    loading: isPending,
     initials,
     displayRole,
   };
