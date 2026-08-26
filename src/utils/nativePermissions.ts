@@ -44,6 +44,77 @@ async function nativeGetPosition(opts: { enableHighAccuracy: boolean; timeout: n
   };
 }
 
+type NativeLocationPowerStatus = {
+  foregroundLocation?: 'granted' | 'denied' | string;
+  backgroundLocation?: 'granted' | 'denied' | string;
+  ignoringBatteryOptimizations?: boolean;
+  sdkInt?: number;
+  opened?: boolean;
+};
+
+async function getDeviceSettingsPlugin() {
+  const { registerPlugin } = await import('@capacitor/core');
+  return registerPlugin<any>('DeviceSettings');
+}
+
+export async function getNativeLocationPowerStatus(): Promise<NativeLocationPowerStatus | null> {
+  if (!isNative()) return null;
+  try {
+    const DeviceSettings = await getDeviceSettingsPlugin();
+    return await DeviceSettings.getLocationPowerStatus();
+  } catch (e) {
+    console.warn('Could not read native location/power status:', e);
+    return null;
+  }
+}
+
+export async function requestBatteryOptimizationExemption(): Promise<NativeLocationPowerStatus | null> {
+  if (!isNative()) return null;
+  try {
+    const DeviceSettings = await getDeviceSettingsPlugin();
+    return await DeviceSettings.requestIgnoreBatteryOptimizations();
+  } catch (e) {
+    console.warn('Could not request battery optimisation exemption:', e);
+    return null;
+  }
+}
+
+export async function requestBackgroundLocationAccess(): Promise<NativeLocationPowerStatus | null> {
+  if (!isNative()) return null;
+  try {
+    const DeviceSettings = await getDeviceSettingsPlugin();
+    return await DeviceSettings.requestBackgroundLocation();
+  } catch (e) {
+    console.warn('Could not request background location access:', e);
+    return null;
+  }
+}
+
+/**
+ * Android does not allow apps to silently set "Allow all the time" location
+ * or disable Battery Optimization. This helper requests what Android permits
+ * directly and opens the exact system screen for the user-controlled settings.
+ */
+export async function prepareNativeLocationSettings(): Promise<NativeLocationPowerStatus | null> {
+  if (!isNative()) return null;
+
+  try {
+    const { Geolocation } = await import('@capacitor/geolocation');
+    await Geolocation.requestPermissions({ permissions: ['location', 'coarseLocation'] });
+  } catch (e) {
+    console.warn('Foreground location permission request failed:', e);
+  }
+
+  const status = await getNativeLocationPowerStatus();
+  if (status?.ignoringBatteryOptimizations === false) {
+    await requestBatteryOptimizationExemption();
+  }
+  if (status?.backgroundLocation !== 'granted') {
+    return requestBackgroundLocationAccess();
+  }
+  return getNativeLocationPowerStatus();
+}
+
 /**
  * Web fallback for geolocation.
  * Uses watchPosition to iterate a few readings and pick the most accurate one,
@@ -184,7 +255,7 @@ export async function requestNativePermissions() {
   // Try native geolocation permission
   try {
     const { Geolocation } = await import('@capacitor/geolocation');
-    await Geolocation.requestPermissions();
+    await Geolocation.requestPermissions({ permissions: ['location', 'coarseLocation'] });
   } catch (e) {
     console.warn('Native geolocation permission request skipped:', e);
   }
@@ -210,6 +281,12 @@ export async function requestNativePermissions() {
 export async function openAppSettings(): Promise<boolean> {
   if (!isNative()) return false;
   try {
+    const DeviceSettings = await getDeviceSettingsPlugin();
+    if (DeviceSettings?.openAppSettings) {
+      await DeviceSettings.openAppSettings();
+      return true;
+    }
+
     const { registerPlugin } = await import('@capacitor/core');
     const BackgroundGeolocation: any = registerPlugin('BackgroundGeolocation');
     if (!BackgroundGeolocation?.openSettings) return false;
