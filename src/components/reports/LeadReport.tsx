@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SelectField, DateScopeFilter } from "./ReportFilters";
 import { useReportScope } from "./useReportScope";
 import { ReportWorkspace } from "./ReportWorkspace";
+import { buildLeadRollups, EMPTY_ROLLUP } from "@/lib/leadActivityRollups";
 import type { ReportColumn } from "./reportTypes";
 import {
   DateFieldOption,
@@ -35,6 +38,38 @@ interface Row {
   close_date: string | null;
   created_at: string;
   updated_at: string;
+  activity_count: number;
+  productive_count: number;
+  last_activity_date: string | null;
+  days_since_last_activity: number | null;
+  next_activity_date: string | null;
+}
+
+/** Small numeric filter used for the activity roll-up thresholds. */
+function NumberField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      <Input
+        type="number"
+        min={0}
+        inputMode="numeric"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
 }
 
 export default function LeadReport() {
@@ -43,11 +78,16 @@ export default function LeadReport() {
   const [owner, setOwner] = useState("all");
   const [status, setStatus] = useState("all");
   const [source, setSource] = useState("all");
+  const [minProductive, setMinProductive] = useState("");
+  const [maxProductive, setMaxProductive] = useState("");
+  const [minDaysSince, setMinDaysSince] = useState("");
+  const [maxDaysSince, setMaxDaysSince] = useState("");
   const [statuses, setStatuses] = useState<{ value: string; label: string }[]>([]);
   const [sources, setSources] = useState<{ value: string; label: string }[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
+
 
   useEffect(() => {
     supabase
