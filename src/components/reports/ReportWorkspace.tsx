@@ -331,9 +331,6 @@ export function ReportWorkspace<R>({
           )}
         </>
       )}
-
-        </>
-      )}
     </div>
   );
 }
