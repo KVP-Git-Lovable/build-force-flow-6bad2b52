@@ -1193,6 +1193,24 @@ export default function CreativeActivityForm({
                   />
                 </div>
 
+                {/* AI enrich — summarise the comment */}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleEnrichComment}
+                    disabled={enrichingComment || !description.trim()}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 dark:border-fuchsia-900/60 bg-gradient-to-r from-indigo-50 to-fuchsia-50 dark:from-indigo-950/40 dark:to-fuchsia-950/40 px-3 py-1 text-[11px] font-semibold text-fuchsia-700 dark:text-fuchsia-300 transition",
+                      (enrichingComment || !description.trim()) && "opacity-50"
+                    )}
+                  >
+                    {enrichingComment ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    Enrich with AI
+                  </button>
+                </div>
+
+
+
                 {/* Icon action rail — under description */}
                 <div className="mt-2 pt-2 border-t border-border/60 flex flex-wrap items-center gap-1 min-w-0 max-w-full">
                   {/* Attachment — camera, gallery or document */}
