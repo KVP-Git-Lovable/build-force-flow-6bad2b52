@@ -75,6 +75,8 @@ export interface Activity {
   lead_id?: string | null;
   lead_name?: string;
   lead_company?: string;
+  lead_designation?: string;
+
   outcome?: string | null;
   risk?: string | null;
   next_follow_up_date?: string | null;
