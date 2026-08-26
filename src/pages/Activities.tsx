@@ -934,24 +934,21 @@ export default function Activities() {
       </motion.div>
 
       {/* Stats Row */}
-      <motion.div variants={item} className="p-4 grid grid-cols-4 gap-2">
-        <div className="bg-card rounded-xl p-3 text-center shadow-card">
-          <p className="text-lg font-bold">{stats.total}</p>
-          <p className="text-[10px] text-muted-foreground">Total</p>
-        </div>
+      <motion.div variants={item} className="p-4 grid grid-cols-3 gap-2">
         <div className="bg-card rounded-xl p-3 text-center shadow-card">
           <p className="text-lg font-bold text-emerald-600">{stats.completed}</p>
-          <p className="text-[10px] text-muted-foreground">Done</p>
+          <p className="text-[10px] text-muted-foreground">Completed</p>
         </div>
         <div className="bg-card rounded-xl p-3 text-center shadow-card">
-          <p className="text-lg font-bold text-amber-600">{stats.pending}</p>
-          <p className="text-[10px] text-muted-foreground">Pending</p>
+          <p className="text-lg font-bold text-sky-600">{stats.productive}</p>
+          <p className="text-[10px] text-muted-foreground">Productive</p>
         </div>
         <div className="bg-card rounded-xl p-3 text-center shadow-card">
-          <p className="text-lg font-bold text-violet-600">{stats.totalHours}h</p>
-          <p className="text-[10px] text-muted-foreground">Hours</p>
+          <p className="text-lg font-bold text-rose-600">{stats.unproductive}</p>
+          <p className="text-[10px] text-muted-foreground">Unproductive</p>
         </div>
       </motion.div>
+
 
       {/* Search + Filters + New Button */}
       <motion.div variants={item} className="px-4 space-y-2">
