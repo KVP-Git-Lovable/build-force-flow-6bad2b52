@@ -339,7 +339,7 @@ export default function LeadReport() {
       generatedBy={scope.generatedBy}
       fileName={`lead-report-${from}-to-${to}.pdf`}
       summary={summary}
-      filterState={{ ...state, owner, status, source }}
+      filterState={{ ...state, owner, status, source, minProductive, maxProductive, minDaysSince, maxDaysSince }}
       onApplyFilterState={(s) => {
         patch({
           field: (s.field as string) || state.field,
@@ -350,12 +350,28 @@ export default function LeadReport() {
         setOwner((s.owner as string) || "all");
         setStatus((s.status as string) || "all");
         setSource((s.source as string) || "all");
+        setMinProductive((s.minProductive as string) ?? "");
+        setMaxProductive((s.maxProductive as string) ?? "");
+        setMinDaysSince((s.minDaysSince as string) ?? "");
+        setMaxDaysSince((s.maxDaysSince as string) ?? "");
       }}
+      defaultCharts={[
+        {
+          id: "productive-by-owner",
+          title: "Productive Activities by Owner",
+          type: "bar",
+          groupBy: "owner",
+          measure: "productive_count",
+          aggregate: "sum",
+        },
+      ]}
       filterSummary={[
         `${fieldLabel}: ${presetLabel(state.preset)} (${from} to ${to})`,
         `Owner: ${owner === "all" ? "All" : scope.users.find((u) => u.id === owner)?.full_name || "-"}`,
         `Status: ${status === "all" ? "All" : statuses.find((s) => s.value === status)?.label || "-"}`,
         `Source: ${source === "all" ? "All" : sources.find((s) => s.value === source)?.label || "-"}`,
+        `Productive activities: ${minProductive || "0"} – ${maxProductive || "∞"}`,
+        `Days since last activity: ${minDaysSince || "0"} – ${maxDaysSince || "∞"}`,
       ]}
       filters={
         <>
@@ -376,8 +392,13 @@ export default function LeadReport() {
           />
           <SelectField label="Status" value={status} onChange={setStatus} allLabel="All Statuses" options={statuses} />
           <SelectField label="Source" value={source} onChange={setSource} allLabel="All Sources" options={sources} />
+          <NumberField label="Min # Productive Activities" value={minProductive} onChange={setMinProductive} placeholder="Any" />
+          <NumberField label="Max # Productive Activities" value={maxProductive} onChange={setMaxProductive} placeholder="Any" />
+          <NumberField label="Min Days Since Last Activity" value={minDaysSince} onChange={setMinDaysSince} placeholder="Any" />
+          <NumberField label="Max Days Since Last Activity" value={maxDaysSince} onChange={setMaxDaysSince} placeholder="Any" />
         </>
       }
     />
+
   );
 }
