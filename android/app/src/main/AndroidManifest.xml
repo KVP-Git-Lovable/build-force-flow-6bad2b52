@@ -55,7 +55,16 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <!-- GPS tracking while the rep is out on beat with the app backgrounded.
-         Android requires this to be requested separately, AFTER fine location
-         has already been granted. -->
+         Background location must be requested separately, AFTER fine location
+         has already been granted. The foreground-service permissions keep the
+         background watcher alive on Android 10+/14+ instead of being killed by
+         Doze, which is what leaves multi-hour holes in the day's trail. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>
+

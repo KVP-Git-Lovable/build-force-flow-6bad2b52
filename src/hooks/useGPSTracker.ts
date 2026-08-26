@@ -4,9 +4,11 @@ import { getCurrentPosition, isNative } from "@/utils/nativePermissions";
 import { shouldAcceptMove } from "@/utils/gpsCaptureGate";
 import { format } from "date-fns";
 
-const INTERVAL_MS = 30_000;          // sample at least every 30s
-const FOREGROUND_POLL_MS = 30_000;   // web / non-native fallback
-const MAX_ACCURACY_M = 100;          // reject fixes worse than 100m (cell-tower guesses create phantom distance)
+const INTERVAL_MS = 15_000;          // safety heartbeat: sample at least every 15s
+const FOREGROUND_POLL_MS = 15_000;   // web / non-native fallback
+const WATCHDOG_MS = 5 * 60_000;      // no point written for 5 min while the day is
+                                     // open ⇒ the OS killed the watcher: re-register
+const MAX_ACCURACY_M = 150;          // reject fixes worse than 150m (cell-tower guesses create phantom distance)
 const MAX_JUMP_METERS = 10000;       // reject teleport jumps >10km between consecutive samples
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
@@ -44,6 +46,7 @@ export function useGPSTracker(userId: string | null | undefined) {
   const watcherIdRef = useRef<string | null>(null);
   const foregroundBusyRef = useRef(false);
   const insertChainRef = useRef<Promise<void>>(Promise.resolve());
+  const lastWriteRef = useRef<number>(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -90,6 +93,7 @@ export function useGPSTracker(userId: string | null | undefined) {
       advanceAnchor: boolean
     ) {
       if (advanceAnchor) lastPointRef.current = { lat, lng, ts, accuracy };
+      lastWriteRef.current = Date.now();
       const today = format(new Date(), "yyyy-MM-dd");
       await supabase.from("gps_tracking").insert({
         user_id: userId!,
@@ -187,34 +191,57 @@ export function useGPSTracker(userId: string | null | undefined) {
         const BackgroundGeolocation: any = registerPlugin("BackgroundGeolocation");
         if (!BackgroundGeolocation?.addWatcher) return false;
 
-        const watcherId = await BackgroundGeolocation.addWatcher(
-          {
-            backgroundMessage: "Tracking your workday location. Tap to open JOVO.",
-            backgroundTitle: "JOVO — Day Tracking active",
-            requestPermissions: false,
+        const register = async () => {
+          const id = await BackgroundGeolocation.addWatcher(
+            {
+              backgroundMessage: "Tracking your workday location. Tap to open JOVO.",
+              backgroundTitle: "JOVO — Day Tracking active",
+              requestPermissions: false,
 
-            stale: false,
-            distanceFilter: 10, // OS-level filter; we further throttle in insertPoint (reduced from 25)
-          },
-          async (location: any, error: any) => {
-            if (error || !location) return;
-            if (!activeRef.current) return;
-            if (cancelled) return;
-            try {
-              await queueInsert(location.latitude, location.longitude, location.accuracy ?? null);
-            } catch { /* ignore */ }
-          }
-        );
-        watcherIdRef.current = watcherId;
+              stale: false,
+              distanceFilter: 5, // OS-level filter; we further throttle in insertPoint
+            },
+            async (location: any, error: any) => {
+              if (error || !location) return;
+              if (!activeRef.current) return;
+              if (cancelled) return;
+              try {
+                await queueInsert(location.latitude, location.longitude, location.accuracy ?? null);
+              } catch { /* ignore */ }
+            }
+          );
+          watcherIdRef.current = id;
+        };
 
-        // Extra 60s heartbeat — force a sample even when stationary
+        await register();
+        lastWriteRef.current = Date.now();
+
+        // Heartbeat — force a sample even when stationary, and act as a
+        // watchdog: Android's Doze / battery optimiser silently kills the
+        // background watcher, which is what leaves multi-hour holes in the
+        // trail. If nothing has been written for WATCHDOG_MS while the day is
+        // open, tear the watcher down and register a fresh one.
         pollTimer = window.setInterval(async () => {
           if (!activeRef.current || cancelled) return;
           try {
             const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
             await queueInsert(pos.latitude, pos.longitude, pos.accuracy ?? null);
           } catch { /* ignore */ }
+          if (Date.now() - lastWriteRef.current > WATCHDOG_MS) {
+            console.warn("[GPSTracker] watcher appears dead — re-registering");
+            try {
+              if (watcherIdRef.current) {
+                await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
+                watcherIdRef.current = null;
+              }
+              await register();
+              lastWriteRef.current = Date.now();
+            } catch (e) {
+              console.warn("[GPSTracker] watcher re-registration failed", e);
+            }
+          }
         }, INTERVAL_MS);
+
 
         stopBackground = async () => {
           try {
