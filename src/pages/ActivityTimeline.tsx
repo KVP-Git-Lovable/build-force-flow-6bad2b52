@@ -43,6 +43,7 @@ export default function ActivityTimeline() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [attendance, setAttendance] = useState<{ check_in_time: string | null; check_out_time: string | null } | null>(null);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [detailActivity, setDetailActivity] = useState<ActivityType | null>(null);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
