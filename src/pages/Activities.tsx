@@ -1,4 +1,4 @@
-import { SignedAudio } from "@/components/ui/signed-image";
+import { SignedAudio, SignedImage } from "@/components/ui/signed-image";
 import { useState, useEffect, useMemo, useRef, Suspense, lazy, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
