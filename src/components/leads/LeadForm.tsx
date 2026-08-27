@@ -290,25 +290,6 @@ export function LeadForm({
               />
             </div>
           </div>
-
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <Label>Address</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={captureLocation}
-                disabled={locating}
-                aria-label="Use my current location"
-              >
-                {locating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <MapPin className="h-4 w-4 mr-1" />}
-                Use location
-              </Button>
-            </div>
-            <Textarea rows={2} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} />
-          </div>
         </div>
         <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
