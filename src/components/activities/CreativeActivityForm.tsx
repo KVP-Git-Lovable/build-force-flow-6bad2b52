@@ -1088,62 +1088,41 @@ export default function CreativeActivityForm({
                   </button>
                 )}
 
-                <div className="relative mb-3">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search leads..."
-                    value={leadSearch}
-                    onChange={(e) => setLeadSearch(e.target.value)}
-                    className="pl-9 h-9 rounded-full bg-background/80 border-0"
-                  />
-                </div>
-                <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1 scrollbar-none max-w-full">
-                  {filteredLeads.length === 0 && (
-                    <p className="text-xs text-muted-foreground py-4">No leads found</p>
-                  )}
-                  {filteredLeads.map((p) => {
-                    const active = p.id === leadId;
-                    return (
+                {!selectedLead && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search leads by name or company..."
+                      value={leadSearch}
+                      onChange={(e) => setLeadSearch(e.target.value)}
+                      className="pl-9 h-9 rounded-full bg-background/80 border-0"
+                    />
+                  </div>
+                )}
+                {!selectedLead && leadSearch.trim().length > 0 && (
+                  <div className="mt-2 max-h-56 overflow-y-auto rounded-xl bg-background/80 divide-y divide-border">
+                    {filteredLeads.length === 0 && (
+                      <p className="text-xs text-muted-foreground px-3 py-3">No leads found</p>
+                    )}
+                    {filteredLeads.slice(0, 20).map((p) => (
                       <button
                         key={p.id}
-                        onClick={() => setLeadId(active ? "" : p.id)}
-                        className="shrink-0 flex flex-col items-center gap-1.5 w-16 focus:outline-none group"
+                        type="button"
+                        onClick={() => { setLeadId(p.id); setLeadSearch(""); }}
+                        className="w-full text-left px-3 py-2 hover:bg-accent/60 transition-colors"
                       >
-                        <div
-                          className={cn(
-                            "relative h-16 w-16 rounded-full p-[2.5px] transition-all",
-                            active
-                              ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-fuchsia-600 scale-105"
-                              : "bg-gradient-to-tr from-muted to-muted group-hover:from-pink-300 group-hover:to-fuchsia-400"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "h-full w-full rounded-full overflow-hidden flex items-center justify-center text-white font-semibold text-sm border-2 border-background bg-gradient-to-br",
-                              gradientFor(p.id)
-                            )}
-                          >
-                            {initials(p.name)}
-                          </div>
-                          {active && (
-                            <div className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-emerald-500 border-2 border-background flex items-center justify-center">
-                              <Check className="h-3 w-3 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <p
-                          className={cn(
-                            "text-[10px] w-full text-center truncate leading-tight",
-                            active ? "font-semibold text-foreground" : "text-muted-foreground"
-                          )}
-                          title={p.company ? `${p.name} · ${p.company}` : p.name}
-                        >
-                          {p.name}
-                        </p>
+                        <p className="text-sm font-medium truncate">{p.name}</p>
+                        {p.company && (
+                          <p className="text-[11px] text-muted-foreground truncate">{p.company}</p>
+                        )}
                       </button>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
+                {!selectedLead && leadSearch.trim().length === 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-2">Type to search and select a lead</p>
+                )}
+
               </div>
 
 
