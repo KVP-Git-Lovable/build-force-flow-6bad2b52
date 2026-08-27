@@ -2023,8 +2023,9 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
             <div className="flex items-start gap-2 mb-1">
               <span className="h-9 w-9 rounded-full overflow-hidden bg-primary/10 text-primary flex items-center justify-center shrink-0 ring-1 ring-border">
                 {a.user_avatar_url ? (
-                  <img
+                  <SignedImage
                     src={a.user_avatar_url}
+                    bucket="employee-photos"
                     alt={a.user_full_name ? `${a.user_full_name} profile photo` : "Activity owner"}
                     className="h-full w-full object-cover"
                     loading="lazy"
