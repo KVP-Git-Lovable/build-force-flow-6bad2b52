@@ -2162,13 +2162,13 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
             {a.status === "planned" && (
               <Button size="sm" className="h-8 gap-1.5" onClick={() => handleStatusChange("in_progress")} disabled={changingStatus}>
                 {changingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
-                Start
+                Check-in
               </Button>
             )}
             {a.status === "in_progress" && (
               <Button size="sm" className="h-8 gap-1.5 bg-success text-success-foreground hover:bg-success/90" onClick={() => handleStatusChange("completed")} disabled={changingStatus}>
                 {changingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                Complete
+                Check out
               </Button>
             )}
             <div className="flex gap-1">
