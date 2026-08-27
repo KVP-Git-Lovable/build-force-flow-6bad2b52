@@ -82,6 +82,15 @@ export default function LeadDetail() {
   const productiveCount = activities.filter(
     (a: any) => String(a.outcome || "").trim().toLowerCase() === "productive",
   ).length;
+  const totalEffortHours = activities.reduce((sum: number, a: any) => {
+    if (a.start_time && a.end_time) {
+      const mins = (new Date(a.end_time).getTime() - new Date(a.start_time).getTime()) / 60000;
+      if (mins > 0) return sum + mins / 60;
+    } else if (a.total_hours) {
+      return sum + Number(a.total_hours || 0);
+    }
+    return sum;
+  }, 0);
 
   const source = sources.find((s) => s.id === lead.lead_source_id);
   const event = events.find((e) => e.id === lead.related_event_id);
@@ -145,7 +154,7 @@ export default function LeadDetail() {
             </CardTitle>
             <div className="text-sm text-muted-foreground">{[lead.title, lead.company].filter(Boolean).join(" · ") || "—"}</div>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-nowrap items-center gap-1.5">
             <Button size="sm" className="px-2.5" onClick={() => { setEditAct(null); setNewAct(true); }}>
               <Plus className="h-4 w-4 mr-1" />Activity
             </Button>
@@ -153,10 +162,17 @@ export default function LeadDetail() {
             <Button variant="outline" size="sm" className="px-2.5" onClick={cloneLead} disabled={cloning}>
               <Copy className="h-4 w-4 mr-1" />{cloning ? "…" : "Clone"}
             </Button>
-            <Button variant="destructive" size="sm" className="px-2.5" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="h-4 w-4 mr-1" />Delete
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Delete lead"
+              className="h-9 w-9 shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
+
 
         </CardHeader>
         <CardContent className="pt-0">
@@ -331,6 +347,12 @@ export default function LeadDetail() {
                   <div className="font-semibold">{productiveCount}</div>
                 </div>
                 <div>
+                  <div className="text-xs text-muted-foreground">Total Effort (hours)</div>
+                  <div className="font-semibold">
+                    {totalEffortHours > 0 ? `${(Math.round(totalEffortHours * 100) / 100).toFixed(2)} hrs` : "—"}
+                  </div>
+                </div>
+                <div>
                   <div className="text-xs text-muted-foreground">Last Activity Date</div>
                   <div className="font-semibold">
                     {lastActivityDate ? format(parseISO(lastActivityDate), "dd MMM yyyy") : "—"}
@@ -423,13 +445,23 @@ export default function LeadDetail() {
               ) : (
                 <div className="space-y-2">
                   {audit.map((a: any) => {
-                    const detail = a.from_value && a.to_value
-                      ? `${a.from_value} → ${a.to_value}`
-                      : (a.to_value || a.from_value || "");
+                    const isActivity = String(a.action || "").startsWith("activity");
                     return (
-                      <div key={a.id} className="text-sm border-l-2 border-primary pl-3 py-1">
-                        <div className="font-medium capitalize">{a.action}</div>
-                        {detail && <div className="text-xs text-muted-foreground">{detail}</div>}
+                      <div
+                        key={a.id}
+                        className={`text-sm border-l-2 pl-3 py-1 ${isActivity ? "border-amber-500" : "border-primary"}`}
+                      >
+                        <div className="font-medium">
+                          <span className="capitalize">{String(a.action || "").replace(/_/g, " ")}</span>
+                          {a.field_name && <span className="text-muted-foreground"> · {a.field_name}</span>}
+                        </div>
+                        {(a.from_value || a.to_value) && (
+                          <div className="text-xs text-muted-foreground break-words">
+                            {a.from_value ? <span className="line-through">{a.from_value}</span> : <span className="italic">empty</span>}
+                            {" → "}
+                            <span className="text-foreground">{a.to_value || "empty"}</span>
+                          </div>
+                        )}
                         <div className="text-xs text-muted-foreground">
                           by {a.actor_name || "System"} · {format(new Date(a.created_at), "dd MMM yyyy, HH:mm")}
                         </div>

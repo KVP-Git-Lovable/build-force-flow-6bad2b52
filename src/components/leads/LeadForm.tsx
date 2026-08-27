@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -275,13 +275,60 @@ export function LeadForm({
               </div>
             </div>
             <div>
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between gap-2 mb-1">
                 <Label className="text-xs">Requirement Overview</Label>
-                <Button type="button" variant="outline" size="sm" onClick={handleElaborate} disabled={isElaborating}>
-                  {isElaborating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-                  AI Elaborate
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <DropdownMenu open={micMenuOpen} onOpenChange={setMicMenuOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        disabled={micBusy}
+                        aria-label="Voice"
+                        className={cn(
+                          "h-9 w-9 rounded-full flex items-center justify-center transition",
+                          isRecording
+                            ? "text-red-600 bg-red-50 dark:bg-red-950/30 animate-pulse"
+                            : "text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/30",
+                          micBusy && "opacity-60",
+                        )}
+                        onClick={(e) => {
+                          if (isRecording) {
+                            e.preventDefault();
+                            stopRecording();
+                          }
+                        }}
+                      >
+                        {isTranscribing || isFinalizing || uploadingAudio ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isRecording ? (
+                          <Square className="h-4 w-4" />
+                        ) : (
+                          <Mic className="h-4 w-4" />
+                        )}
+                      </button>
+                    </DropdownMenuTrigger>
+                    {!isRecording && (
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleMicOptionClick("text")} className="gap-2">
+                          <Mic className="h-3.5 w-3.5" /> Voice to text
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleMicOptionClick("audio")} className="gap-2">
+                          <AudioLines className="h-3.5 w-3.5" /> Record audio
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
+                  <Button type="button" variant="outline" size="sm" onClick={handleElaborate} disabled={isElaborating}>
+                    {isElaborating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+                    AI Elaborate
+                  </Button>
+                </div>
               </div>
+              {isRecording && (
+                <p className="text-[11px] font-medium text-red-600 mb-1">
+                  {voiceToTextMode ? "Listening" : "Recording"} · tap the mic to stop
+                </p>
+              )}
               <Textarea
                 rows={5}
                 placeholder="What the customer needs — scope, products/services, quantities, timelines and budget. You can also add background research: company size, recent news, pain points and competition… or leave blank and click AI Elaborate."

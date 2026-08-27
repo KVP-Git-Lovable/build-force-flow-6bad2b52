@@ -67,6 +67,7 @@ export interface Activity {
   created_at: string;
   // joined
   user_full_name?: string;
+  user_avatar_url?: string;
   project_name?: string;
   site_name?: string;
   site_flag?: string;
@@ -135,12 +136,18 @@ export function useActivities() {
       const siteIds = [...new Set((data || []).filter((a: any) => a.site_id).map((a: any) => a.site_id))];
 
       let userMap: Record<string, string> = {};
+      let avatarMap: Record<string, string> = {};
       let projectMap: Record<string, string> = {};
       let siteMap: Record<string, { name: string; active: boolean; flag: string }> = {};
 
       if (userIds.length > 0) {
         const { data: usersData } = await supabase.from("users").select("id, full_name").in("id", userIds);
         (usersData || []).forEach((u: any) => { userMap[u.id] = u.full_name || u.id; });
+        const { data: profData } = await supabase.from("profiles").select("id, full_name, profile_picture_url").in("id", userIds);
+        (profData || []).forEach((p: any) => {
+          if (p.profile_picture_url) avatarMap[p.id] = p.profile_picture_url;
+          if (!userMap[p.id] && p.full_name) userMap[p.id] = p.full_name;
+        });
       }
 
       if (projectIds.length > 0) {
@@ -182,6 +189,7 @@ export function useActivities() {
           status_history: Array.isArray(a.status_history) ? a.status_history : [],
           photo_urls: Array.isArray(a.photo_urls) ? a.photo_urls : [],
           user_full_name: userMap[a.user_id] || "",
+          user_avatar_url: avatarMap[a.user_id] || "",
           project_name: a.project_id ? projectMap[a.project_id] || "" : "",
           site_name: siteInfo ? `${siteInfo.name}${!siteInfo.active ? " (Inactive)" : ""}` : "",
           site_flag: siteInfo?.flag || "",
