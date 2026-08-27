@@ -41,8 +41,8 @@ Deno.serve(async (req) => {
     if (!target_user_id || !new_password) {
       return json({ error: "target_user_id and new_password are required" }, 400);
     }
-    if (String(new_password).length < 6) {
-      return json({ error: "Password must be at least 6 characters" }, 400);
+    if (String(new_password).length < 8) {
+      return json({ error: "Password must be at least 8 characters" });
     }
 
     // Admin check: legacy admin role OR an Administrator security profile
@@ -77,7 +77,15 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       console.error("Password update failed:", updateError);
-      return json({ error: updateError.message }, 400);
+      const msg = String(updateError.message || "");
+      const weak = /weak|easy to guess|pwned/i.test(msg);
+      // Return 200 so the client surfaces the real reason instead of a generic
+      // "Edge function returned 400" error.
+      return json({
+        error: weak
+          ? "That password is known to be breached. Use the Generate button to create a strong one."
+          : msg,
+      });
     }
 
     await supabaseAdmin
