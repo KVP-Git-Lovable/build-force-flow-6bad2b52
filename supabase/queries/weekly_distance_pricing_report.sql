@@ -53,7 +53,7 @@ user_distances AS (
 )
 SELECT
   'Weekly Summary' as report_type,
-  CURRENT_DATE - INTERVAL '7 days'::TEXT as week_start_date,
+  (CURRENT_DATE - INTERVAL '7 days')::TEXT as week_start_date,
   CURRENT_DATE::TEXT as week_end_date,
   COUNT(*)::INTEGER as total_users,
   ROUND(SUM(distance_km)::NUMERIC, 2) as total_distance_km,
@@ -69,7 +69,7 @@ UNION ALL
 -- Detailed breakdown by user
 SELECT
   COALESCE(full_name, email) as report_type,
-  CURRENT_DATE - INTERVAL '7 days'::TEXT as week_start_date,
+  (CURRENT_DATE - INTERVAL '7 days')::TEXT as week_start_date,
   CURRENT_DATE::TEXT as week_end_date,
   1::INTEGER as total_users,
   distance_km as total_distance_km,
