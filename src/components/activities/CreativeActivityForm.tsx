@@ -391,6 +391,34 @@ export default function CreativeActivityForm({
 
   const selectedLead = leadOptions.find((l) => l.id === leadId);
 
+  // ---- Activity owner (defaults to the logged-in user, can be reassigned) ----
+  const effectiveOwnerId = ownerId || currentUserId || "";
+  const isSelfOwner = !effectiveOwnerId || effectiveOwnerId === currentUserId;
+  const ownerName = isSelfOwner
+    ? currentProfile?.full_name || currentProfile?.username || "Me"
+    : users.find((u) => u.id === effectiveOwnerId)?.full_name || "Owner";
+  const ownerAvatar = isSelfOwner ? currentProfile?.profile_picture_url || "" : ownerAvatars[effectiveOwnerId] || "";
+  const ownerResults = useMemo(() => {
+    const q = ownerSearch.trim().toLowerCase();
+    const list = q ? users.filter((u) => u.full_name?.toLowerCase().includes(q)) : users;
+    return list.slice(0, 25);
+  }, [users, ownerSearch]);
+
+  useEffect(() => {
+    if (!open || isSelfOwner || !effectiveOwnerId || ownerAvatars[effectiveOwnerId] !== undefined) return;
+    let active = true;
+    supabase
+      .from("profiles")
+      .select("id, profile_picture_url")
+      .eq("id", effectiveOwnerId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setOwnerAvatars((prev) => ({ ...prev, [effectiveOwnerId]: (data as any)?.profile_picture_url || "" }));
+      });
+    return () => { active = false; };
+  }, [open, isSelfOwner, effectiveOwnerId, ownerAvatars]);
+
+
   const filteredUsers = useMemo(() => {
     const q = assignSearch.trim().toLowerCase();
     return q ? users.filter((u) => u.full_name.toLowerCase().includes(q)) : users;
@@ -632,21 +660,27 @@ export default function CreativeActivityForm({
 
   const canPost = !!leadId && (!!description.trim() || !!activityType);
 
+  const fail = (msg: string) => {
+    setFormError(msg);
+    toast.error(msg, { className: "font-bold" });
+  };
+
   const handlePost = async () => {
+    setFormError("");
     if (!leadId) {
-      toast.error("Select a lead — it is mandatory for an activity");
+      fail("Lead is mandatory — select a lead before saving this activity");
       return;
     }
     if (!canPost) {
-      toast.error("Add an activity type or description to save");
+      fail("Add an activity type or an activity comment to save");
       return;
     }
     if (outcome && FOLLOW_UP_REQUIRED_OUTCOMES.includes(outcome) && !followUp) {
-      toast.error(`Select a next follow-up — it is mandatory when the outcome is "${outcome}"`);
+      fail(`Next follow-up is mandatory when the outcome is "${outcome}"`);
       return;
     }
     if (followUp === "Custom date" && !followUpDate) {
-      toast.error("Pick a date for the custom follow-up");
+      fail("Pick a date for the custom follow-up");
       return;
     }
     if (isEdit && !editActivity) return;
@@ -720,12 +754,12 @@ export default function CreativeActivityForm({
       };
 
       if (isEdit && updateActivity) {
-        await updateActivity(editActivity!.id, payload);
+        await updateActivity(editActivity!.id, { ...payload, ...(effectiveOwnerId ? { user_id: effectiveOwnerId } : {}) });
         toast.success("Post updated");
       } else {
         payload.status = "planned";
         payload.status_history = [{ status: "planned", at: new Date().toISOString() } as ActivityStatusEntry];
-        await createActivity(payload, undefined, true);
+        await createActivity(payload, effectiveOwnerId || undefined, true);
       }
 
       // Auto-create the next follow-up task
@@ -1082,7 +1116,7 @@ export default function CreativeActivityForm({
               {/* Lead picker */}
               <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-fuchsia-50 dark:from-indigo-950/30 dark:to-fuchsia-950/30 border border-indigo-100 dark:border-indigo-900/50 px-3 sm:px-4 pt-4 pb-3 shadow-sm min-w-0 max-w-full overflow-hidden">
                 <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
-                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Lead</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Lead <span className="text-destructive">*</span></p>
                   {selectedLead && (
                     <button
                       className="text-[11px] text-muted-foreground hover:text-foreground shrink-0"
