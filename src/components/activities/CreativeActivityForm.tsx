@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,8 @@ import {
   ImagePlus,
   LogIn,
   CheckCircle2,
+  HelpCircle,
+  AlertTriangle,
 
 } from "lucide-react";
 import { toast } from "sonner";
@@ -189,6 +192,11 @@ export default function CreativeActivityForm({
   const [checkedIn, setCheckedIn] = useState(false);
 
   const [checkingIn, setCheckingIn] = useState(false);
+  const [ownerId, setOwnerId] = useState("");
+  const [ownerOpen, setOwnerOpen] = useState(false);
+  const [ownerSearch, setOwnerSearch] = useState("");
+  const [ownerAvatars, setOwnerAvatars] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState("");
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignSearch, setAssignSearch] = useState("");
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -245,6 +253,10 @@ export default function CreativeActivityForm({
       setGrnRecv({});
       setGrnItemRemarks({});
       setGrnRemarks("");
+      setOwnerId("");
+      setOwnerOpen(false);
+      setOwnerSearch("");
+      setFormError("");
       return;
     }
     // Prefill on edit
@@ -261,6 +273,7 @@ export default function CreativeActivityForm({
       setCheckedIn(!!(editActivity as any).check_in_at);
       setGrnPoId((editActivity as any).grn_po_id || "");
       setRisk((editActivity as any).risk || "green");
+      setOwnerId((editActivity as any).user_id || currentUserId || "");
       if ((editActivity as any).next_follow_up_date) {
         setFollowUp("Custom date");
         setFollowUpDate(String((editActivity as any).next_follow_up_date).slice(0, 10));
@@ -280,9 +293,10 @@ export default function CreativeActivityForm({
       });
     } else {
       setCheckedIn(false);
+      setOwnerId(currentUserId || "");
       if (defaultLeadId) setLeadId(defaultLeadId);
     }
-  }, [open, editActivity, clearRecording, defaultLeadId]);
+  }, [open, editActivity, clearRecording, defaultLeadId, currentUserId]);
 
 
   // Load leads for the picker
