@@ -2003,6 +2003,10 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
   };
   const outcomeStyle = outcome ? outcomeStyles[outcome] : undefined;
 
+  const spentMins = a.start_time && a.end_time
+    ? Math.max(0, Math.round((new Date(a.end_time).getTime() - new Date(a.start_time).getTime()) / 60000))
+    : null;
+
   const Row = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
     <div className="flex items-start gap-1.5 text-xs text-muted-foreground min-w-0">
       <span className="shrink-0 mt-[1px]">{icon}</span>
@@ -2153,6 +2157,12 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
                 <span className="max-w-[86px] truncate">{outcome}</span>
               </span>
             )}
+            {spentMins !== null && (
+              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium bg-sky-50 text-sky-700 border-sky-200">
+                <Clock className="h-3 w-3" />
+                {spentMins} min spent
+              </span>
+            )}
             {a.activity_type?.trim().toLowerCase().includes("grn") && (a as any).grn_po_id && (
               <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => onReceiveGoods((a as any).grn_po_id)}>
                 <Route className="h-3.5 w-3.5" />
@@ -2162,13 +2172,13 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
             {a.status === "planned" && (
               <Button size="sm" className="h-8 gap-1.5" onClick={() => handleStatusChange("in_progress")} disabled={changingStatus}>
                 {changingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="h-3.5 w-3.5" />}
-                Start
+                Check-in
               </Button>
             )}
             {a.status === "in_progress" && (
               <Button size="sm" className="h-8 gap-1.5 bg-success text-success-foreground hover:bg-success/90" onClick={() => handleStatusChange("completed")} disabled={changingStatus}>
                 {changingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                Complete
+                Check out
               </Button>
             )}
             <div className="flex gap-1">

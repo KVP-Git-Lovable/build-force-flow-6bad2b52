@@ -114,12 +114,17 @@ export default function ActivityDetailsDialog({ activity, open, onClose, onSaveP
               </p>
               {activity.start_time && (
                 <p className="text-xs text-muted-foreground">
-                  Started: {format(parseISO(activity.start_time), "MMM d, yyyy h:mm a")}
+                  Check-in: {format(parseISO(activity.start_time), "MMM d, yyyy h:mm a")}
                 </p>
               )}
               {activity.end_time && (
                 <p className="text-xs text-muted-foreground">
-                  Completed: {format(parseISO(activity.end_time), "MMM d, yyyy h:mm a")}
+                  Check-out: {format(parseISO(activity.end_time), "MMM d, yyyy h:mm a")}
+                  {activity.start_time && (
+                    <span className="ml-1.5 font-medium text-foreground">
+                      ({Math.max(0, Math.round((new Date(activity.end_time).getTime() - new Date(activity.start_time).getTime()) / 60000))} min spent)
+                    </span>
+                  )}
                 </p>
               )}
               {activity.total_hours ? (
