@@ -206,10 +206,19 @@ export function useSaveLead() {
         if (error) throw error;
         return data;
       }
-      const { data, error } = await supabase.from("leads" as any).insert(rest as any).select().single();
+      // Always stamp ownership from the live auth session so the insert satisfies RLS
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Your session expired. Please sign in again to create a lead.");
+      const payload = {
+        ...(rest as any),
+        owner_id: (rest as any).owner_id ?? user.id,
+        created_by: (rest as any).created_by ?? user.id,
+      };
+      const { data, error } = await supabase.from("leads" as any).insert(payload).select().single();
       if (error) throw error;
       return data;
     },
+
     onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ["leads"] });
       if (data?.id) {
