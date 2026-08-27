@@ -65,31 +65,37 @@ serve(async (req) => {
       )
     }
 
-    // Verify current user is admin by checking security profiles
+    // Verify current user is admin: legacy role OR admin security profile
+    const { data: roleRows, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", currentUser.id)
+
     const { data: adminCheck, error: adminCheckError } = await supabaseAdmin
       .from("user_security_profiles")
       .select("profile_id, security_profiles(name)")
       .eq("user_id", currentUser.id)
 
-    if (adminCheckError) {
-      console.error("Admin check failed:", adminCheckError)
+    if (adminCheckError || roleError) {
+      console.error("Admin check failed:", adminCheckError || roleError)
       return new Response(
         JSON.stringify({ error: "Failed to verify admin status" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       )
     }
 
-    // Check if any of the user's security profiles is System Administrator
-    const isAdmin = adminCheck && adminCheck.length > 0 && adminCheck.some(
-      (a: any) => a.security_profiles?.name === "System Administrator"
+    const hasAdminRole = (roleRows || []).some((r: any) => r.role === "admin")
+    const hasAdminProfile = (adminCheck || []).some((a: any) =>
+      /administrator/i.test(a.security_profiles?.name ?? "")
     )
 
-    if (!isAdmin) {
+    if (!hasAdminRole && !hasAdminProfile) {
       return new Response(
-        JSON.stringify({ error: "Only System Administrators can impersonate users" }),
+        JSON.stringify({ error: "Only administrators can impersonate users" }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       )
     }
+
 
     // Get target user details
     const { data: targetUser, error: targetUserError } = await supabaseAdmin
