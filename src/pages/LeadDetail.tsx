@@ -143,15 +143,19 @@ export default function LeadDetail() {
             </CardTitle>
             <div className="text-sm text-muted-foreground">{[lead.title, lead.company].filter(Boolean).join(" · ") || "—"}</div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Edit className="h-4 w-4 mr-1" />Edit</Button>
-            <Button variant="outline" size="sm" onClick={cloneLead} disabled={cloning}>
-              <Copy className="h-4 w-4 mr-1" />{cloning ? "Cloning…" : "Clone"}
+          <div className="flex flex-wrap gap-1.5">
+            <Button size="sm" className="px-2.5" onClick={() => { setEditAct(null); setNewAct(true); }}>
+              <Plus className="h-4 w-4 mr-1" />Activity
             </Button>
-            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+            <Button variant="outline" size="sm" className="px-2.5" onClick={() => setEditOpen(true)}><Edit className="h-4 w-4 mr-1" />Edit</Button>
+            <Button variant="outline" size="sm" className="px-2.5" onClick={cloneLead} disabled={cloning}>
+              <Copy className="h-4 w-4 mr-1" />{cloning ? "…" : "Clone"}
+            </Button>
+            <Button variant="destructive" size="sm" className="px-2.5" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4 mr-1" />Delete
             </Button>
           </div>
+
         </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 rounded-lg border bg-muted/30 p-3">
