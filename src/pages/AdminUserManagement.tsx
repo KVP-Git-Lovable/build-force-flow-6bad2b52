@@ -254,6 +254,8 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
   const [managerId, setManagerId] = useState(user.reporting_manager_id || "none");
   const [secondaryManagerId, setSecondaryManagerId] = useState("none");
   const [newPassword, setNewPassword] = useState("");
+  const [resettingPassword, setResettingPassword] = useState(false);
+
   const [dateOfJoining, setDateOfJoining] = useState(employee?.date_of_joining || "");
   const [loading, setLoading] = useState(false);
   const [deletingData, setDeletingData] = useState(false);
@@ -412,6 +414,27 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
     setNewPassword(pwd);
   };
 
+  const handleResetPassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-reset-password", {
+        body: { target_user_id: user.id, new_password: newPassword },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Password reset for ${user.email}. Share it with the user — they must change it on next login.`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset password");
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -499,8 +522,20 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
                   <RefreshCw className="h-3.5 w-3.5 mr-1" /> Generate
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Password reset requires backend function support</p>
+              <Button
+                className="w-full"
+                size="sm"
+                onClick={handleResetPassword}
+                disabled={resettingPassword || newPassword.length < 6}
+              >
+                {resettingPassword ? "Resetting..." : "Reset Password"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Sign-in email: <span className="font-medium">{user.email}</span>. The user must sign in with this
+                exact email and will be asked to set their own password on next login.
+              </p>
             </div>
+
           </TabsContent>
         </Tabs>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-4 pt-4 border-t gap-2">
