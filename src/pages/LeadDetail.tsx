@@ -203,15 +203,30 @@ export default function LeadDetail() {
         </CardContent>
       </Card>
 
+      {!isConverted && statuses.length > 0 && (
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Lead Stage</div>
+            <LeadStagePath
+              stages={statuses.map((s) => ({ id: s.id, name: s.name }))}
+              currentId={lead.lead_status_id}
+              onSelect={changeStatus}
+              disabled={save.isPending}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="activities">Activities ({activities.length})</TabsTrigger>
           <TabsTrigger value="score">Lead Score (BANT)</TabsTrigger>
           <TabsTrigger value="sla">Lead SLA</TabsTrigger>
-          <TabsTrigger value="activities">Activities ({activities.length})</TabsTrigger>
           <TabsTrigger value="attachments">Attachments ({insight?.documentCount ?? 0})</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="overview" className="space-y-4 mt-4">
           <Card>
