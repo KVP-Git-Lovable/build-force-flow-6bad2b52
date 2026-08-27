@@ -1217,25 +1217,81 @@ export default function CreativeActivityForm({
                 </div>
               )}
 
+              {formError && (
+                <div className="rounded-2xl border-2 border-destructive bg-destructive/10 px-3 sm:px-4 py-2.5 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                  <p className="text-sm font-bold text-destructive break-words">{formError}</p>
+                </div>
+              )}
+
               {/* Description with inline icon rail */}
               <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
                 <div className="flex items-start gap-3 min-w-0">
-                  {currentProfile?.profile_picture_url ? (
-                    <SignedImage
-                      src={currentProfile.profile_picture_url}
-                      alt={currentProfile.full_name || currentProfile.username || "Me"}
-                      className="h-10 w-10 rounded-full object-cover shrink-0 border border-border"
-                    />
-                  ) : (
-                    <div
-                      className={cn(
-                        "h-10 w-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-sm font-semibold shrink-0",
-                        gradientFor(currentUserId || "me")
-                      )}
-                    >
-                      {currentInitials && currentInitials !== "??" ? currentInitials : initials(currentProfile?.full_name || currentProfile?.username || "Me")}
-                    </div>
-                  )}
+                  <Popover open={ownerOpen} onOpenChange={(v) => { setOwnerOpen(v); if (!v) setOwnerSearch(""); }}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        title={`Owner: ${ownerName} — tap to reassign`}
+                        aria-label={`Activity owner ${ownerName}. Tap to reassign`}
+                        className="relative shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      >
+                        {ownerAvatar ? (
+                          <SignedImage
+                            src={ownerAvatar}
+                            alt={ownerName}
+                            className="h-10 w-10 rounded-full object-cover border border-border"
+                          />
+                        ) : (
+                          <div
+                            className={cn(
+                              "h-10 w-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-sm font-semibold",
+                              gradientFor(effectiveOwnerId || "me")
+                            )}
+                          >
+                            {isSelfOwner && currentInitials && currentInitials !== "??" ? currentInitials : initials(ownerName)}
+                          </div>
+                        )}
+                        <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-background border border-border flex items-center justify-center">
+                          <Users className="h-2.5 w-2.5 text-muted-foreground" />
+                        </span>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-64 p-2">
+                      <p className="text-xs font-semibold mb-2">Activity owner</p>
+                      <div className="flex items-center gap-2 border rounded-md px-2 mb-2">
+                        <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <input
+                          autoFocus
+                          value={ownerSearch}
+                          onChange={(e) => setOwnerSearch(e.target.value)}
+                          placeholder="Search users..."
+                          className="flex-1 min-w-0 bg-transparent text-sm py-2 outline-none"
+                        />
+                      </div>
+                      <div className="max-h-56 overflow-y-auto">
+                        {ownerResults.map((u) => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => { setOwnerId(u.id); setOwnerOpen(false); setOwnerSearch(""); }}
+                            className={cn(
+                              "w-full text-left flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-sm",
+                              u.id === effectiveOwnerId && "bg-muted font-semibold"
+                            )}
+                          >
+                            <span className={cn("h-6 w-6 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-[10px] font-semibold shrink-0", gradientFor(u.id))}>
+                              {initials(u.full_name)}
+                            </span>
+                            <span className="truncate">{u.full_name}</span>
+                            {u.id === currentUserId && <span className="ml-auto text-[10px] text-muted-foreground">You</span>}
+                          </button>
+                        ))}
+                        {ownerResults.length === 0 && (
+                          <p className="text-xs text-muted-foreground px-2 py-2">No users found</p>
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -1517,9 +1573,21 @@ export default function CreativeActivityForm({
 
               {/* Activity type chips */}
               <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-100 dark:border-amber-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
-                <p className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 mb-2">
-                  Activity Type
-                </p>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                    Activity Type
+                  </p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-muted-foreground hover:text-foreground shrink-0">
+                        <HelpCircle className="h-3.5 w-3.5" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-64 text-xs leading-relaxed">
+                      Pick the type of work done. An activity type (or a comment) is required to save, and it must be set before you can check out.
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="flex flex-wrap gap-2 min-w-0">
                   {activityTypes.length === 0 && (
                     <p className="text-xs text-muted-foreground">No activity types configured</p>
@@ -1546,9 +1614,21 @@ export default function CreativeActivityForm({
 
               {/* Outcome */}
               <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-100 dark:border-emerald-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
-                <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 mb-2">
-                  Outcome
-                </p>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                    Outcome
+                  </p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-muted-foreground hover:text-foreground shrink-0">
+                        <HelpCircle className="h-3.5 w-3.5" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-64 text-xs leading-relaxed">
+                      Outcome is mandatory before check-out. Choose what actually happened during the visit or call.
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="flex flex-wrap gap-2 min-w-0">
                   {ACTIVITY_OUTCOMES.map((o) => {
                     const active = o === outcome;
@@ -1572,9 +1652,21 @@ export default function CreativeActivityForm({
 
               {/* Next follow up */}
               <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-950/30 dark:to-indigo-950/30 border border-sky-100 dark:border-sky-900/50 px-3 sm:px-4 py-3 shadow-sm min-w-0 max-w-full overflow-hidden">
-                <p className="text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300 mb-2">
-                  Next Follow Up
-                </p>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300">
+                    Next Follow Up
+                  </p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-muted-foreground hover:text-foreground shrink-0">
+                        <HelpCircle className="h-3.5 w-3.5" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-64 text-xs leading-relaxed">
+                      A next follow-up is mandatory when the outcome is "Visited but not available", "Postponed" or "Cancelled". Use "Not fixed" only when no date can be committed.
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="flex flex-wrap gap-2 min-w-0">
                   {FOLLOW_UP_OPTIONS.map((f) => {
                     const active = f === followUp;
