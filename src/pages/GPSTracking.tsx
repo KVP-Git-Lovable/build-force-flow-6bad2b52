@@ -189,20 +189,21 @@ export default function GPSTracking() {
     const { from, to } = getDateRange();
     setTrackingLoading(true);
     try {
-      const [pointsRes, sessionsRes, stopsRes, activitiesRes] = await Promise.all([
+      const [pointsRes, attendanceRes, stopsRes, activitiesRes] = await Promise.all([
         supabase
           .from("gps_tracking")
-          .select("latitude, longitude, timestamp, speed, accuracy")
+          .select("latitude, longitude, timestamp, speed, accuracy, date")
           .eq("user_id", userId)
           .gte("date", from)
           .lte("date", to)
           .order("timestamp", { ascending: true }),
+        // Check-in windows live in `attendance` (activity_sessions is unused)
         supabase
-          .from("activity_sessions")
-          .select("id, user_id, checked_in_at, checked_out_at")
+          .from("attendance")
+          .select("date, check_in_time, check_out_time")
           .eq("user_id", userId)
-          .gte("checked_in_at", `${from}T00:00:00`)
-          .lte("checked_in_at", `${to}T23:59:59`),
+          .gte("date", from)
+          .lte("date", to),
         supabase
           .from("gps_tracking_stops")
           .select("latitude, longitude, timestamp, duration_minutes, reason")
@@ -218,22 +219,24 @@ export default function GPSTracking() {
       ]);
 
       // Filter GPS points - remove noise/jitter while keeping real movement
-      let points = (pointsRes.data || []) as GPSPoint[];
-      const sessions = sessionsRes.data || [];
+      let points = (pointsRes.data || []) as (GPSPoint & { date?: string })[];
+      const attendanceRows = (attendanceRes.data || []).filter((a: any) => a.check_in_time);
+      const attendanceDates = new Set(attendanceRows.map((a: any) => a.date));
 
-      // Check if GPS point timestamp is within an active session window
-      // Strict enforcement: GPS only counts during active check-in window
-      const isInActiveSession = (timestamp: string): boolean => {
-        const pointTime = new Date(timestamp).getTime();
-        return sessions.some((session: any) => {
-          const checkinTime = new Date(session.checked_in_at).getTime();
-          const checkoutTime = session.checked_out_at ? new Date(session.checked_out_at).getTime() : Infinity;
+      // Keep points inside a check-in window; if a day has no attendance record
+      // at all, keep that day's points rather than blanking the trail.
+      const isInActiveSession = (p: { timestamp: string; date?: string }): boolean => {
+        if (p.date && !attendanceDates.has(p.date)) return true;
+        const pointTime = new Date(p.timestamp).getTime();
+        return attendanceRows.some((a: any) => {
+          const checkinTime = new Date(a.check_in_time).getTime();
+          const checkoutTime = a.check_out_time ? new Date(a.check_out_time).getTime() : Infinity;
           return pointTime >= checkinTime && pointTime <= checkoutTime;
         });
       };
 
-      // Filter by session first, then apply shared filtering
-      const sessionFilteredPoints = points.filter((p) => isInActiveSession(p.timestamp));
+      const sessionFilteredPoints = points.filter((p) => isInActiveSession(p));
+
 
       // Shared filtering — identical algorithm on web, dashboard, and APK
       // (accuracy ≤100m, 20m stationary jitter, 160 km/h jump, 5-min gap split)
