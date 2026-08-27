@@ -2021,23 +2021,39 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpenDetails(a)}>
 
             <div className="flex items-start gap-2 mb-1">
-              <span className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <Activity className="h-4 w-4" />
+              <span className="h-9 w-9 rounded-full overflow-hidden bg-primary/10 text-primary flex items-center justify-center shrink-0 ring-1 ring-border">
+                {a.user_avatar_url ? (
+                  <img
+                    src={a.user_avatar_url}
+                    alt={a.user_full_name ? `${a.user_full_name} profile photo` : "Activity owner"}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="text-[11px] font-semibold">
+                    {(a.user_full_name || "?")
+                      .split(" ")
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((p) => p[0]?.toUpperCase())
+                      .join("") || "?"}
+                  </span>
+                )}
               </span>
               <div className="min-w-0 flex-1">
                 {leadId ? (
                   <button
                     type="button"
-                    className="font-semibold text-sm text-primary text-left break-words"
+                    className="font-bold text-[15px] leading-snug text-primary text-left break-words"
                     onClick={(e) => { e.stopPropagation(); navigate(`/leads/${leadId}`); }}
                   >
                     {headline}
                   </button>
                 ) : (
-                  <span className="font-semibold text-sm break-words">{headline}</span>
+                  <span className="font-bold text-[15px] leading-snug break-words">{headline}</span>
                 )}
                 {subLine && (
-                  <p className="text-[11px] text-muted-foreground truncate">{subLine}</p>
+                  <p className="text-[12px] font-medium text-foreground/70 truncate">{subLine}</p>
                 )}
               </div>
               {!leadId && a.site_flag && (
@@ -2176,7 +2192,7 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
               </Button>
             )}
             {a.status === "in_progress" && (
-              <Button size="sm" className="h-8 gap-1.5 bg-success text-success-foreground hover:bg-success/90" onClick={() => handleStatusChange("completed")} disabled={changingStatus}>
+              <Button size="sm" variant="destructive" className="h-8 gap-1.5" onClick={() => handleStatusChange("completed")} disabled={changingStatus}>
                 {changingStatus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                 Check out
               </Button>
