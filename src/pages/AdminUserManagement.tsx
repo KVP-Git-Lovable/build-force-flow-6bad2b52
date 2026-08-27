@@ -412,6 +412,27 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
     setNewPassword(pwd);
   };
 
+  const handleResetPassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-reset-password", {
+        body: { target_user_id: user.id, new_password: newPassword },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Password reset for ${user.email}. Share it with the user — they must change it on next login.`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset password");
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
