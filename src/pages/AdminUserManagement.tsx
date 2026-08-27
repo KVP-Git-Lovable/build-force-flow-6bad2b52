@@ -522,8 +522,20 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
                   <RefreshCw className="h-3.5 w-3.5 mr-1" /> Generate
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Password reset requires backend function support</p>
+              <Button
+                className="w-full"
+                size="sm"
+                onClick={handleResetPassword}
+                disabled={resettingPassword || newPassword.length < 6}
+              >
+                {resettingPassword ? "Resetting..." : "Reset Password"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Sign-in email: <span className="font-medium">{user.email}</span>. The user must sign in with this
+                exact email and will be asked to set their own password on next login.
+              </p>
             </div>
+
           </TabsContent>
         </Tabs>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-4 pt-4 border-t gap-2">
