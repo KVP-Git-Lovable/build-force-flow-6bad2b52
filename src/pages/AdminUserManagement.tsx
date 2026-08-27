@@ -408,15 +408,21 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
   };
 
   const generatePassword = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$";
-    let pwd = "";
-    for (let i = 0; i < 12; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-    setNewPassword(pwd);
+    // Long random password so it never matches a known-breached ("weak") password
+    const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const lower = "abcdefghijkmnpqrstuvwxyz";
+    const digits = "23456789";
+    const symbols = "!@#$%^&*-_+=";
+    const all = upper + lower + digits + symbols;
+    const rand = (set: string) => set.charAt(Math.floor(Math.random() * set.length));
+    const chars = [rand(upper), rand(lower), rand(digits), rand(symbols)];
+    for (let i = 0; i < 12; i++) chars.push(rand(all));
+    setNewPassword(chars.sort(() => Math.random() - 0.5).join(""));
   };
 
   const handleResetPassword = async () => {
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
       return;
     }
     setResettingPassword(true);
@@ -433,6 +439,7 @@ function EditUserDialog({ user, employee, roles, allUsers, onSaved, open, onOpen
       setResettingPassword(false);
     }
   };
+
 
 
   return (
