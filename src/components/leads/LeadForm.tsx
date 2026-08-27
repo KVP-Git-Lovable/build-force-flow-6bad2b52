@@ -40,6 +40,118 @@ export function LeadForm({
   const [isElaborating, setIsElaborating] = useState(false);
   const [locating, setLocating] = useState(false);
 
+  // ==== Voice-to-text / audio note for Requirement Overview ====
+  const qc = useQueryClient();
+  const {
+    isRecording, isFinalizing, recording, elapsed,
+    startRecording, stopRecording, clearRecording,
+  } = useAudioRecorder();
+  const [micMenuOpen, setMicMenuOpen] = useState(false);
+  const [voiceToTextMode, setVoiceToTextMode] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isStartingRecording, setIsStartingRecording] = useState(false);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
+  const micBusy = isTranscribing || isFinalizing || isStartingRecording || uploadingAudio;
+
+  const transcribeAudio = useCallback(async (audioBlob: Blob) => {
+    setIsTranscribing(true);
+    try {
+      const formData = new FormData();
+      const extension = audioBlob.type.includes("mp4") || audioBlob.type.includes("aac")
+        ? "m4a" : audioBlob.type.includes("ogg") ? "ogg" : "webm";
+      formData.append("audio", audioBlob, `recording.${extension}`);
+      formData.append("lang", "en");
+      const response = await supabase.functions.invoke("transcribe-audio", { body: formData });
+      if (response.error) throw response.error;
+      const transcript = response.data?.transcript?.trim();
+      if (transcript) {
+        setF((prev) => ({
+          ...prev,
+          researched_information: prev.researched_information
+            ? `${prev.researched_information} ${transcript}`
+            : transcript,
+        }));
+        toast.success("Voice transcribed");
+      } else {
+        toast.error("Could not understand the audio.");
+      }
+    } catch (err: any) {
+      toast.error("Transcription failed: " + (err.message || "Unknown error"));
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, []);
+
+  const uploadAudioNote = useCallback(async (rec: { blob: Blob; fileExtension: string; mimeType: string }) => {
+    if (!lead?.id) {
+      toast.error("Save the lead first, then record an audio note");
+      return;
+    }
+    setUploadingAudio(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id ?? null;
+      const fileName = `voice-note-${new Date().toISOString().replace(/[:.]/g, "-")}.${rec.fileExtension}`;
+      const path = `leads/${lead.id}/${Date.now()}_${fileName}`;
+      const { error: upErr } = await supabase.storage
+        .from("customer-documents")
+        .upload(path, rec.blob, { contentType: rec.mimeType });
+      if (upErr) throw upErr;
+      const { error } = await supabase.from("customer_documents").insert({
+        lead_id: lead.id,
+        file_name: fileName,
+        file_url: path,
+        file_size: rec.blob.size,
+        file_type: rec.mimeType,
+        doc_type: "other",
+        uploaded_by: uid,
+        updated_by: uid,
+      } as any);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["lead-documents", lead.id] });
+      toast.success("Audio note attached to this lead");
+    } catch (e: any) {
+      toast.error(e.message ?? "Could not save the audio note");
+    } finally {
+      setUploadingAudio(false);
+    }
+  }, [lead?.id, qc]);
+
+  useEffect(() => {
+    if (recording && !isRecording && !isTranscribing && !uploadingAudio) {
+      const rec = recording;
+      clearRecording();
+      if (voiceToTextMode) {
+        setVoiceToTextMode(false);
+        transcribeAudio(rec.blob);
+      } else {
+        uploadAudioNote(rec);
+      }
+    }
+  }, [recording, isRecording, isTranscribing, uploadingAudio, voiceToTextMode, clearRecording, transcribeAudio, uploadAudioNote]);
+
+  const handleMicOptionClick = useCallback(async (mode: "text" | "audio") => {
+    if (micBusy) return;
+    if (isRecording) { setMicMenuOpen(false); await stopRecording(); return; }
+    if (mode === "audio" && !lead?.id) {
+      toast.error("Save the lead first, then record an audio note");
+      setMicMenuOpen(false);
+      return;
+    }
+    clearRecording();
+    setVoiceToTextMode(mode === "text");
+    setIsStartingRecording(true);
+    try {
+      await startRecording();
+      setMicMenuOpen(false);
+    } catch (err: any) {
+      setVoiceToTextMode(false);
+      toast.error(err.message || "Could not start recording");
+    } finally {
+      setIsStartingRecording(false);
+    }
+  }, [micBusy, isRecording, lead?.id, clearRecording, startRecording, stopRecording]);
+
   useEffect(() => {
     if (lead) {
       const l = lead as any;
