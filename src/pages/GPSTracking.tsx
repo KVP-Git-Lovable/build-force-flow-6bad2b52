@@ -349,6 +349,8 @@ export default function GPSTracking() {
   // Real road distance snapped onto actual roads (falls back to straight-line)
   const isRoadDistance = route?.distanceMeters != null;
   const totalDistance = isRoadDistance ? (route!.distanceMeters as number) / 1000 : haversineDistance;
+  // Kilometres reconstructed across tracking blackouts (Routes API estimate)
+  const bridgedKm = (route?.bridgedMeters ?? 0) / 1000;
 
   // Capture diagnostics — a long hole in the trail means the phone stopped
   // reporting (Doze / battery optimisation), and no route API can recover
