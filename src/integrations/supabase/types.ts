@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -5606,6 +5606,10 @@ export type Database = {
       can_access_object: {
         Args: { _object_name: string; _permission: string; _user_id: string }
         Returns: boolean
+      }
+      compute_filtered_distance_km: {
+        Args: { _date: string; _user_id: string }
+        Returns: number
       }
       convert_lead: {
         Args: { _lead_id: string; _payload: Json }
