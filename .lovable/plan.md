@@ -1,28 +1,60 @@
-# Why `activity_sessions` has 0 rows
+# Day Tracking shows 0.0 km — diagnosis and fix
 
-## Findings (verified)
+## What the data shows (verified today, Aug 28)
 
-- The table exists and is empty: `select count(*) from activity_sessions` returns 0, and Postgres table stats show `n_tup_ins = 0`, `n_tup_del = 0` — no row was ever inserted, nothing was deleted. So this is not data loss.
-- The only writer is the `manage-activity-session` edge function (`action: "checkin" / "checkout"`). Its logs show **no invocations at all**.
-- The only caller of that function is `handleActivityCheckIn` / `handleActivityCheckOut` in `CreativeActivityForm.tsx`. Those handlers run only when the parent passes a `checkInActivity` / `checkOutActivity` prop.
-- `Activities.tsx` and `LeadActivityComposer.tsx` are the only components that render `CreativeActivityForm`, and **neither passes those props**. The form also gates the button with `showCheckIn = cfgCheckIn && !!checkInActivity`, so the per-activity check-in button never renders.
+Nagananda Beegamudre has only **14 raw GPS rows** for today:
 
-Conclusion: `activity_sessions` is dead infrastructure. The per-activity check-in/check-out UI that was supposed to fill it was never wired up, so the table has been empty since it was created. Day Tracking read from it, which is why the trail went blank — already fixed by switching that gate to `attendance`.
+```text
+02:31 UTC  12.92227, 77.53858   (Bangalore city)
+04:36 UTC  12.67432, 77.44189   (~30 km south)   <-- 2h 5m gap
+04:42 UTC  same spot
+06:45 - 07:12 UTC  10 rows, all within ~2 metres of that same spot
+```
 
-Related dead code: `validate-gps-session` edge function (called by `capacitorBackgroundTracking.ts` to validate each GPS point against `activity_sessions`) will always fail to find a session. Worth checking whether that path is silently dropping background GPS points.
+So the trail is: one fix, a 2-hour blackout during which the phone moved ~30 km, then a
+cluster of stationary fixes. Nothing was recorded *between* the two locations.
 
-## Options
+The shared filter (`filterTrackPoints`) then:
+- keeps the 02:31 fix,
+- treats the 04:36 fix as a **new segment** (gap > 5 min), so the 30 km jump adds no distance,
+- discards every later fix as stationary jitter (< 10 m move).
 
-**A. Remove the dead path (recommended)**
-- Drop the unused `manage-activity-session` and `validate-gps-session` invocations from `CreativeActivityForm.tsx` and `capacitorBackgroundTracking.ts`, delete both edge functions, and leave `attendance` as the single source of check-in windows.
-- Keep or drop the `activity_sessions` table itself (no data to lose either way).
+Result: 1 usable point, no polyline, and 0.0 km — exactly what the screenshot shows. The
+route/distance code is never even called, because road snapping needs at least 2 points.
 
-**B. Wire it up properly**
-- Pass `checkInActivity` / `checkOutActivity` from `Activities.tsx` so the per-activity check-in button appears and sessions actually get created. Only worth doing if you want per-activity (not per-day) time tracking as a product feature.
+**This is not a Google API problem.** Roads/Routes are healthy; there is simply no movement
+data to snap. The cause is on-device capture: background location pings are not being
+delivered while the user travels (Doze / battery optimisation / background location revoked).
 
-**C. Leave as is**
-- No code change; Day Tracking already uses `attendance`. The table stays empty and the two edge functions stay unused.
+## Proposed fix (two parts)
 
-## Next step
+### 1. Stop throwing away travel across tracking blackouts
+Today a > 5 min gap silently kills the distance for that leg. Instead, when two consecutive
+fixes are far apart in time but plausibly reachable by road, bridge them with the Routes API
+(the `snap-gps-route` gap-bridging path that already exists in `src/utils/googleRoute.ts`) and
+count that road distance, clearly labelled as *estimated across a tracking gap*.
 
-Confirm which option you want. If it's A, I will also verify whether `validate-gps-session` is currently blocking background GPS writes on native, and remove that gate in the same change.
+Changes:
+- `src/pages/GPSTracking.tsx`: don't require 2 *filtered* points before routing — pass the
+  segmented track (including gap ends) to `getSnappedRoute`.
+- `src/utils/gpsDistance.ts`: keep the segment split for the drawn line, but return the gap
+  ends so bridging is possible instead of dropping them.
+- Show a small note under Distance when any leg was bridged ("includes N km estimated across
+  tracking gaps"), so the number is never silently inflated without explanation.
+- Guard: bridge only if the gap is under a sane threshold (e.g. straight-line < 200 km and
+  average implied speed < 120 km/h), otherwise leave it out.
+
+### 2. Surface *why* the trail is empty
+Add a diagnostic line on Day Tracking when the day has large blackouts: "Tracking gap of 2h 5m
+detected — background location may be disabled on the device", with a link to the existing
+device-settings prompt (battery-optimisation exemption + "Allow all the time" location) already
+built in `nativePermissions` / `DeviceSettingsPlugin`.
+
+No changes to the Google Maps gateway, edge functions, or the snapping logic itself.
+
+## Technical notes
+- Files touched: `src/pages/GPSTracking.tsx`, `src/utils/gpsDistance.ts`, and a small helper in
+  `src/utils/googleRoute.ts` for gap bridging (function already present).
+- Historical days keep their stored values; only live/recomputed views change.
+- Distance stays consistent across web, dashboard and APK because the shared helpers are the
+  ones being changed.
