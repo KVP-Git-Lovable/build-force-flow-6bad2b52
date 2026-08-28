@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { Plus, Camera, CalendarDays, CalendarRange, Loader2, Pencil, Trash2, Eye, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Plus, Camera, Download, Loader2, Pencil, Trash2, Eye, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,15 +12,76 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import CameraCapture from "@/components/CameraCapture";
 import TeamExpenseSummary from "@/components/expenses/TeamExpenseSummary";
 import MonthNavigator from "@/components/expenses/MonthNavigator";
 import ExpenseSummaryCards from "@/components/expenses/ExpenseSummaryCards";
-import WeeklyBreakdown from "@/components/expenses/WeeklyBreakdown";
-import DailyBreakdown from "@/components/expenses/DailyBreakdown";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useMonthlyExpenseSummary } from "@/hooks/useMonthlyExpenseSummary";
+import { useMonthlyExpenseSummary, type DailyBreakdownRow } from "@/hooks/useMonthlyExpenseSummary";
+
+const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+
+function TATable({ days, totalTa, totalKm }: { days: DailyBreakdownRow[]; totalTa: number; totalKm: number }) {
+  const active = days.filter((d) => d.km > 0 || d.ta > 0);
+  if (!active.length) return <p className="text-xs text-muted-foreground text-center py-6">No TA records this month.</p>;
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="text-xs">Date</TableHead>
+          <TableHead className="text-right text-xs">KM</TableHead>
+          <TableHead className="text-right text-xs">TA Amt</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {active.map((d) => (
+          <TableRow key={d.date}>
+            <TableCell className="text-xs">{format(new Date(d.date), "dd MMM")}</TableCell>
+            <TableCell className="text-right text-xs">{d.km.toFixed(1)}</TableCell>
+            <TableCell className="text-right text-xs font-medium">{inr(d.ta)}</TableCell>
+          </TableRow>
+        ))}
+        <TableRow className="border-t-2 bg-muted/30">
+          <TableCell className="font-bold text-xs">Total</TableCell>
+          <TableCell className="text-right font-bold text-xs">{totalKm.toFixed(1)}</TableCell>
+          <TableCell className="text-right font-bold text-xs">{inr(totalTa)}</TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
+  );
+}
+
+function DATable({ days, totalDa }: { days: DailyBreakdownRow[]; totalDa: number }) {
+  const active = days.filter((d) => d.present > 0 || d.da > 0);
+  if (!active.length) return <p className="text-xs text-muted-foreground text-center py-6">No DA records this month.</p>;
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="text-xs">Date</TableHead>
+          <TableHead className="text-right text-xs">Present</TableHead>
+          <TableHead className="text-right text-xs">DA Amt</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {active.map((d) => (
+          <TableRow key={d.date}>
+            <TableCell className="text-xs">{format(new Date(d.date), "dd MMM")}</TableCell>
+            <TableCell className="text-right text-xs">{d.present === 1 ? "Full" : d.present === 0.5 ? "Half" : "—"}</TableCell>
+            <TableCell className="text-right text-xs font-medium">{inr(d.da)}</TableCell>
+          </TableRow>
+        ))}
+        <TableRow className="border-t-2 bg-muted/30">
+          <TableCell className="font-bold text-xs">Total</TableCell>
+          <TableCell></TableCell>
+          <TableCell className="text-right font-bold text-xs">{inr(totalDa)}</TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
+  );
+}
 
 interface Expense {
   id: string;
@@ -58,9 +119,7 @@ export default function Expenses() {
   const [submitting, setSubmitting] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
 
-  // Breakdown dialog
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
-  const [breakdownView, setBreakdownView] = useState<"weekly" | "daily">("weekly");
+  const [detailsTab, setDetailsTab] = useState<"ta" | "da" | "additional">("ta");
 
   const [rejectionView, setRejectionView] = useState<string | null>(null);
 
@@ -142,6 +201,39 @@ export default function Expenses() {
     toast.success("Deleted"); fetchExpenses(); refetchSummary();
   };
 
+  const downloadXLS = async () => {
+    const XLSX = await import("xlsx");
+    const wb = XLSX.utils.book_new();
+
+    const taRows = (summary?.daily || []).filter((d) => d.km > 0 || d.ta > 0);
+    const taSheet = XLSX.utils.json_to_sheet([
+      ...taRows.map((d) => ({ Date: format(new Date(d.date), "dd-MMM-yyyy"), "KM": d.km, "TA Amount (₹)": d.ta })),
+      { Date: "TOTAL", "KM": summary?.total_km || 0, "TA Amount (₹)": summary?.ta || 0 },
+    ]);
+    XLSX.utils.book_append_sheet(wb, taSheet, "TA");
+
+    const daRows = (summary?.daily || []).filter((d) => d.present > 0 || d.da > 0);
+    const daSheet = XLSX.utils.json_to_sheet([
+      ...daRows.map((d) => ({ Date: format(new Date(d.date), "dd-MMM-yyyy"), Present: d.present === 1 ? "Full" : d.present === 0.5 ? "Half" : "-", "DA Amount (₹)": d.da })),
+      { Date: "TOTAL", Present: "", "DA Amount (₹)": summary?.da || 0 },
+    ]);
+    XLSX.utils.book_append_sheet(wb, daSheet, "DA");
+
+    const addlSheet = XLSX.utils.json_to_sheet([
+      ...expenses.map((e) => ({
+        Date: format(new Date(e.expense_date), "dd-MMM-yyyy"),
+        Category: e.category === "Other" ? e.custom_category : e.category,
+        "Amount (₹)": e.amount,
+        Status: e.status,
+      })),
+      { Date: "TOTAL", Category: "", "Amount (₹)": expenses.reduce((s, e) => s + Number(e.amount), 0), Status: "" },
+    ]);
+    XLSX.utils.book_append_sheet(wb, addlSheet, "Additional Expenses");
+
+    XLSX.writeFile(wb, `Expenses_${yearMonth}.xlsx`);
+    toast.success("Expense report downloaded");
+  };
+
   const statusBadge = (s: string) => {
     if (s === "approved") return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"><CheckCircle2 className="h-3 w-3 mr-1" />Approved</Badge>;
     if (s === "rejected") return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
@@ -161,7 +253,6 @@ export default function Expenses() {
         presentDays={summary?.present_days || 0}
         totalKm={summary?.total_km || 0}
         loading={summaryLoading}
-        onTotalClick={() => setBreakdownOpen(true)}
         taType={policy?.ta_type}
         taPerKmRate={Number(policy?.ta_per_km_rate || 0)}
         fixedTaAmount={Number(policy?.fixed_ta_amount || 0)}
@@ -186,52 +277,82 @@ export default function Expenses() {
       )}
 
       <Card className="shadow-card">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold">Additional Expenses</h3>
-              <p className="text-[11px] text-muted-foreground">Receipts, reimbursements & miscellaneous claims</p>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-base">Expense Details</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={downloadXLS}>
+                <Download className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">XLS</span>
+              </Button>
+              <Button size="sm" className="h-8 px-2 text-xs" onClick={openAdd}>
+                <Plus className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Add </span>Expense
+              </Button>
             </div>
-            <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Expense</Button>
           </div>
+          <p className="text-xs text-muted-foreground">{format(selectedMonth, "MMMM yyyy")}</p>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={detailsTab} onValueChange={(v) => setDetailsTab(v as typeof detailsTab)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="ta" className="text-xs">TA</TabsTrigger>
+              <TabsTrigger value="da" className="text-xs">DA</TabsTrigger>
+              <TabsTrigger value="additional" className="text-xs">Additional Expenses</TabsTrigger>
+            </TabsList>
 
-          {loading ? (
-            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-          ) : expenses.length === 0 ? (
-            <p className="text-sm text-center text-muted-foreground py-6">No expenses this month.</p>
-          ) : (
-            <div className="space-y-2">
-              {expenses.map((e) => (
-                <div key={e.id} className="border rounded-lg p-3">
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{e.category === "Other" ? e.custom_category : e.category}</p>
-                      <p className="text-[11px] text-muted-foreground">{format(new Date(e.expense_date), "dd MMM yyyy")}</p>
-                      {e.description && <p className="text-xs text-muted-foreground mt-1">{e.description}</p>}
+            {summaryLoading ? (
+              <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            ) : (
+              <>
+                <TabsContent value="ta" className="mt-3">
+                  {summary && <TATable days={summary.daily} totalTa={summary.ta} totalKm={summary.total_km} />}
+                </TabsContent>
+
+                <TabsContent value="da" className="mt-3">
+                  {summary && <DATable days={summary.daily} totalDa={summary.da} />}
+                </TabsContent>
+
+                <TabsContent value="additional" className="mt-3">
+                  {loading ? (
+                    <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                  ) : expenses.length === 0 ? (
+                    <p className="text-xs text-center text-muted-foreground py-6">No additional expenses this month.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {expenses.map((e) => (
+                        <div key={e.id} className="border rounded-lg p-3">
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{e.category === "Other" ? e.custom_category : e.category}</p>
+                              <p className="text-[11px] text-muted-foreground">{format(new Date(e.expense_date), "dd MMM yyyy")}</p>
+                              {e.description && <p className="text-xs text-muted-foreground mt-1">{e.description}</p>}
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="font-bold">₹{Number(e.amount).toFixed(0)}</span>
+                              {statusBadge(e.status)}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 mt-2 flex-wrap">
+                            {(e.status === "draft" || e.status === "rejected" || e.status === "submitted" || e.status === "pending") && (
+                              <Button variant="outline" size="sm" onClick={() => openEdit(e)}><Pencil className="h-3 w-3 mr-1" />Edit</Button>
+                            )}
+                            {(e.status === "draft" || e.status === "submitted" || e.status === "pending") && (
+                              <Button variant="outline" size="sm" className="text-destructive" onClick={() => remove(e.id)}><Trash2 className="h-3 w-3 mr-1" />Delete</Button>
+                            )}
+                            {e.status === "rejected" && e.rejection_reason && (
+                              <Button variant="ghost" size="sm" onClick={() => setRejectionView(e.rejection_reason)}><Eye className="h-3 w-3 mr-1" />Reason</Button>
+                            )}
+                            {e.bill_url && (
+                              <Button variant="ghost" size="sm" onClick={() => window.open(e.bill_url!, "_blank")}><Eye className="h-3 w-3 mr-1" />Receipt</Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="font-bold">₹{Number(e.amount).toFixed(0)}</span>
-                      {statusBadge(e.status)}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    {(e.status === "draft" || e.status === "rejected" || e.status === "submitted" || e.status === "pending") && (
-                      <Button variant="outline" size="sm" onClick={() => openEdit(e)}><Pencil className="h-3 w-3 mr-1" />Edit</Button>
-                    )}
-                    {(e.status === "draft" || e.status === "submitted" || e.status === "pending") && (
-                      <Button variant="outline" size="sm" className="text-destructive" onClick={() => remove(e.id)}><Trash2 className="h-3 w-3 mr-1" />Delete</Button>
-                    )}
-                    {e.status === "rejected" && e.rejection_reason && (
-                      <Button variant="ghost" size="sm" onClick={() => setRejectionView(e.rejection_reason)}><Eye className="h-3 w-3 mr-1" />Reason</Button>
-                    )}
-                    {e.bill_url && (
-                      <Button variant="ghost" size="sm" onClick={() => window.open(e.bill_url!, "_blank")}><Eye className="h-3 w-3 mr-1" />Receipt</Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                  )}
+                </TabsContent>
+              </>
+            )}
+          </Tabs>
         </CardContent>
       </Card>
     </div>
@@ -251,20 +372,6 @@ export default function Expenses() {
           <TabsContent value="team"><TeamExpenseSummary /></TabsContent>
         </Tabs>
       ) : myContent}
-
-      {/* Breakdown Dialog */}
-      <Dialog open={breakdownOpen} onOpenChange={setBreakdownOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Expense Breakdown · {format(selectedMonth, "MMM yyyy")}</DialogTitle></DialogHeader>
-          <div className="flex gap-2">
-            <Button variant={breakdownView === "weekly" ? "default" : "outline"} size="sm" className="h-8 text-xs gap-1.5" onClick={() => setBreakdownView("weekly")}><CalendarRange className="h-3.5 w-3.5" />Weekly</Button>
-            <Button variant={breakdownView === "daily" ? "default" : "outline"} size="sm" className="h-8 text-xs gap-1.5" onClick={() => setBreakdownView("daily")}><CalendarDays className="h-3.5 w-3.5" />Daily</Button>
-          </div>
-          {summary && (breakdownView === "weekly"
-            ? <WeeklyBreakdown weeks={summary.weekly} />
-            : <DailyBreakdown days={summary.daily} />)}
-        </DialogContent>
-      </Dialog>
 
       {/* Add/Edit Dialog */}
       <Dialog open={addOpen} onOpenChange={(o) => { if (!o) { setAddOpen(false); resetForm(); } }}>
