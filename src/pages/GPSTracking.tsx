@@ -573,6 +573,12 @@ export default function GPSTracking() {
                   <p className="text-[10px] text-muted-foreground mt-0.5">
                     {isRoadDistance ? (route?.snapped ? "road-snapped" : "part estimated") : "estimated"}
                   </p>
+                  {bridgedKm >= 0.1 && (
+                    <p className="text-[10px] text-amber-600 mt-0.5">
+                      incl. {bridgedKm.toFixed(1)} km across tracking gaps
+                    </p>
+                  )}
+
 
                 </CardContent>
               </Card>
