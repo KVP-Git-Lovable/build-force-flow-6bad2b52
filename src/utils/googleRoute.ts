@@ -18,6 +18,8 @@ export interface SnappedRoute {
   /** Actual road distance in metres, or null when snapping was unavailable. */
   distanceMeters: number | null;
   snapped: boolean;
+  /** Metres contributed by bridging tracking blackouts (estimated, not recorded). */
+  bridgedMeters?: number;
 }
 
 /**
@@ -98,6 +100,21 @@ async function snapBatch(batch: RoutePoint[]): Promise<{ path: LatLng[]; meters:
   }
 }
 
+// Sanity guards for bridging a blackout: beyond these the two fixes are not a
+// plausible single road journey (flight, stale fix, day rollover) — skip them.
+const MAX_BRIDGE_METERS = 200_000;
+const MAX_BRIDGE_SPEED_KMH = 120;
+
+function isBridgeable(a: RoutePoint, b: RoutePoint): boolean {
+  const straight = haversineMeters(a.latitude, a.longitude, b.latitude, b.longitude);
+  if (straight > MAX_BRIDGE_METERS) return false;
+  if (a.timestamp && b.timestamp) {
+    const hours = (new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) / 3600000;
+    if (hours > 0 && straight / 1000 / hours > MAX_BRIDGE_SPEED_KMH) return false;
+  }
+  return true;
+}
+
 /** Bridge a tracking gap with a real driving route between the two ends. */
 async function bridgeGap(a: RoutePoint, b: RoutePoint): Promise<{ path: LatLng[]; meters: number; snapped: boolean }> {
   const straight = haversineMeters(a.latitude, a.longitude, b.latitude, b.longitude);
@@ -125,6 +142,7 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRout
   let calls = 0;
   const path: LatLng[] = [];
   let meters = 0;
+  let bridgedMeters = 0;
   let allSnapped = true;
 
   try {
@@ -136,18 +154,26 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRout
         const prevSeg = segments[s - 1];
         const from = prevSeg[prevSeg.length - 1];
         const to = segment[0];
-        if (calls < MAX_CALLS) {
+        if (!isBridgeable(from, to)) {
+          // Implausible as a road journey — keep the line broken and add nothing.
+          path.push(toLatLng(to));
+          allSnapped = false;
+        } else if (calls < MAX_CALLS) {
           calls++;
           const bridge = await bridgeGap(from, to);
           path.push(...bridge.path);
           meters += bridge.meters;
+          bridgedMeters += bridge.meters;
           if (!bridge.snapped) allSnapped = false;
         } else {
-          meters += haversineMeters(from.latitude, from.longitude, to.latitude, to.longitude);
+          const straight = haversineMeters(from.latitude, from.longitude, to.latitude, to.longitude);
+          meters += straight;
+          bridgedMeters += straight;
           path.push(toLatLng(to));
           allSnapped = false;
         }
       }
+
 
       if (segment.length < 2) {
         path.push(toLatLng(segment[0]));
@@ -173,7 +199,7 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRout
     }
 
     if (path.length < 2) throw new Error("empty route");
-    return { path, distanceMeters: meters > 0 ? meters : null, snapped: allSnapped };
+    return { path, distanceMeters: meters > 0 ? meters : null, snapped: allSnapped, bridgedMeters };
   } catch {
     return {
       path: points.map(toLatLng),
