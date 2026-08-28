@@ -18,6 +18,8 @@ export interface SnappedRoute {
   /** Actual road distance in metres, or null when snapping was unavailable. */
   distanceMeters: number | null;
   snapped: boolean;
+  /** Metres contributed by bridging tracking blackouts (estimated, not recorded). */
+  bridgedMeters?: number;
 }
 
 /**
