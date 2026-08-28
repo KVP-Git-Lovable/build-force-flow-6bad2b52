@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
+import {
+  format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, subDays,
+} from "date-fns";
 import { Plus, Camera, Download, Loader2, Pencil, Trash2, Eye, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,70 +18,115 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import CameraCapture from "@/components/CameraCapture";
 import TeamExpenseSummary from "@/components/expenses/TeamExpenseSummary";
-import MonthNavigator from "@/components/expenses/MonthNavigator";
+import ExpenseDateRangeFilter, { type ExpenseDatePreset } from "@/components/expenses/ExpenseDateRangeFilter";
+import Pager from "@/components/expenses/Pager";
 import ExpenseSummaryCards from "@/components/expenses/ExpenseSummaryCards";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useMonthlyExpenseSummary, type DailyBreakdownRow } from "@/hooks/useMonthlyExpenseSummary";
+import { useExpenseSummaryRange, type DailyBreakdownRow } from "@/hooks/useMonthlyExpenseSummary";
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+const PAGE_SIZE = 10;
+
+function resolveRange(preset: ExpenseDatePreset, customStart: string, customEnd: string): { start: Date; end: Date } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  switch (preset) {
+    case "today":
+      return { start: today, end: today };
+    case "yesterday": {
+      const y = subDays(today, 1);
+      return { start: y, end: y };
+    }
+    case "this_week":
+      return { start: startOfWeek(today, { weekStartsOn: 1 }), end: endOfWeek(today, { weekStartsOn: 1 }) };
+    case "last_week": {
+      const lw = subWeeks(today, 1);
+      return { start: startOfWeek(lw, { weekStartsOn: 1 }), end: endOfWeek(lw, { weekStartsOn: 1 }) };
+    }
+    case "last_month": {
+      const lm = subMonths(today, 1);
+      return { start: startOfMonth(lm), end: endOfMonth(lm) };
+    }
+    case "custom":
+      if (customStart && customEnd) return { start: new Date(customStart), end: new Date(customEnd) };
+      return { start: startOfMonth(today), end: endOfMonth(today) };
+    case "this_month":
+    default:
+      return { start: startOfMonth(today), end: endOfMonth(today) };
+  }
+}
 
 function TATable({ days, totalTa, totalKm }: { days: DailyBreakdownRow[]; totalTa: number; totalKm: number }) {
-  const active = days.filter((d) => d.km > 0 || d.ta > 0);
-  if (!active.length) return <p className="text-xs text-muted-foreground text-center py-6">No TA records this month.</p>;
+  const active = useMemo(() => days.filter((d) => d.km > 0 || d.ta > 0), [days]);
+  const [page, setPage] = useState(0);
+  useEffect(() => setPage(0), [active.length]);
+  const pageCount = Math.max(1, Math.ceil(active.length / PAGE_SIZE));
+  const pageRows = active.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  if (!active.length) return <p className="text-xs text-muted-foreground text-center py-6">No TA records in this period.</p>;
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="text-xs">Date</TableHead>
-          <TableHead className="text-right text-xs">KM</TableHead>
-          <TableHead className="text-right text-xs">TA Amt</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {active.map((d) => (
-          <TableRow key={d.date}>
-            <TableCell className="text-xs">{format(new Date(d.date), "dd MMM")}</TableCell>
-            <TableCell className="text-right text-xs">{d.km.toFixed(1)}</TableCell>
-            <TableCell className="text-right text-xs font-medium">{inr(d.ta)}</TableCell>
+    <div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="text-xs">Date</TableHead>
+            <TableHead className="text-right text-xs">KM</TableHead>
+            <TableHead className="text-right text-xs">TA Amt</TableHead>
           </TableRow>
-        ))}
-        <TableRow className="border-t-2 bg-muted/30">
-          <TableCell className="font-bold text-xs">Total</TableCell>
-          <TableCell className="text-right font-bold text-xs">{totalKm.toFixed(1)}</TableCell>
-          <TableCell className="text-right font-bold text-xs">{inr(totalTa)}</TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {pageRows.map((d) => (
+            <TableRow key={d.date}>
+              <TableCell className="text-xs">{format(new Date(d.date), "dd MMM yyyy")}</TableCell>
+              <TableCell className="text-right text-xs">{d.km.toFixed(1)}</TableCell>
+              <TableCell className="text-right text-xs font-medium">{inr(d.ta)}</TableCell>
+            </TableRow>
+          ))}
+          <TableRow className="border-t-2 bg-muted/30">
+            <TableCell className="font-bold text-xs">Total ({active.length} days)</TableCell>
+            <TableCell className="text-right font-bold text-xs">{totalKm.toFixed(1)}</TableCell>
+            <TableCell className="text-right font-bold text-xs">{inr(totalTa)}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+      <Pager page={page} pageCount={pageCount} onPageChange={setPage} />
+    </div>
   );
 }
 
 function DATable({ days, totalDa }: { days: DailyBreakdownRow[]; totalDa: number }) {
-  const active = days.filter((d) => d.present > 0 || d.da > 0);
-  if (!active.length) return <p className="text-xs text-muted-foreground text-center py-6">No DA records this month.</p>;
+  const active = useMemo(() => days.filter((d) => d.present > 0 || d.da > 0), [days]);
+  const [page, setPage] = useState(0);
+  useEffect(() => setPage(0), [active.length]);
+  const pageCount = Math.max(1, Math.ceil(active.length / PAGE_SIZE));
+  const pageRows = active.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  if (!active.length) return <p className="text-xs text-muted-foreground text-center py-6">No DA records in this period.</p>;
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="text-xs">Date</TableHead>
-          <TableHead className="text-right text-xs">Present</TableHead>
-          <TableHead className="text-right text-xs">DA Amt</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {active.map((d) => (
-          <TableRow key={d.date}>
-            <TableCell className="text-xs">{format(new Date(d.date), "dd MMM")}</TableCell>
-            <TableCell className="text-right text-xs">{d.present === 1 ? "Full" : d.present === 0.5 ? "Half" : "—"}</TableCell>
-            <TableCell className="text-right text-xs font-medium">{inr(d.da)}</TableCell>
+    <div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="text-xs">Date</TableHead>
+            <TableHead className="text-right text-xs">Present</TableHead>
+            <TableHead className="text-right text-xs">DA Amt</TableHead>
           </TableRow>
-        ))}
-        <TableRow className="border-t-2 bg-muted/30">
-          <TableCell className="font-bold text-xs">Total</TableCell>
-          <TableCell></TableCell>
-          <TableCell className="text-right font-bold text-xs">{inr(totalDa)}</TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {pageRows.map((d) => (
+            <TableRow key={d.date}>
+              <TableCell className="text-xs">{format(new Date(d.date), "dd MMM yyyy")}</TableCell>
+              <TableCell className="text-right text-xs">{d.present === 1 ? "Full" : d.present === 0.5 ? "Half" : "—"}</TableCell>
+              <TableCell className="text-right text-xs font-medium">{inr(d.da)}</TableCell>
+            </TableRow>
+          ))}
+          <TableRow className="border-t-2 bg-muted/30">
+            <TableCell className="font-bold text-xs">Total ({active.length} days)</TableCell>
+            <TableCell></TableCell>
+            <TableCell className="text-right font-bold text-xs">{inr(totalDa)}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+      <Pager page={page} pageCount={pageCount} onPageChange={setPage} />
+    </div>
   );
 }
 
@@ -98,15 +145,26 @@ interface Category { id: string; name: string; auto_approval_limit: number | nul
 
 export default function Expenses() {
   const { userId } = useCurrentUser();
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
-  const yearMonth = format(selectedMonth, "yyyy-MM");
-  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useMonthlyExpenseSummary(userId, yearMonth);
+  const [preset, setPreset] = useState<ExpenseDatePreset>("this_month");
+  const [customStart, setCustomStart] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+  const [customEnd, setCustomEnd] = useState(format(new Date(), "yyyy-MM-dd"));
+  const { start, end } = useMemo(() => resolveRange(preset, customStart, customEnd), [preset, customStart, customEnd]);
+  const startStr = format(start, "yyyy-MM-dd");
+  const endStr = format(end, "yyyy-MM-dd");
+  const rangeLabel = preset === "today" ? "Today" : preset === "yesterday" ? "Yesterday" : `${format(start, "dd MMM yyyy")} - ${format(end, "dd MMM yyyy")}`;
+
+  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useExpenseSummaryRange(userId, start, end);
   const [policy, setPolicy] = useState<{ ta_type: "from_gps" | "fixed"; ta_per_km_rate: number; fixed_ta_amount: number; fixed_da_amount: number; da_calculation_basis: "per_day" | "per_half_day" } | null>(null);
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [addlPage, setAddlPage] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasTeam, setHasTeam] = useState(false);
+
+  const additionalApproved = useMemo(() => expenses.filter((e) => e.status === "approved").reduce((s, e) => s + Number(e.amount), 0), [expenses]);
+  const additionalPending = useMemo(() => expenses.filter((e) => e.status === "submitted" || e.status === "pending").reduce((s, e) => s + Number(e.amount), 0), [expenses]);
+  const totalExpenses = (summary?.ta || 0) + (summary?.da || 0) + additionalApproved;
 
   // Add/Edit dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -139,15 +197,16 @@ export default function Expenses() {
       .then(({ data }) => data && setPolicy(data as any));
   }, [userId]);
 
-  useEffect(() => { if (userId) fetchExpenses(); }, [userId, yearMonth]);
+  useEffect(() => { if (userId) fetchExpenses(); }, [userId, startStr, endStr]);
+  useEffect(() => setAddlPage(0), [startStr, endStr]);
 
   const fetchExpenses = async () => {
     if (!userId) return;
     setLoading(true);
     const { data } = await supabase.from("additional_expenses").select("*")
       .eq("user_id", userId)
-      .gte("expense_date", `${yearMonth}-01`)
-      .lte("expense_date", `${yearMonth}-31`)
+      .gte("expense_date", startStr)
+      .lte("expense_date", endStr)
       .order("expense_date", { ascending: false });
     setExpenses((data || []) as Expense[]);
     setLoading(false);
@@ -230,7 +289,7 @@ export default function Expenses() {
     ]);
     XLSX.utils.book_append_sheet(wb, addlSheet, "Additional Expenses");
 
-    XLSX.writeFile(wb, `Expenses_${yearMonth}.xlsx`);
+    XLSX.writeFile(wb, `Expenses_${startStr}_to_${endStr}.xlsx`);
     toast.success("Expense report downloaded");
   };
 
@@ -243,13 +302,21 @@ export default function Expenses() {
 
   const myContent = (
     <div className="space-y-4">
-      <MonthNavigator selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
+      <ExpenseDateRangeFilter
+        preset={preset}
+        onPresetChange={setPreset}
+        customStart={customStart}
+        customEnd={customEnd}
+        onCustomStartChange={setCustomStart}
+        onCustomEndChange={setCustomEnd}
+        rangeLabel={rangeLabel}
+      />
 
       <ExpenseSummaryCards
         ta={summary?.ta || 0}
         da={summary?.da || 0}
-        additional={(summary?.additional_approved || 0) + (summary?.additional_pending || 0)}
-        total={summary?.total || 0}
+        additional={additionalApproved + additionalPending}
+        total={totalExpenses}
         presentDays={summary?.present_days || 0}
         totalKm={summary?.total_km || 0}
         loading={summaryLoading}
@@ -265,7 +332,7 @@ export default function Expenses() {
           <CardContent className="p-3 text-xs text-muted-foreground space-y-1">
             <p><span className="font-semibold text-foreground">TA policy:</span>{" "}
               {policy.ta_type === "from_gps"
-                ? <>From GPS tracking · <span className="font-medium text-foreground">₹{Number(policy.ta_per_km_rate || 0)}/km</span> × total km driven this month ({(summary?.total_km || 0).toFixed(1)} km = ₹{Math.round(summary?.ta || 0).toLocaleString("en-IN")})</>
+                ? <>From GPS tracking · <span className="font-medium text-foreground">₹{Number(policy.ta_per_km_rate || 0)}/km</span> × total km driven in this period ({(summary?.total_km || 0).toFixed(1)} km = ₹{Math.round(summary?.ta || 0).toLocaleString("en-IN")})</>
                 : <>Fixed · <span className="font-medium text-foreground">₹{Number(policy.fixed_ta_amount || 0)}/day</span> per present day</>}
             </p>
             <p><span className="font-semibold text-foreground">DA policy:</span>{" "}
@@ -289,7 +356,7 @@ export default function Expenses() {
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">{format(selectedMonth, "MMMM yyyy")}</p>
+          <p className="text-xs text-muted-foreground">{rangeLabel}</p>
         </CardHeader>
         <CardContent>
           <Tabs value={detailsTab} onValueChange={(v) => setDetailsTab(v as typeof detailsTab)}>
@@ -315,10 +382,10 @@ export default function Expenses() {
                   {loading ? (
                     <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
                   ) : expenses.length === 0 ? (
-                    <p className="text-xs text-center text-muted-foreground py-6">No additional expenses this month.</p>
+                    <p className="text-xs text-center text-muted-foreground py-6">No additional expenses in this period.</p>
                   ) : (
                     <div className="space-y-2">
-                      {expenses.map((e) => (
+                      {expenses.slice(addlPage * PAGE_SIZE, addlPage * PAGE_SIZE + PAGE_SIZE).map((e) => (
                         <div key={e.id} className="border rounded-lg p-3">
                           <div className="flex items-start justify-between">
                             <div className="min-w-0">
@@ -347,6 +414,11 @@ export default function Expenses() {
                           </div>
                         </div>
                       ))}
+                      <Pager
+                        page={addlPage}
+                        pageCount={Math.max(1, Math.ceil(expenses.length / PAGE_SIZE))}
+                        onPageChange={setAddlPage}
+                      />
                     </div>
                   )}
                 </TabsContent>
