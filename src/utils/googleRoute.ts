@@ -199,7 +199,7 @@ export async function getSnappedRoute(points: RoutePoint[]): Promise<SnappedRout
     }
 
     if (path.length < 2) throw new Error("empty route");
-    return { path, distanceMeters: meters > 0 ? meters : null, snapped: allSnapped };
+    return { path, distanceMeters: meters > 0 ? meters : null, snapped: allSnapped, bridgedMeters };
   } catch {
     return {
       path: points.map(toLatLng),
