@@ -202,28 +202,74 @@ export default function LeadDetail() {
             </CardTitle>
             <div className="text-sm text-muted-foreground">{[lead.title, lead.company].filter(Boolean).join(" · ") || "—"}</div>
           </div>
-          <div className="flex flex-nowrap items-center gap-1.5">
-            <Button size="sm" className="px-2.5" onClick={() => { setEditAct(null); setNewAct(true); }}>
-              <Plus className="h-4 w-4 mr-1" />Activity
-            </Button>
-            <Button variant="outline" size="sm" className="px-2.5" onClick={() => setEditOpen(true)}><Edit className="h-4 w-4 mr-1" />Edit</Button>
-            <Button variant="outline" size="sm" className="px-2.5" onClick={cloneLead} disabled={cloning}>
-              <Copy className="h-4 w-4 mr-1" />{cloning ? "…" : "Clone"}
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Delete lead"
-              className="h-9 w-9 shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <Popover open={ownerOpen} onOpenChange={(v) => { setOwnerOpen(v); if (!v) setOwnerSearch(""); }}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-left transition-colors hover:bg-muted"
+                  title="Lead owner — tap to reassign"
+                >
+                  <UserCog className="h-4 w-4 text-muted-foreground" />
+                  <span className="min-w-0">
+                    <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">Lead Owner</span>
+                    <span className="block truncate text-sm font-semibold">{ownerDisplayName}</span>
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="z-50 w-64 bg-popover p-2">
+                <p className="mb-2 text-xs font-semibold">Reassign lead owner</p>
+                <Input
+                  autoFocus
+                  value={ownerSearch}
+                  onChange={(e) => setOwnerSearch(e.target.value)}
+                  placeholder="Search users..."
+                  className="h-8 text-sm"
+                />
+                <div className="mt-2 max-h-60 space-y-0.5 overflow-y-auto">
+                  {ownerResults.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={async () => {
+                        setOwnerOpen(false);
+                        setOwnerSearch("");
+                        await save.mutateAsync({ id: lead.id, owner_id: u.id });
+                      }}
+                      className={`flex w-full items-center rounded px-2 py-1.5 text-left text-sm hover:bg-muted ${u.id === (lead as any).owner_id ? "font-semibold text-primary" : ""}`}
+                    >
+                      {u.name}
+                    </button>
+                  ))}
+                  {ownerResults.length === 0 && (
+                    <p className="px-2 py-2 text-xs text-muted-foreground">No users found</p>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <div className="flex flex-nowrap items-center gap-1.5">
+              <Button size="sm" className="px-2.5" onClick={() => { setEditAct(null); setNewAct(true); }}>
+                <Plus className="h-4 w-4 mr-1" />Activity
+              </Button>
+              <Button variant="outline" size="sm" className="px-2.5" onClick={() => setEditOpen(true)}><Edit className="h-4 w-4 mr-1" />Edit</Button>
+              <Button variant="outline" size="sm" className="px-2.5" onClick={cloneLead} disabled={cloning}>
+                <Copy className="h-4 w-4 mr-1" />{cloning ? "…" : "Clone"}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Delete lead"
+                className="h-9 w-9 shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-
-
         </CardHeader>
         <CardContent className="pt-0">
+
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 rounded-lg border bg-muted/30 p-3">
             <div>
               <div className="text-[11px] text-muted-foreground">BANT Score</div>
