@@ -43,6 +43,26 @@ function useUserName(userId?: string | null) {
   });
 }
 
+/** All assignable users, used by the lead owner lookup. */
+function useAssignableUsers() {
+  return useQuery({
+    queryKey: ["assignable-users"],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, full_name, username, email")
+        .order("full_name");
+      if (error) throw error;
+      return (data ?? []).map((u: any) => ({
+        id: u.id as string,
+        name: (u.full_name || u.username || u.email || "Unknown") as string,
+      }));
+    },
+  });
+}
+
+
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
