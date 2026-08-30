@@ -34,13 +34,8 @@ import { LeadAvatar } from "@/components/leads/listviews/LeadAvatar";
 
 const SECTION = "leads";
 
-function inRange(value?: string | null, range?: { start: Date; end: Date } | null) {
-  if (!range) return true;
-  if (!value) return false;
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return false;
-  return isWithinInterval(d, range);
-}
+
+
 
 /** Activities recorded against leads — used for the completed KPIs and roll-ups */
 function useLeadActivityStats() {
