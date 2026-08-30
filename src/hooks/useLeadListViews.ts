@@ -102,6 +102,24 @@ export function useLeadListViews(section = "leads", objectLabel = "Leads") {
     [section]
   );
 
+  /** Standard-view filters/charts are personal, so they persist locally. */
+  const updateStandardFilters = useCallback(
+    (viewId: string, filters: ListView["filters"]) => {
+      setStandardFilters(section, viewId, filters as any);
+      setStandardViews((prev) => prev.map((v) => (v.id === viewId ? { ...v, filters } : v)));
+    },
+    [section]
+  );
+
+  const updateStandardCharts = useCallback(
+    (viewId: string, charts: ListView["charts"]) => {
+      setStandardCharts(section, viewId, charts as any);
+      setStandardViews((prev) => prev.map((v) => (v.id === viewId ? { ...v, charts } : v)));
+    },
+    [section]
+  );
+
+
 
   const saveView = useCallback(
     async (payload: Partial<ListView> & { name: string }) => {
@@ -201,6 +219,9 @@ export function useLeadListViews(section = "leads", objectLabel = "Leads") {
     allViews,
     standardViews,
     updateStandardColumns,
+    updateStandardFilters,
+    updateStandardCharts,
+
 
     loading,
     userId,
