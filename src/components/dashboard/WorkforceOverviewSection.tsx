@@ -36,8 +36,8 @@ export default function WorkforceOverviewSection() {
               <p className="text-xs text-muted-foreground">{rangeLabel}</p>
             </div>
           </div>
-          <WorkforceFilters />
         </div>
+
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">
