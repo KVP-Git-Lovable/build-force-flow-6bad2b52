@@ -8,12 +8,6 @@ import {
   OPERATORS,
   LEAD_FIELDS,
   fieldDef,
-  GENDER_OPTIONS,
-  STATUS_OPTIONS,
-  SKIN_TYPE_OPTIONS,
-  BLOOD_GROUP_OPTIONS,
-  SOURCE_OPTIONS,
-  ENGAGEMENT_TIER_OPTIONS,
   type FilterCondition,
   type ListView,
 } from "@/lib/leadFields";
@@ -23,12 +17,12 @@ interface PickOption { value: string; label: string }
 interface Props {
   view: ListView | null;
   canManage: boolean;
-  doctorOptions: PickOption[];
+  picklistOptions: Record<string, PickOption[]>;
   onSave: (filters: { match: "all" | "any"; conditions: FilterCondition[] }) => void;
   onClose: () => void;
 }
 
-const blank = (): FilterCondition => ({ field: "status", operator: "equals", value: "", values: [] });
+const blank = (): FilterCondition => ({ field: "status_name", operator: "equals", value: "", values: [] });
 
 const labelFor = (key: string) => LEAD_FIELDS.find((f) => f.key === key)?.label ?? key;
 
@@ -42,7 +36,7 @@ function conditionText(c: FilterCondition) {
   return `${operatorLabel(c.field, c.operator)}${val ? ` ${val}` : ""}`;
 }
 
-export default function ViewFiltersPanel({ view, canManage, doctorOptions, onSave, onClose }: Props) {
+export default function ViewFiltersPanel({ view, canManage, picklistOptions, onSave, onClose }: Props) {
   const locked = !!view?.is_standard || !canManage;
   const [editing, setEditing] = useState(false);
   const [match, setMatch] = useState<"all" | "any">(view?.filters?.match ?? "all");
@@ -54,18 +48,7 @@ export default function ViewFiltersPanel({ view, canManage, doctorOptions, onSav
     setEditing(false);
   }, [view?.id, view?.filters]);
 
-  const optionsFor = (source?: string): PickOption[] => {
-    switch (source) {
-      case "gender": return GENDER_OPTIONS;
-      case "status": return STATUS_OPTIONS;
-      case "skin_type": return SKIN_TYPE_OPTIONS;
-      case "blood_group": return BLOOD_GROUP_OPTIONS;
-      case "source": return SOURCE_OPTIONS;
-      case "engagement_tier": return ENGAGEMENT_TIER_OPTIONS;
-      case "doctor": return doctorOptions;
-      default: return [];
-    }
-  };
+  const optionsFor = (source?: string): PickOption[] => picklistOptions[source ?? ""] ?? [];
 
   const updateCond = (i: number, patch: Partial<FilterCondition>) =>
     setConditions((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
@@ -95,8 +78,8 @@ export default function ViewFiltersPanel({ view, canManage, doctorOptions, onSav
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         <div className="rounded-lg border border-border bg-muted/30 p-3">
-          <p className="text-sm font-medium text-primary">Filter by Owner</p>
-          <p className="text-sm text-muted-foreground">All patients</p>
+          <p className="text-sm font-medium text-primary">Scope</p>
+          <p className="text-sm text-muted-foreground">All leads you can access</p>
         </div>
 
         {locked ? (
@@ -123,7 +106,7 @@ export default function ViewFiltersPanel({ view, canManage, doctorOptions, onSav
 
         {conditions.length === 0 && (
           <p className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-            No filters — this view shows all patients.
+            No filters — this view shows all leads.
           </p>
         )}
 
