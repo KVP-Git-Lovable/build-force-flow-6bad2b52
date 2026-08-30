@@ -5,10 +5,11 @@ import {
   Clock,
   CheckCircle,
   LogIn,
-  ListTodo,
-  CalendarOff,
-  CheckSquare,
+  Users,
+  Timer,
   Activity,
+  ThumbsUp,
+  Trophy,
   TrendingUp,
   CalendarClock,
 } from "lucide-react";
@@ -25,7 +26,13 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useLeads } from "@/hooks/useLeadsEvents";
 import { formatCurrencyCompact } from "@/lib/currency";
 import WorkforceOverviewSection from "@/components/dashboard/WorkforceOverviewSection";
+import WorkforceFilters from "@/components/dashboard/WorkforceFilters";
+import {
+  WorkforceFilterProvider,
+  useWorkforceFilterContext,
+} from "@/components/dashboard/WorkforceFilterContext";
 import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
+
 
 
 const container = {
