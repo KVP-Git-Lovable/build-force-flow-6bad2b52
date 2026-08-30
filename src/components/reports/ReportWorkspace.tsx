@@ -95,10 +95,20 @@ export function ReportWorkspace<R>({
   };
 
   // Restore the last generated report for this module (e.g. after opening a
-  // record and navigating back).
+  // record and navigating back), unless a dashboard KPI handed us a prefill.
   useEffect(() => {
     if (restored.current) return;
     restored.current = true;
+
+    const prefill = takeReportPrefill(module);
+    if (prefill) {
+      appliedFavourite.current = true;
+      try { sessionStorage.removeItem(cacheKey); } catch { /* ignore */ }
+      onApplyFilterState(prefill);
+      setPendingGenerate(true);
+      return;
+    }
+
     try {
       const raw = sessionStorage.getItem(cacheKey);
       if (!raw) return;
@@ -121,6 +131,15 @@ export function ReportWorkspace<R>({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Run the generation once the prefilled filters (and report scope) are ready.
+  useEffect(() => {
+    if (!pendingGenerate || loading) return;
+    setPendingGenerate(false);
+    onGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingGenerate, loading]);
+
 
   // Persist the generated result so it survives a round-trip to a record page.
   useEffect(() => {
