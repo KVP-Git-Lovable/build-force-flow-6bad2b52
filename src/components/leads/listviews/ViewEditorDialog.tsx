@@ -13,8 +13,6 @@ import {
 
 import {
   LEAD_FIELDS, OPERATORS, DEFAULT_VIEW_COLUMNS, fieldDef,
-  GENDER_OPTIONS, STATUS_OPTIONS, SKIN_TYPE_OPTIONS, BLOOD_GROUP_OPTIONS, SOURCE_OPTIONS,
-  ENGAGEMENT_TIER_OPTIONS,
   type FilterCondition, type ListView,
 } from "@/lib/leadFields";
 
@@ -26,12 +24,13 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   view: ListView | null;
   onSave: (v: Partial<ListView> & { name: string }) => void;
-  doctorOptions: PickOption[];
+  /** Picklist options keyed by the field's optionsSource. */
+  picklistOptions: Record<string, PickOption[]>;
   people: PickOption[];
 }
 
 function blankCondition(): FilterCondition {
-  return { field: "status", operator: "equals", value: "", values: [] };
+  return { field: "status_name", operator: "equals", value: "", values: [] };
 }
 
 function MultiPicker({
@@ -270,19 +269,7 @@ export default function ViewEditorDialog({ open, onOpenChange, view, onSave, doc
     setPeopleSearch("");
   }, [open, view]);
 
-  const optionsFor = (source?: string): PickOption[] => {
-    switch (source) {
-      case "gender": return GENDER_OPTIONS;
-      case "status": return STATUS_OPTIONS;
-      case "skin_type": return SKIN_TYPE_OPTIONS;
-      case "blood_group": return BLOOD_GROUP_OPTIONS;
-      case "source": return SOURCE_OPTIONS;
-      case "engagement_tier": return ENGAGEMENT_TIER_OPTIONS;
-      case "doctor": return doctorOptions;
-
-      default: return [];
-    }
-  };
+  const optionsFor = (source?: string): PickOption[] => picklistOptions[source ?? ""] ?? [];
 
   const filteredPeople = useMemo(() => {
     const q = peopleSearch.trim().toLowerCase();
@@ -320,7 +307,7 @@ export default function ViewEditorDialog({ open, onOpenChange, view, onSave, doc
           <div className="p-6 space-y-7 bg-card">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">View Name *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Active Acne Patients" className="h-10 text-sm" />
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hot leads this quarter" className="h-10 text-sm" />
             </div>
 
             {/* Filters */}
@@ -343,7 +330,7 @@ export default function ViewEditorDialog({ open, onOpenChange, view, onSave, doc
 
               {conditions.length === 0 && (
                 <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg bg-muted/20 p-4">
-                  No filters — this view shows all patients.
+                  No filters — this view shows all leads.
                 </p>
               )}
 
