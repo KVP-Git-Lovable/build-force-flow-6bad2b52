@@ -37,8 +37,10 @@ export function LeadForm({
     opportunity_value: "", opportunity_close_date: "", opportunity_probability: "",
   };
   const [f, setF] = useState(emptyForm);
+  const [errors, setErrors] = useState<string[]>([]);
   const [isElaborating, setIsElaborating] = useState(false);
   const [locating, setLocating] = useState(false);
+
 
   // ==== Voice-to-text / audio note for Requirement Overview ====
   const qc = useQueryClient();
