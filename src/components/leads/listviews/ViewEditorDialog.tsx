@@ -245,7 +245,7 @@ export function FieldPicker({ columns, onChange }: { columns: string[]; onChange
   );
 }
 
-export default function ViewEditorDialog({ open, onOpenChange, view, onSave, doctorOptions, people }: Props) {
+export default function ViewEditorDialog({ open, onOpenChange, view, onSave, picklistOptions, people }: Props) {
   const [name, setName] = useState("");
   const [match, setMatch] = useState<"all" | "any">("all");
   const [conditions, setConditions] = useState<FilterCondition[]>([]);
