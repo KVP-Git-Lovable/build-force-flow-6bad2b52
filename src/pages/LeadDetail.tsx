@@ -99,8 +99,17 @@ export default function LeadDetail() {
   const [ownerSearch, setOwnerSearch] = useState("");
   const { data: assignableUsers = [] } = useAssignableUsers();
 
-
   if (isLoading || !lead) return <div className="p-6 text-muted-foreground">Loading…</div>;
+
+  const ownerId = (lead as any).owner_id as string | null;
+  const ownerDisplayName =
+    assignableUsers.find((u) => u.id === ownerId)?.name || ownerFetchedName || "Unassigned";
+  const ownerQuery = ownerSearch.trim().toLowerCase();
+  const ownerResults = ownerQuery
+    ? assignableUsers.filter((u) => u.name.toLowerCase().includes(ownerQuery))
+    : assignableUsers;
+
+
 
   const currentStatus = statuses.find((s) => s.id === lead.lead_status_id);
   const bant = bantScore(
