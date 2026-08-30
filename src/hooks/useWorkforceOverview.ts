@@ -204,6 +204,8 @@ export function useWorkforceOverview(filters: WorkforceFilters) {
         activityRows,
         wonDeals,
         wonStatusIds,
+        quoteStatusIds,
+
         newLeads: newLeadsCount || 0,
         newOpportunities: newOppsCount || 0,
       };
