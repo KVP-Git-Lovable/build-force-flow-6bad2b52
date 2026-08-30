@@ -90,6 +90,10 @@ export default function LeadDetail() {
   const [cloning, setCloning] = useState(false);
   const [newAct, setNewAct] = useState(false);
   const [editAct, setEditAct] = useState<any>(null);
+  const [ownerOpen, setOwnerOpen] = useState(false);
+  const [ownerSearch, setOwnerSearch] = useState("");
+  const { data: assignableUsers = [] } = useAssignableUsers();
+
 
   if (isLoading || !lead) return <div className="p-6 text-muted-foreground">Loading…</div>;
 
