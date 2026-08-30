@@ -53,6 +53,11 @@ export default function LeadDetail() {
   const { data: events = [] } = useEvents();
   const { data: industries = [] } = useIndustries();
   const { data: audit = [] } = useLeadAuditLog(id);
+  const { data: createdByName } = useUserName((lead as any)?.created_by);
+  const latestActorId = (audit as any[]).find((a) => a.actor_id)?.actor_id as string | undefined;
+  const { data: latestActorName } = useUserName(latestActorId);
+  const modifiedByName = (audit as any[]).find((a) => a.actor_name)?.actor_name || latestActorName || createdByName;
+
   const save = useSaveLead();
   const del = useDeleteLead();
   const { data: activities = [] } = useLeadActivities(id);
