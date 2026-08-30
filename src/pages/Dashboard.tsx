@@ -12,6 +12,8 @@ import {
   Trophy,
   TrendingUp,
   CalendarClock,
+  UserPlus,
+  Briefcase,
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,6 +34,7 @@ import {
   useWorkforceFilterContext,
 } from "@/components/dashboard/WorkforceFilterContext";
 import { SignedAvatarImage, SignedImage } from "@/components/ui/signed-image";
+import { setReportPrefill } from "@/components/reports/reportPrefill";
 
 
 
@@ -65,8 +68,13 @@ function OverviewSkeleton() {
   );
 }
 
-function openReport(navigate: ReturnType<typeof useNavigate>, tab: string) {
+function openReport(
+  navigate: ReturnType<typeof useNavigate>,
+  tab: string,
+  prefill?: Record<string, unknown>,
+) {
   sessionStorage.setItem("analytics-tab", tab);
+  if (prefill) setReportPrefill(tab, prefill);
   navigate("/reports");
 }
 
@@ -88,6 +96,9 @@ function DashboardContent() {
     data: workforce,
     isLoading: workforceLoading,
     rangeLabel,
+    selectedUsers,
+    startStr,
+    endStr,
   } = useWorkforceFilterContext();
 
   const workforceKpis = useMemo(() => {
@@ -104,6 +115,8 @@ function DashboardContent() {
       productive,
       activities: activityRows.length,
       wonDeals: workforce?.wonDeals || 0,
+      newLeads: (workforce as any)?.newLeads || 0,
+      newOpportunities: (workforce as any)?.newOpportunities || 0,
     };
   }, [workforce]);
 
