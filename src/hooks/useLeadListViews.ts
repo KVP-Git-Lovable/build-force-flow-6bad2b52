@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DEFAULT_VIEW_COLUMNS, type ListView } from "@/lib/leadFields";
-import { ALL_VIEW_ID, buildStandardViews, isStandardViewId, setStandardColumns } from "@/lib/leadStandardViews";
+import {
+  ALL_VIEW_ID, buildStandardViews, isStandardViewId, setStandardColumns,
+  setStandardFilters, setStandardCharts,
+} from "@/lib/leadStandardViews";
 
 const STORAGE_KEY = "leads.activeListView";
 
