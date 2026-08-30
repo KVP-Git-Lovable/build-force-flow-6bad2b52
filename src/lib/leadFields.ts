@@ -217,20 +217,12 @@ export function computeChartData(rows: any[], chart: ViewChart): { name: string;
 }
 
 
-export function patientAge(dob: string | null | undefined): number | null {
-  if (!dob) return null;
-  const diff = Date.now() - new Date(dob).getTime();
-  if (isNaN(diff)) return null;
-  return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
-}
-
-/** Resolve the comparable value of a field for a given patient row. */
+/** Resolve the comparable value of a field for a given (enriched) lead row. */
 export function rawValue(row: any, key: string): unknown {
   if (!row) return null;
-  if (key === "full_name") return `${row.first_name || ""} ${row.last_name || ""}`.trim();
-  if (key === "age") return patientAge(row.date_of_birth);
   return row[key];
 }
+
 
 function listValues(c: FilterCondition): string[] {
   if (c.values && c.values.length) return c.values.map((v) => String(v).trim()).filter(Boolean);
