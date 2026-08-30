@@ -121,6 +121,10 @@ export function WorkforceFilterProvider({ children }: { children: ReactNode }) {
         rangeLabel,
         data,
         isLoading,
+        saveFilters,
+        clearFilters,
+        hasSavedFilters,
+
       }}
     >
       {children}
