@@ -26,6 +26,23 @@ import { LeadSlaTab } from "@/components/leads/LeadSlaTab";
 import { LeadStagePath } from "@/components/leads/LeadStagePath";
 
 import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+function useUserName(userId?: string | null) {
+  return useQuery({
+    queryKey: ["user-display-name", userId],
+    enabled: !!userId,
+    staleTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const { data: u } = await supabase.from("users").select("full_name, username, email").eq("id", userId!).maybeSingle();
+      if (u) return (u as any).full_name || (u as any).username || (u as any).email || "";
+      const { data: p } = await supabase.from("profiles").select("full_name, username").eq("id", userId!).maybeSingle();
+      return (p as any)?.full_name || (p as any)?.username || "";
+    },
+  });
+}
+
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
