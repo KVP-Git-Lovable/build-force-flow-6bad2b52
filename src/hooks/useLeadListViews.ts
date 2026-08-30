@@ -33,7 +33,7 @@ function normalize(row: any): ListView {
 }
 
 
-export function useLeadListViews(section = "patients", objectLabel = "Patients") {
+export function useLeadListViews(section = "leads", objectLabel = "Leads") {
   const [views, setViews] = useState<ListView[]>([]);
   const [standardViews, setStandardViews] = useState<ListView[]>(() => buildStandardViews(section, objectLabel));
   const [loading, setLoading] = useState(true);
