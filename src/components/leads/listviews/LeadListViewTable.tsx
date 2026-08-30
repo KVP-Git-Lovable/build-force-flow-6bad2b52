@@ -22,7 +22,6 @@ interface Props {
   onToggle: (id: string) => void;
   onToggleAll: () => void;
   onOpen: (row: any) => void;
-  doctorLabels?: Record<string, string>;
   avatars?: Record<string, string>;
   sortKey?: string | null;
   sortDir?: SortDir;
@@ -47,7 +46,7 @@ const READ_ONLY = new Set([
 ]);
 
 export default function LeadListViewTable({
-  rows, columns, selectedIds, onToggle, onToggleAll, onOpen, doctorLabels = {}, avatars = {},
+  rows, columns, selectedIds, onToggle, onToggleAll, onOpen, avatars = {},
   sortKey = null, sortDir = "asc", onSort, onInlineSave, picklistOptions = {},
 }: Props) {
   const tableRef = useStackedTable<HTMLTableElement>();
@@ -60,13 +59,7 @@ export default function LeadListViewTable({
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
-  const cell = (row: any, key: string) => {
-    if (key === "doctor_id") {
-      const id = rawValue(row, key) as string | null;
-      return id ? doctorLabels[id] ?? "—" : "—";
-    }
-    return formatCell(row, key);
-  };
+  const cell = (row: any, key: string) => formatCell(row, key);
 
   const canEdit = (key: string) => !!onInlineSave && !READ_ONLY.has(key);
 
@@ -92,9 +85,7 @@ export default function LeadListViewTable({
 
   const renderEditor = (row: any, key: string) => {
     const def = fieldDef(key);
-    const options = def?.optionsSource === "doctor"
-      ? Object.entries(doctorLabels).map(([value, label]) => ({ value, label }))
-      : picklistOptions[def?.optionsSource ?? ""] ?? [];
+    const options = picklistOptions[def?.optionsSource ?? ""] ?? [];
 
     if (def?.type === "picklist" && options.length > 0) {
       return (
