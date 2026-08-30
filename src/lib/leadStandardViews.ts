@@ -1,4 +1,4 @@
-import { DEFAULT_VIEW_COLUMNS, type KanbanConfig, type ListView } from "@/lib/leadFields";
+import { DEFAULT_VIEW_COLUMNS, type KanbanConfig, type ListView, type ViewChart, type FilterCondition } from "@/lib/leadFields";
 
 export const ALL_VIEW_ID = "__all__";
 export const RECENT_VIEW_ID = "__recent__";
@@ -7,6 +7,9 @@ export const isStandardViewId = (id?: string | null) => id === ALL_VIEW_ID || id
 
 const columnsKey = (section: string, id: string) => `lv.${section}.${id}.columns`;
 const kanbanKey = (section: string, id: string) => `lv.${section}.${id}.kanban`;
+const filtersKey = (section: string, id: string) => `lv.${section}.${id}.filters`;
+const chartsKey = (section: string, id: string) => `lv.${section}.${id}.charts`;
+
 
 function readJson<T>(key: string): T | null {
   try {
