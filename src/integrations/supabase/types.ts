@@ -1945,6 +1945,63 @@ export type Database = {
         }
         Relationships: []
       }
+      list_views: {
+        Row: {
+          charts: Json
+          created_at: string
+          display_fields: string[]
+          filter_match: string
+          filters: Json
+          id: string
+          is_default: boolean
+          is_shared: boolean
+          name: string
+          section: string
+          shared_with: string[]
+          sort_by: string | null
+          sort_direction: string
+          updated_at: string
+          user_id: string
+          visibility: string
+        }
+        Insert: {
+          charts?: Json
+          created_at?: string
+          display_fields?: string[]
+          filter_match?: string
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          name: string
+          section: string
+          shared_with?: string[]
+          sort_by?: string | null
+          sort_direction?: string
+          updated_at?: string
+          user_id: string
+          visibility?: string
+        }
+        Update: {
+          charts?: Json
+          created_at?: string
+          display_fields?: string[]
+          filter_match?: string
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          name?: string
+          section?: string
+          shared_with?: string[]
+          sort_by?: string | null
+          sort_direction?: string
+          updated_at?: string
+          user_id?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
       master_activity_outcomes: {
         Row: {
           created_at: string | null
