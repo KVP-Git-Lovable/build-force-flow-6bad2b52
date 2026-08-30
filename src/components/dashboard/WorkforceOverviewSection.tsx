@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Users, CalendarCheck } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import WorkforceFilters from "./WorkforceFilters";
 import WorkforceAttendanceTable from "./WorkforceAttendanceTable";
 import WorkforceActivityCalendar from "./WorkforceActivityCalendar";
 import { useWorkforceFilterContext } from "./WorkforceFilterContext";
@@ -36,8 +35,8 @@ export default function WorkforceOverviewSection() {
               <p className="text-xs text-muted-foreground">{rangeLabel}</p>
             </div>
           </div>
-          <WorkforceFilters />
         </div>
+
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">

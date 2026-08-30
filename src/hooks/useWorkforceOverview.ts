@@ -181,20 +181,31 @@ export function useWorkforceOverview(filters: WorkforceFilters) {
       if (userIds.length > 0) newLeadsQuery = newLeadsQuery.in("owner_id", userIds);
       const { count: newLeadsCount } = await newLeadsQuery;
 
-      // New opportunities created in the range
-      let newOppsQuery = supabase
-        .from("customer_opportunities")
-        .select("id", { count: "exact", head: true })
-        .gte("created_at", `${start}T00:00:00`)
-        .lte("created_at", `${end}T23:59:59`);
-      if (userIds.length > 0) newOppsQuery = newOppsQuery.in("owner_id", userIds);
-      const { count: newOppsCount } = await newOppsQuery;
+      // New opportunities — leads moved into a "Quote submitted" status in range
+      const quoteStatusIds = (statuses || [])
+        .filter((s) => /quote\s*submitted/i.test(s.name || ""))
+        .map((s) => s.id);
+      let newOppsCount = 0;
+      if (quoteStatusIds.length > 0) {
+        let newOppsQuery = supabase
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .in("lead_status_id", quoteStatusIds)
+          .gte("updated_at", `${start}T00:00:00`)
+          .lte("updated_at", `${end}T23:59:59`);
+        if (userIds.length > 0) newOppsQuery = newOppsQuery.in("owner_id", userIds);
+        const { count } = await newOppsQuery;
+        newOppsCount = count || 0;
+      }
+
 
       return {
         attendanceRows,
         activityRows,
         wonDeals,
         wonStatusIds,
+        quoteStatusIds,
+
         newLeads: newLeadsCount || 0,
         newOpportunities: newOppsCount || 0,
       };

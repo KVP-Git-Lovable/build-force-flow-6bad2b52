@@ -149,17 +149,20 @@ function DashboardContent() {
   });
   const wonStatusId = (workforce as any)?.wonStatusIds?.[0] ?? "all";
 
+  const quoteStatusId = (workforce as any)?.quoteStatusIds?.[0] ?? "all";
+
   const overviewCards = [
     { label: "Present (Days)", value: workforceKpis.present, icon: Users, colorClass: "bg-primary/5 text-primary", onClick: () => openReport(navigate, "attendance", { ...dateScope("date"), employee: employeeFilter, status: "all" }), module: "module_attendance" },
     { label: "Active Hours", value: `${workforceKpis.totalHours.toFixed(1)}h`, icon: Timer, colorClass: "bg-info/5 text-info", onClick: () => openReport(navigate, "attendance", { ...dateScope("date"), employee: employeeFilter, status: "all" }), module: "module_attendance" },
+    { label: "Total Activities", value: workforceKpis.activities, icon: Activity, colorClass: "bg-warning/5 text-warning", onClick: () => openReport(navigate, "activities", { ...dateScope("activity_date"), employee: employeeFilter }), module: "module_activities" },
     { label: "Productive Activities", value: workforceKpis.productive, icon: ThumbsUp, colorClass: "bg-success/5 text-success", onClick: () => openReport(navigate, "activities", { ...dateScope("activity_date"), employee: employeeFilter, outcome: "Productive" }), module: "module_activities" },
-    { label: "Activities", value: workforceKpis.activities, icon: Activity, colorClass: "bg-warning/5 text-warning", onClick: () => openReport(navigate, "activities", { ...dateScope("activity_date"), employee: employeeFilter }), module: "module_activities" },
-    { label: "Won Deals", value: workforceKpis.wonDeals, icon: Trophy, colorClass: "bg-success/5 text-success", onClick: () => openReport(navigate, "leads", { ...dateScope("updated_at"), owner: employeeFilter, status: wonStatusId }), module: "module_leads" },
-    { label: "New Leads", value: workforceKpis.newLeads, icon: UserPlus, colorClass: "bg-primary/5 text-primary", onClick: () => openReport(navigate, "leads", { ...dateScope("created_at"), owner: employeeFilter }), module: "module_leads" },
-    { label: "New Opportunities", value: workforceKpis.newOpportunities, icon: Briefcase, colorClass: "bg-info/5 text-info", onClick: () => navigate("/opportunities"), module: "module_customers" },
+    { label: "New Leads added", value: workforceKpis.newLeads, icon: UserPlus, colorClass: "bg-primary/5 text-primary", onClick: () => openReport(navigate, "leads", { ...dateScope("created_at"), owner: employeeFilter }), module: "module_leads" },
+    { label: "New Opportunities added", value: workforceKpis.newOpportunities, icon: Briefcase, colorClass: "bg-info/5 text-info", onClick: () => openReport(navigate, "leads", { ...dateScope("updated_at"), owner: employeeFilter, status: quoteStatusId }), module: "module_leads" },
     { label: "Total Pipeline", value: money(leadKpis.pipeline), icon: TrendingUp, colorClass: "bg-info/5 text-info", onClick: () => openReport(navigate, "leads", { ...dateScope("created_at"), owner: employeeFilter }), module: "module_leads" },
-    { label: "Closing This Month", value: money(leadKpis.closingValue), icon: CalendarClock, colorClass: "bg-warning/5 text-warning", onClick: () => openReport(navigate, "leads", { field: "opportunity_close_date", preset: "current_month", customFrom: startStr, customTo: endStr, owner: employeeFilter }), module: "module_leads" },
+    { label: "Closing", value: money(leadKpis.closingValue), icon: CalendarClock, colorClass: "bg-warning/5 text-warning", onClick: () => openReport(navigate, "leads", { field: "opportunity_close_date", preset: "current_month", customFrom: startStr, customTo: endStr, owner: employeeFilter }), module: "module_leads" },
+    { label: "Won Deals", value: workforceKpis.wonDeals, icon: Trophy, colorClass: "bg-success/5 text-success", onClick: () => openReport(navigate, "leads", { ...dateScope("updated_at"), owner: employeeFilter, status: wonStatusId }), module: "module_leads" },
   ];
+
 
 
   // Filter cards by module access for all users (including admins)
