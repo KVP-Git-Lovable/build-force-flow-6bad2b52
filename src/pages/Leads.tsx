@@ -281,12 +281,6 @@ export default function Leads() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-        <KpiCard icon={TrendingUp} label="Total Opportunity Pipeline" value={money(kpis.pipeline)} sub={`${viewRows.length} leads`} color="bg-blue-100 text-blue-600" />
-        <KpiCard icon={CalendarClock} label="Closing This Month" value={money(kpis.closingValue)} sub={`${kpis.closingCount} leads`} color="bg-amber-100 text-amber-600" />
-        <KpiCard icon={CheckCircle2} label="Activities Completed (Month)" value={kpis.completedMonth} color="bg-emerald-100 text-emerald-600" />
-        <KpiCard icon={Activity} label="Activities Completed (Week)" value={kpis.completedWeek} color="bg-purple-100 text-purple-600" />
-      </div>
 
       <ViewBar
         views={allViews}
