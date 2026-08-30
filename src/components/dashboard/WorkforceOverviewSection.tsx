@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Users, CalendarCheck } from "lucide-react";
 import { useProfilePermissions } from "@/hooks/useProfilePermissions";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import WorkforceFilters from "./WorkforceFilters";
 import WorkforceAttendanceTable from "./WorkforceAttendanceTable";
 import WorkforceActivityCalendar from "./WorkforceActivityCalendar";
 import { useWorkforceFilterContext } from "./WorkforceFilterContext";
