@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DEFAULT_VIEW_COLUMNS, type ListView } from "@/lib/leadFields";
-import { ALL_VIEW_ID, buildStandardViews, isStandardViewId, setStandardColumns } from "@/lib/leadStandardViews";
+import {
+  ALL_VIEW_ID, buildStandardViews, isStandardViewId, setStandardColumns,
+  setStandardFilters, setStandardCharts,
+} from "@/lib/leadStandardViews";
 
 const STORAGE_KEY = "leads.activeListView";
 
@@ -98,6 +101,24 @@ export function useLeadListViews(section = "leads", objectLabel = "Leads") {
     },
     [section]
   );
+
+  /** Standard-view filters/charts are personal, so they persist locally. */
+  const updateStandardFilters = useCallback(
+    (viewId: string, filters: ListView["filters"]) => {
+      setStandardFilters(section, viewId, filters as any);
+      setStandardViews((prev) => prev.map((v) => (v.id === viewId ? { ...v, filters } : v)));
+    },
+    [section]
+  );
+
+  const updateStandardCharts = useCallback(
+    (viewId: string, charts: ListView["charts"]) => {
+      setStandardCharts(section, viewId, charts as any);
+      setStandardViews((prev) => prev.map((v) => (v.id === viewId ? { ...v, charts } : v)));
+    },
+    [section]
+  );
+
 
 
   const saveView = useCallback(
@@ -198,6 +219,9 @@ export function useLeadListViews(section = "leads", objectLabel = "Leads") {
     allViews,
     standardViews,
     updateStandardColumns,
+    updateStandardFilters,
+    updateStandardCharts,
+
 
     loading,
     userId,

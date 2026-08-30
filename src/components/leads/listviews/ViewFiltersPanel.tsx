@@ -37,7 +37,7 @@ function conditionText(c: FilterCondition) {
 }
 
 export default function ViewFiltersPanel({ view, canManage, picklistOptions, onSave, onClose }: Props) {
-  const locked = !!view?.is_standard || !canManage;
+  const locked = !canManage;
   const [editing, setEditing] = useState(false);
   const [match, setMatch] = useState<"all" | "any">(view?.filters?.match ?? "all");
   const [conditions, setConditions] = useState<FilterCondition[]>(view?.filters?.conditions ?? []);
@@ -85,8 +85,9 @@ export default function ViewFiltersPanel({ view, canManage, picklistOptions, onS
         {locked ? (
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
             <Lock className="h-3.5 w-3.5" />
-            {view?.is_standard ? "Filters are locked for standard views." : "Only the view owner can change filters."}
+            Only the view owner can change filters.
           </p>
+
         ) : (
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">

@@ -227,7 +227,6 @@ export default function ViewBar({
             className="h-9 w-9"
             title="Charts"
             onClick={onToggleCharts}
-            disabled={isStandard}
           >
             <BarChart3 className="h-4 w-4" />
           </Button>
@@ -237,11 +236,12 @@ export default function ViewBar({
           variant={filtersOpen ? "default" : "outline"}
           size="icon"
           className="h-9 w-9"
-          title={isStandard ? "Filters (locked for standard views)" : "Filters"}
+          title="Filters"
           onClick={() => (onToggleFilters ? onToggleFilters() : canManage && onEdit(activeView!))}
         >
           <Filter className="h-4 w-4" />
         </Button>
+
       </div>
     </div>
   );
