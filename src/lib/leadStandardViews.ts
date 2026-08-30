@@ -1,4 +1,4 @@
-import { DEFAULT_VIEW_COLUMNS, type KanbanConfig, type ListView } from "@/lib/patientFields";
+import { DEFAULT_VIEW_COLUMNS, type KanbanConfig, type ListView } from "@/lib/leadFields";
 
 export const ALL_VIEW_ID = "__all__";
 export const RECENT_VIEW_ID = "__recent__";
@@ -32,7 +32,7 @@ export const setStandardColumns = (section: string, id: string, columns: string[
   writeJson(columnsKey(section, id), columns);
 
 export const getKanbanConfig = (section: string, id: string): KanbanConfig =>
-  readJson<KanbanConfig>(kanbanKey(section, id)) ?? { group_field: "status", summarize_field: null };
+  readJson<KanbanConfig>(kanbanKey(section, id)) ?? { group_field: "status_name", summarize_field: null };
 
 export const setKanbanConfig = (section: string, id: string, config: KanbanConfig) =>
   writeJson(kanbanKey(section, id), config);

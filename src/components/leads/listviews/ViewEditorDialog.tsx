@@ -12,11 +12,11 @@ import {
 } from "lucide-react";
 
 import {
-  PATIENT_FIELDS, OPERATORS, DEFAULT_VIEW_COLUMNS, fieldDef,
+  LEAD_FIELDS, OPERATORS, DEFAULT_VIEW_COLUMNS, fieldDef,
   GENDER_OPTIONS, STATUS_OPTIONS, SKIN_TYPE_OPTIONS, BLOOD_GROUP_OPTIONS, SOURCE_OPTIONS,
   ENGAGEMENT_TIER_OPTIONS,
   type FilterCondition, type ListView,
-} from "@/lib/patientFields";
+} from "@/lib/leadFields";
 
 
 export interface PickOption { value: string; label: string }
@@ -70,13 +70,13 @@ function MultiPicker({
   );
 }
 
-const labelFor = (key: string) => PATIENT_FIELDS.find((f) => f.key === key)?.label ?? key;
+const labelFor = (key: string) => LEAD_FIELDS.find((f) => f.key === key)?.label ?? key;
 
 /** Field chooser with a built-in search box (field list is long). */
 function FieldSelect({ value, onChange }: { value: string; onChange: (key: string) => void }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const shown = PATIENT_FIELDS.filter((f) => f.label.toLowerCase().includes(q.trim().toLowerCase()));
+  const shown = LEAD_FIELDS.filter((f) => f.label.toLowerCase().includes(q.trim().toLowerCase()));
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQ(""); }}>
       <PopoverTrigger asChild>
@@ -117,7 +117,7 @@ export function FieldPicker({ columns, onChange }: { columns: string[]; onChange
   const [availQuery, setAvailQuery] = useState("");
   const [visQuery, setVisQuery] = useState("");
 
-  const available = PATIENT_FIELDS.filter(
+  const available = LEAD_FIELDS.filter(
     (f) => !columns.includes(f.key) && f.label.toLowerCase().includes(availQuery.trim().toLowerCase())
   );
   const visibleShown = columns.filter((key) =>

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Lock, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   OPERATORS,
-  PATIENT_FIELDS,
+  LEAD_FIELDS,
   fieldDef,
   GENDER_OPTIONS,
   STATUS_OPTIONS,
@@ -16,7 +16,7 @@ import {
   ENGAGEMENT_TIER_OPTIONS,
   type FilterCondition,
   type ListView,
-} from "@/lib/patientFields";
+} from "@/lib/leadFields";
 
 interface PickOption { value: string; label: string }
 
@@ -30,7 +30,7 @@ interface Props {
 
 const blank = (): FilterCondition => ({ field: "status", operator: "equals", value: "", values: [] });
 
-const labelFor = (key: string) => PATIENT_FIELDS.find((f) => f.key === key)?.label ?? key;
+const labelFor = (key: string) => LEAD_FIELDS.find((f) => f.key === key)?.label ?? key;
 
 function operatorLabel(field: string, op: string) {
   const type = fieldDef(field)?.type ?? "text";
@@ -172,7 +172,7 @@ export default function ViewFiltersPanel({ view, canManage, doctorOptions, onSav
                   >
                     <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-50 max-h-72 bg-popover">
-                      {PATIENT_FIELDS.map((f) => (
+                      {LEAD_FIELDS.map((f) => (
                         <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>
                       ))}
                     </SelectContent>

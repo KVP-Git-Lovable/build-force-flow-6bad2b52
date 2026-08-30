@@ -13,7 +13,7 @@ import {
   BarChart3, ChevronDown, Columns3, Copy, Filter, Kanban, LayoutGrid, ListFilter, Lock, Pencil, Pin, Plus,
   PinOff, RefreshCw, Search, Settings2, SplitSquareHorizontal, Table2, Trash2,
 } from "lucide-react";
-import type { ListDisplayMode, ListView } from "@/lib/patientFields";
+import type { ListDisplayMode, ListView } from "@/lib/leadFields";
 
 interface Props {
   views: ListView[];

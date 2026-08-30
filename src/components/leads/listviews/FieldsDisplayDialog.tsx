@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { FieldPicker } from "./ViewEditorDialog";
-import { DEFAULT_VIEW_COLUMNS } from "@/lib/patientFields";
+import { DEFAULT_VIEW_COLUMNS } from "@/lib/leadFields";
 
 interface Props {
   open: boolean;

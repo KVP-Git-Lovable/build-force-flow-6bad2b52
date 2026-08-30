@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { DEFAULT_VIEW_COLUMNS, type ListView } from "@/lib/patientFields";
-import { ALL_VIEW_ID, buildStandardViews, isStandardViewId, setStandardColumns } from "@/lib/standardViews";
+import { DEFAULT_VIEW_COLUMNS, type ListView } from "@/lib/leadFields";
+import { ALL_VIEW_ID, buildStandardViews, isStandardViewId, setStandardColumns } from "@/lib/leadStandardViews";
 
-const STORAGE_KEY = "patients.activeListView";
+const STORAGE_KEY = "leads.activeListView";
 
 
 function normalize(row: any): ListView {
@@ -33,7 +33,7 @@ function normalize(row: any): ListView {
 }
 
 
-export function usePatientListViews(section = "patients", objectLabel = "Patients") {
+export function useLeadListViews(section = "patients", objectLabel = "Patients") {
   const [views, setViews] = useState<ListView[]>([]);
   const [standardViews, setStandardViews] = useState<ListView[]>(() => buildStandardViews(section, objectLabel));
   const [loading, setLoading] = useState(true);
@@ -186,7 +186,7 @@ export function usePatientListViews(section = "patients", objectLabel = "Patient
       } else if (view && !view.is_standard) {
         toast.error("You can only pin views you own");
       } else {
-        toast.success(`"${view?.name ?? "All Patients"}" pinned as default`);
+        toast.success(`"${view?.name ?? "All Leads"}" pinned as default`);
       }
       await load();
     },

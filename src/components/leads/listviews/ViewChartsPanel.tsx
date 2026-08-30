@@ -43,11 +43,11 @@ import {
 import {
   computeChartData,
   fieldDef,
-  PATIENT_FIELDS,
+  LEAD_FIELDS,
   type AggregateType,
   type ChartType,
   type ViewChart,
-} from "@/lib/patientFields";
+} from "@/lib/leadFields";
 
 const CHART_TYPES: { value: ChartType; label: string }[] = [
   { value: "vertical_bar", label: "Vertical Bar Chart" },
@@ -70,8 +70,8 @@ const COLORS = [
   "hsl(var(--chart-5, 27 87% 61%))",
 ];
 
-const numericFields = PATIENT_FIELDS.filter((f) => f.type === "number");
-const groupFields = PATIENT_FIELDS.filter((f) => f.type !== "number" || true);
+const numericFields = LEAD_FIELDS.filter((f) => f.type === "number");
+const groupFields = LEAD_FIELDS.filter((f) => f.type !== "number" || true);
 
 const newChart = (): ViewChart => ({
   id: crypto.randomUUID(),

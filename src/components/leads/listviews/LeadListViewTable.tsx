@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ArrowDown, ArrowUp, ArrowUpDown, Pencil } from "lucide-react";
 import { useStackedTable } from "@/hooks/useStackedTable";
-import { fieldDef, formatCell, PATIENT_FIELDS, rawValue } from "@/lib/patientFields";
+import { fieldDef, formatCell, LEAD_FIELDS, rawValue } from "@/lib/leadFields";
 import { PatientAvatar } from "@/components/patients/PatientAvatar";
 import {
   Select,
@@ -32,7 +32,7 @@ interface Props {
   picklistOptions?: Record<string, { value: string; label: string }[]>;
 }
 
-const labelFor = (key: string) => PATIENT_FIELDS.find((f) => f.key === key)?.label ?? key;
+const labelFor = (key: string) => LEAD_FIELDS.find((f) => f.key === key)?.label ?? key;
 
 /** Columns that are computed / read-only and cannot be edited inline. */
 const READ_ONLY = new Set([

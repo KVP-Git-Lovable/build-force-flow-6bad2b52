@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PatientAvatar } from "@/components/patients/PatientAvatar";
-import { fieldDef, formatCell, PATIENT_FIELDS } from "@/lib/patientFields";
+import { fieldDef, formatCell, LEAD_FIELDS } from "@/lib/leadFields";
 import { ExternalLink, Mail, Phone } from "lucide-react";
 
 interface Props {
@@ -90,7 +90,7 @@ export default function PatientSplitView({ rows, columns, avatars = {}, onOpen }
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {DETAIL_FIELDS.filter((k) => PATIENT_FIELDS.some((f) => f.key === k)).map((key) => (
+              {DETAIL_FIELDS.filter((k) => LEAD_FIELDS.some((f) => f.key === k)).map((key) => (
                 <div key={key} className="rounded-lg border border-border bg-card p-3 shadow-sm">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{fieldDef(key)?.label}</p>
                   <p className="mt-0.5 truncate text-sm font-medium">{formatCell(selected, key)}</p>

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { KANBAN_GROUP_FIELDS, KANBAN_SUMMARY_FIELDS, type KanbanConfig } from "@/lib/patientFields";
+import { KANBAN_GROUP_FIELDS, KANBAN_SUMMARY_FIELDS, type KanbanConfig } from "@/lib/leadFields";
 
 interface Props {
   open: boolean;

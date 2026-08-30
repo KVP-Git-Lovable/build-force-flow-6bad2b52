@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { PatientAvatar } from "@/components/patients/PatientAvatar";
-import { fieldDef, formatCell, rawValue, type KanbanConfig } from "@/lib/patientFields";
+import { fieldDef, formatCell, rawValue, type KanbanConfig } from "@/lib/leadFields";
 
 interface Option { value: string; label: string }
 
