@@ -4,12 +4,13 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, CalendarClock, CheckCircle2, Activity } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   useLeads, useLeadStatuses, useLeadSources, useIndustries, statusColorClasses,
 } from "@/hooks/useLeadsEvents";
 import { LeadForm } from "@/components/leads/LeadForm";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
+import { format } from "date-fns";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { buildLeadRollups, EMPTY_ROLLUP } from "@/lib/leadActivityRollups";
@@ -57,20 +58,6 @@ function useLeadActivityStats() {
   });
 }
 
-function KpiCard({ icon: Icon, label, value, sub, color }: any) {
-  return (
-    <Card><CardContent className="p-4 min-h-[120px] flex flex-col justify-between">
-      <div className="flex items-start gap-2 mb-2">
-        <div className={`p-2 rounded-lg shrink-0 ${color}`}><Icon className="h-4 w-4 md:h-5 md:w-5" /></div>
-        <div className="text-xs md:text-sm text-muted-foreground font-medium line-clamp-2">{label}</div>
-      </div>
-      <div className="space-y-1">
-        <div className="text-lg md:text-2xl font-bold break-words">{value}</div>
-        {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
-      </div>
-    </CardContent></Card>
-  );
-}
 
 /** Columns that can be written straight back to the leads table. */
 const DIRECT_COLUMNS: Record<string, string> = {
@@ -208,28 +195,8 @@ export default function Leads() {
     setKanbanConfigState(getKanbanConfig(SECTION, activeView?.id ?? "__all__"));
   }, [activeView?.id]);
 
-  const kpis = useMemo(() => {
-    const now = new Date();
-    const monthRange = { start: startOfMonth(now), end: endOfMonth(now) };
-    const weekRange = { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-    const pipeline = viewRows.reduce((s: number, l: any) => s + (Number(l.opportunity_value) || 0), 0);
-    const closingLeads = viewRows.filter((l: any) => inRange(l.opportunity_close_date, monthRange));
-    const closingValue = closingLeads.reduce((s: number, l: any) => s + (Number(l.opportunity_value) || 0), 0);
-    const leadIds = new Set(viewRows.map((l: any) => l.id));
-    const completed = leadActivities.filter((a) => a.status === "completed" && leadIds.has(a.lead_id));
-    return {
-      pipeline,
-      closingCount: closingLeads.length,
-      closingValue,
-      completedMonth: completed.filter((a) => inRange(a.activity_date, monthRange)).length,
-      completedWeek: completed.filter((a) => inRange(a.activity_date, weekRange)).length,
-    };
-  }, [viewRows, leadActivities]);
+  const canManageActive = !!activeView && (activeView.is_standard || activeView.owner_id === userId);
 
-  const money = (n: number) =>
-    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: n >= 100000 ? "compact" : "standard" }).format(n || 0);
-
-  const canManageActive = !!activeView && !activeView.is_standard && activeView.owner_id === userId;
 
   const toggleSort = (key: string) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
