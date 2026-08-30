@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowDown, ArrowUp, ArrowUpDown, Pencil } from "lucide-react";
 import { useStackedTable } from "@/hooks/useStackedTable";
 import { fieldDef, formatCell, LEAD_FIELDS, rawValue } from "@/lib/leadFields";
-import { PatientAvatar } from "@/components/patients/PatientAvatar";
+import { LeadAvatar } from "./LeadAvatar";
 import {
   Select,
   SelectContent,
@@ -46,7 +46,7 @@ const READ_ONLY = new Set([
   "age",
 ]);
 
-export default function PatientListViewTable({
+export default function LeadListViewTable({
   rows, columns, selectedIds, onToggle, onToggleAll, onOpen, doctorLabels = {}, avatars = {},
   sortKey = null, sortDir = "asc", onSort, onInlineSave, picklistOptions = {},
 }: Props) {
@@ -208,9 +208,8 @@ export default function PatientListViewTable({
                   return (
                     <td key={key} className="p-4 text-sm font-medium" data-label={labelFor(key)}>
                       <div className="flex items-center gap-3">
-                        <PatientAvatar
-                          firstName={row.first_name}
-                          lastName={row.last_name}
+                        <LeadAvatar
+                        name={row.name}
                           photoUrl={avatars[row.id]}
                           className="h-9 w-9"
                         />

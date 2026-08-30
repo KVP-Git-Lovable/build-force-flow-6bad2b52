@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { PatientAvatar } from "@/components/patients/PatientAvatar";
+import { LeadAvatar } from "./LeadAvatar";
 import { fieldDef, formatCell, rawValue, type KanbanConfig } from "@/lib/leadFields";
 
 interface Option { value: string; label: string }
@@ -20,7 +20,7 @@ const EMPTY = "__empty__";
 const inr = (n: number) =>
   new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(n));
 
-export default function PatientKanban({ rows, config, options, columns, avatars = {}, onOpen, onMove }: Props) {
+export default function LeadKanban({ rows, config, options, columns, avatars = {}, onOpen, onMove }: Props) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
 
@@ -97,9 +97,8 @@ export default function PatientKanban({ rows, config, options, columns, avatars 
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <PatientAvatar
-                        firstName={row.first_name}
-                        lastName={row.last_name}
+                      <LeadAvatar
+                        name={row.name}
                         photoUrl={avatars[row.id]}
                         className="h-8 w-8"
                       />

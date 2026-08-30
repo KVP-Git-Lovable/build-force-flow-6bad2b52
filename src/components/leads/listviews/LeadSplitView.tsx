@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PatientAvatar } from "@/components/patients/PatientAvatar";
+import { LeadAvatar } from "./LeadAvatar";
 import { fieldDef, formatCell, LEAD_FIELDS } from "@/lib/leadFields";
 import { ExternalLink, Mail, Phone } from "lucide-react";
 
@@ -17,7 +17,7 @@ const DETAIL_FIELDS = [
   "last_visit_date", "engagement_tier", "created_at",
 ];
 
-export default function PatientSplitView({ rows, columns, avatars = {}, onOpen }: Props) {
+export default function LeadSplitView({ rows, columns, avatars = {}, onOpen }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(rows[0]?.id ?? null);
 
   useEffect(() => {
@@ -40,9 +40,8 @@ export default function PatientSplitView({ rows, columns, avatars = {}, onOpen }
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <PatientAvatar
-                firstName={row.first_name}
-                lastName={row.last_name}
+              <LeadAvatar
+                        name={row.name}
                 photoUrl={avatars[row.id]}
                 className="h-8 w-8"
               />
@@ -65,9 +64,8 @@ export default function PatientSplitView({ rows, columns, avatars = {}, onOpen }
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <PatientAvatar
-                  firstName={selected.first_name}
-                  lastName={selected.last_name}
+                <LeadAvatar
+                        name={selected.name}
                   photoUrl={avatars[selected.id]}
                   className="h-12 w-12"
                 />
