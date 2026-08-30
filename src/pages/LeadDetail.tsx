@@ -74,6 +74,8 @@ export default function LeadDetail() {
   const { data: industries = [] } = useIndustries();
   const { data: audit = [] } = useLeadAuditLog(id);
   const { data: createdByName } = useUserName((lead as any)?.created_by);
+  const { data: ownerFetchedName } = useUserName((lead as any)?.owner_id);
+
   const latestActorId = (audit as any[]).find((a) => a.actor_id)?.actor_id as string | undefined;
   const { data: latestActorName } = useUserName(latestActorId);
   const modifiedByName = (audit as any[]).find((a) => a.actor_name)?.actor_name || latestActorName || createdByName;
