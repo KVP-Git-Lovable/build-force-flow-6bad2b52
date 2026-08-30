@@ -37,8 +37,10 @@ export function LeadForm({
     opportunity_value: "", opportunity_close_date: "", opportunity_probability: "",
   };
   const [f, setF] = useState(emptyForm);
+  const [errors, setErrors] = useState<string[]>([]);
   const [isElaborating, setIsElaborating] = useState(false);
   const [locating, setLocating] = useState(false);
+
 
   // ==== Voice-to-text / audio note for Requirement Overview ====
   const qc = useQueryClient();
@@ -172,6 +174,8 @@ export function LeadForm({
     } else {
       setF({ ...emptyForm, related_event_id: defaultEventId ?? "" });
     }
+    setErrors([]);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead, open, defaultEventId]);
 
@@ -244,8 +248,46 @@ export function LeadForm({
     }
   };
 
+  const statusName = (statuses.find((s) => s.id === f.lead_status_id)?.name ?? "").trim().toLowerCase();
+
+  const validate = (): string[] => {
+    const errs: string[] = [];
+    if (!f.name.trim()) errs.push("Name is required");
+    if (!f.lead_status_id) { errs.push("Status is required"); return errs; }
+
+    const qualified = ["quote submitted", "negotiation", "close won", "closed won"];
+    const contactHeavy = ["contacted", "shown interest", ...qualified];
+    const early = ["enquiry", "lost", "on hold", "dropped"];
+
+    if (qualified.includes(statusName)) {
+      if (!f.indicative_budget.trim()) errs.push("Indicative Budget is required for this status");
+      if (!f.opportunity_value.trim()) errs.push("Opportunity Value is required for this status");
+      if (!f.opportunity_close_date) errs.push("Close Date is required for this status");
+      if (!f.opportunity_probability.trim()) errs.push("Probability of Win is required for this status");
+      if (!f.researched_information.trim()) errs.push("Requirement Overview is required for this status");
+    }
+
+    if (contactHeavy.includes(statusName) || early.includes(statusName)) {
+      if (!f.title.trim()) errs.push("Designation is required for this status");
+      if (!f.contact_role || f.contact_role === "unknown") errs.push("Contact Role is required for this status");
+      if (!f.company.trim()) errs.push("Company is required for this status");
+      if (!f.email.trim()) errs.push("Email is required for this status");
+      if (!f.phone.trim()) errs.push("Phone is required for this status");
+    }
+    if (contactHeavy.includes(statusName)) {
+      if (!f.industry) errs.push("Industry is required for this status");
+      if (!f.address.trim()) errs.push("Address is required for this status");
+    }
+    return errs;
+  };
+
   const submit = async () => {
-    if (!f.name.trim()) return;
+    const errs = validate();
+    setErrors(errs);
+    if (errs.length) {
+      toast.error("Please fix the highlighted fields before saving");
+      return;
+    }
     await save.mutateAsync({
       id: lead?.id,
       name: f.name.trim(),
@@ -284,8 +326,25 @@ export function LeadForm({
         </DialogHeader>
 
         <div className="space-y-3">
+          {errors.length > 0 && (
+            <div className="rounded-md border border-destructive bg-destructive/10 p-3">
+              <p className="text-sm font-bold text-destructive">Please complete the required fields</p>
+              <ul className="mt-1 list-disc pl-5 text-sm font-semibold text-destructive">
+                {errors.map((e) => <li key={e}>{e}</li>)}
+              </ul>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><Label>Name *</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+            {/* Left: Name, Designation, Company, Phone, Industry — Right: Status, Contact role, Website, Email, Source */}
+            <div><Label>Name <span className="text-destructive">*</span></Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+            <div>
+              <Label>Status <span className="text-destructive">*</span></Label>
+              <Select value={f.lead_status_id} onValueChange={(v) => setF({ ...f, lead_status_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>{statuses.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+
             <div><Label>Designation</Label><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
             <div>
               <Label>Contact Role</Label>
@@ -298,22 +357,18 @@ export function LeadForm({
                 </SelectContent>
               </Select>
             </div>
+
             <div><Label>Company</Label><Input value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} /></div>
+            <div><Label>Website</Label><Input value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} /></div>
+
+            <div><Label>Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
+            <div><Label>Email</Label><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
+
             <div>
               <Label>Industry</Label>
               <Select value={f.industry} onValueChange={(v) => setF({ ...f, industry: v })}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>{industries.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div><Label>Email</Label><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
-            <div><Label>Phone</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
-            <div><Label>Website</Label><Input value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} /></div>
-            <div>
-              <Label>Status</Label>
-              <Select value={f.lead_status_id} onValueChange={(v) => setF({ ...f, lead_status_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>{statuses.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
@@ -324,6 +379,7 @@ export function LeadForm({
               </Select>
             </div>
           </div>
+
 
 
           <div>

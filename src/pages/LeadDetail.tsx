@@ -26,6 +26,23 @@ import { LeadSlaTab } from "@/components/leads/LeadSlaTab";
 import { LeadStagePath } from "@/components/leads/LeadStagePath";
 
 import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+function useUserName(userId?: string | null) {
+  return useQuery({
+    queryKey: ["user-display-name", userId],
+    enabled: !!userId,
+    staleTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const { data: u } = await supabase.from("users").select("full_name, username, email").eq("id", userId!).maybeSingle();
+      if (u) return (u as any).full_name || (u as any).username || (u as any).email || "";
+      const { data: p } = await supabase.from("profiles").select("full_name, username").eq("id", userId!).maybeSingle();
+      return (p as any)?.full_name || (p as any)?.username || "";
+    },
+  });
+}
+
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +53,11 @@ export default function LeadDetail() {
   const { data: events = [] } = useEvents();
   const { data: industries = [] } = useIndustries();
   const { data: audit = [] } = useLeadAuditLog(id);
+  const { data: createdByName } = useUserName((lead as any)?.created_by);
+  const latestActorId = (audit as any[]).find((a) => a.actor_id)?.actor_id as string | undefined;
+  const { data: latestActorName } = useUserName(latestActorId);
+  const modifiedByName = (audit as any[]).find((a) => a.actor_name)?.actor_name || latestActorName || createdByName;
+
   const save = useSaveLead();
   const del = useDeleteLead();
   const { data: activities = [] } = useLeadActivities(id);
@@ -379,7 +401,10 @@ export default function LeadDetail() {
             <CardHeader><CardTitle className="text-base">Audit &amp; System Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
+              <Field icon={User} label="Created By" value={createdByName || "—"} />
               <Field icon={CalendarDays} label="Last Modified" value={(lead as any).updated_at ? format(new Date((lead as any).updated_at), "dd MMM yyyy, HH:mm") : "—"} />
+              <Field icon={User} label="Modified By" value={modifiedByName || "—"} />
+
             </CardContent>
           </Card>
 
