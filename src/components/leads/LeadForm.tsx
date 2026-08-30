@@ -174,6 +174,8 @@ export function LeadForm({
     } else {
       setF({ ...emptyForm, related_event_id: defaultEventId ?? "" });
     }
+    setErrors([]);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead, open, defaultEventId]);
 
