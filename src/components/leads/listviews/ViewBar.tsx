@@ -82,7 +82,7 @@ export default function ViewBar({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="max-w-[60vw] gap-1.5 px-2 text-base font-semibold">
               <ListFilter className="h-4 w-4 shrink-0 text-primary" />
-              <span className="truncate">{activeView?.name ?? "All Patients"}</span>
+              <span className="truncate">{activeView?.name ?? "All Leads"}</span>
               <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
             </Button>
           </DropdownMenuTrigger>

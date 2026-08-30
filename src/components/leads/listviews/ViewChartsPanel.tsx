@@ -75,11 +75,11 @@ const groupFields = LEAD_FIELDS.filter((f) => f.type !== "number" || true);
 
 const newChart = (): ViewChart => ({
   id: crypto.randomUUID(),
-  name: "Patients by status",
+  name: "Leads by status",
   chart_type: "vertical_bar",
   aggregate: "count",
   aggregate_field: null,
-  group_field: "status",
+  group_field: "status_name",
   limit: 12,
 });
 
