@@ -232,8 +232,14 @@ function DashboardContent() {
         <motion.div variants={item}>
           <Card className="shadow-card">
             <CardContent className="p-4">
-              <p className="text-sm font-bold mb-4">Overview</p>
-              {isSummaryLoading ? (
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold">Overview</p>
+                  <p className="text-[11px] text-muted-foreground">{rangeLabel}</p>
+                </div>
+                <WorkforceFilters />
+              </div>
+              {workforceLoading ? (
                 <OverviewSkeleton />
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -241,7 +247,7 @@ function DashboardContent() {
                     <div
                       key={card.label}
                       className={`rounded-xl border border-border ${card.colorClass.split(" ")[0]} p-4 text-center cursor-pointer hover:shadow-md transition-shadow`}
-                      onClick={() => navigate(card.path)}
+                      onClick={card.onClick}
                     >
                       <card.icon className={`h-5 w-5 mx-auto mb-1 ${card.colorClass.split(" ")[1]}`} />
                       <p className="text-xl font-bold">{card.value}</p>
@@ -253,6 +259,7 @@ function DashboardContent() {
             </CardContent>
           </Card>
         </motion.div>
+
 
         {/* Attendance & Workforce Overview (permission-gated) */}
         <motion.div variants={item}>
