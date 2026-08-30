@@ -1,83 +1,64 @@
 export type FieldType = "text" | "picklist" | "date" | "number";
 
+export type OptionsSource =
+  | "status"
+  | "source"
+  | "industry"
+  | "owner"
+  | "contact_role"
+  | "converted";
+
 export interface FieldDef {
   key: string;
   label: string;
   type: FieldType;
   /** Where the picklist options come from (resolved at runtime by the caller). */
-  optionsSource?: "gender" | "status" | "skin_type" | "blood_group" | "source" | "doctor" | "engagement_tier";
-  /** Recurring yearly date (birthday/anniversary) — matched on day+month, ignoring year. */
+  optionsSource?: OptionsSource;
+  /** Recurring yearly date — matched on day+month, ignoring year. */
   anniversary?: boolean;
 }
 
-export const PATIENT_FIELDS: FieldDef[] = [
-  { key: "full_name", label: "Patient Name", type: "text" },
-  { key: "first_name", label: "First Name", type: "text" },
-  { key: "last_name", label: "Last Name", type: "text" },
+/** Every field a lead list view can display, filter, sort or chart on. */
+export const LEAD_FIELDS: FieldDef[] = [
+  { key: "name", label: "Lead Name", type: "text" },
+  { key: "title", label: "Designation", type: "text" },
+  { key: "company", label: "Company", type: "text" },
   { key: "phone", label: "Phone", type: "text" },
   { key: "email", label: "Email", type: "text" },
-  { key: "gender", label: "Gender", type: "picklist", optionsSource: "gender" },
-  { key: "age", label: "Age", type: "number" },
-  { key: "date_of_birth", label: "Date of Birth (Birthday)", type: "date", anniversary: true },
-  { key: "status", label: "Status", type: "picklist", optionsSource: "status" },
-  { key: "skin_type", label: "Skin Type", type: "picklist", optionsSource: "skin_type" },
-  { key: "skin_concerns", label: "Skin Concerns", type: "text" },
-  { key: "blood_group", label: "Blood Group", type: "picklist", optionsSource: "blood_group" },
-  { key: "allergies", label: "Allergies", type: "text" },
-  { key: "current_medications", label: "Current Medications", type: "text" },
-  { key: "medical_history", label: "Medical History", type: "text" },
-  { key: "previous_treatments", label: "Previous Treatments", type: "text" },
-  { key: "city", label: "City", type: "text" },
-  { key: "state", label: "State", type: "text" },
-  { key: "pincode", label: "Pincode", type: "text" },
+  { key: "website", label: "Website", type: "text" },
   { key: "address", label: "Address", type: "text" },
-  { key: "source", label: "Source", type: "picklist", optionsSource: "source" },
-  { key: "source_referral_doctor", label: "Referral Doctor", type: "text" },
-  { key: "doctor_id", label: "Assigned Doctor", type: "picklist", optionsSource: "doctor" },
-  { key: "emergency_contact_name", label: "Emergency Contact", type: "text" },
-  { key: "emergency_contact_phone", label: "Emergency Phone", type: "text" },
-  { key: "notes", label: "Notes", type: "text" },
-  { key: "total_visits", label: "# of Visits", type: "number" },
-  { key: "lifetime_value", label: "Total Lifetime Value", type: "number" },
-  { key: "last_visit_date", label: "Last Visit Date", type: "date" },
-  { key: "days_since_last_visit", label: "# Days Since Last Visit", type: "number" },
-  { key: "engagement_score", label: "Engagement Score", type: "number" },
-  { key: "engagement_tier", label: "Engagement Tier", type: "picklist", optionsSource: "engagement_tier" },
-  { key: "engagement_visit_frequency", label: "Engagement - Visit Frequency", type: "number" },
-  { key: "engagement_revenue_value", label: "Engagement - Revenue Value", type: "number" },
-  { key: "engagement_treatment_depth", label: "Engagement - Treatment Depth", type: "number" },
-  { key: "engagement_retention_signal", label: "Engagement - Retention Signal", type: "number" },
-  { key: "engagement_compliance", label: "Engagement - Compliance", type: "number" },
-  { key: "engagement_updated_at", label: "Engagement Updated", type: "date" },
+  { key: "industry", label: "Industry", type: "picklist", optionsSource: "industry" },
+  { key: "contact_role", label: "Contact Role", type: "picklist", optionsSource: "contact_role" },
+  { key: "status_name", label: "Status", type: "picklist", optionsSource: "status" },
+  { key: "source_name", label: "Lead Source", type: "picklist", optionsSource: "source" },
+  { key: "owner_name", label: "Owner", type: "picklist", optionsSource: "owner" },
+  { key: "created_by_name", label: "Created By", type: "text" },
+  { key: "opportunity_value", label: "Opportunity Value", type: "number" },
+  { key: "opportunity_probability", label: "Win %", type: "number" },
+  { key: "opportunity_close_date", label: "Close Date", type: "date" },
+  { key: "indicative_budget", label: "Indicative Budget", type: "number" },
+  { key: "researched_information", label: "Requirement Overview", type: "text" },
+  { key: "activity_count", label: "# Activities", type: "number" },
+  { key: "productive_count", label: "# Productive Activities", type: "number" },
+  { key: "days_since_last_activity", label: "Days Since Last Activity", type: "number" },
+  { key: "total_effort_hours", label: "Total Effort (hours)", type: "number" },
+  { key: "last_activity_date", label: "Last Activity Date", type: "date" },
+  { key: "next_activity_date", label: "Next Activity Date", type: "date" },
+  { key: "converted_label", label: "Converted", type: "picklist", optionsSource: "converted" },
+  { key: "target_first_contact_date", label: "Target First Contact", type: "date" },
+  { key: "actual_first_contact_date", label: "Actual First Contact", type: "date" },
+  { key: "target_conversion_date", label: "Target Conversion Date", type: "date" },
   { key: "created_at", label: "Created Date", type: "date" },
   { key: "updated_at", label: "Last Modified", type: "date" },
 ];
 
-
-export const DEFAULT_VIEW_COLUMNS = ["full_name", "phone", "skin_type", "status", "created_at"];
+export const DEFAULT_VIEW_COLUMNS = ["name", "company", "phone", "status_name", "owner_name", "created_at"];
 
 export function fieldDef(key: string): FieldDef | undefined {
-  return PATIENT_FIELDS.find((f) => f.key === key);
+  return LEAD_FIELDS.find((f) => f.key === key);
 }
 
-export const GENDER_OPTIONS = ["Male", "Female", "Other"].map((v) => ({ value: v, label: v }));
-export const STATUS_OPTIONS = ["Active", "Inactive"].map((v) => ({ value: v, label: v }));
-export const SKIN_TYPE_OPTIONS = ["Normal", "Dry", "Oily", "Combination", "Sensitive"].map((v) => ({ value: v, label: v }));
-export const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((v) => ({ value: v, label: v }));
-export const SOURCE_OPTIONS = [
-  "Walk-in",
-  "Referral",
-  "Doctor Referral",
-  "Google",
-  "Facebook",
-  "Instagram",
-  "Advertisement",
-  "Other",
-].map((v) => ({ value: v, label: v }));
-
-export const ENGAGEMENT_TIER_OPTIONS = ["Platinum", "Gold", "Silver", "Early"].map((v) => ({ value: v, label: v }));
-
-
+export const CONVERTED_OPTIONS = ["Yes", "No"].map((v) => ({ value: v, label: v }));
 
 export const OPERATORS: Record<FieldType, { value: string; label: string }[]> = {
   text: [
