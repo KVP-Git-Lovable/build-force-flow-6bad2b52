@@ -13,6 +13,7 @@ import { generateReportPdf } from "./reportPdf";
 import { useSavedReports } from "@/hooks/useSavedReports";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ChartConfig, ReportColumn, SavedReport } from "./reportTypes";
+import { takeReportPrefill } from "./reportPrefill";
 
 interface Props<R> {
   /** Stable key used to store saved reports, e.g. "leads". */
@@ -76,6 +77,7 @@ export function ReportWorkspace<R>({
   const [activeName, setActiveName] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [cachedRows, setCachedRows] = useState<R[] | null>(null);
+  const [pendingGenerate, setPendingGenerate] = useState(false);
   const appliedFavourite = useRef(false);
   const restored = useRef(false);
 
