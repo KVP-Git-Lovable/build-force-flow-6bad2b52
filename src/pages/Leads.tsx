@@ -160,7 +160,7 @@ export default function Leads() {
       activity_count: ru.activityCount,
       productive_count: ru.productiveCount,
       days_since_last_activity: ru.daysSinceLastActivity,
-      total_effort_hours: ru.totalEffortHours ?? 0,
+      total_effort_hours: (ru as any).totalEffortHours ?? 0,
       last_activity_date: ru.lastActivityDate,
       next_activity_date: ru.nextActivityDate,
       converted_label: l.converted_customer_id ? "Yes" : "No",
@@ -262,8 +262,9 @@ export default function Leads() {
       toast.error("This field can't be edited inline");
       return;
     }
+
     const { error } = await supabase.from("leads" as any).update(patch).eq("id", row.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["leads"] });
     toast.success("Lead updated");
   };
