@@ -269,3 +269,12 @@ function DashboardContent() {
     </div>
   );
 }
+
+export default function Dashboard() {
+  return (
+    <WorkforceFilterProvider>
+      <DashboardContent />
+    </WorkforceFilterProvider>
+  );
+}
+
