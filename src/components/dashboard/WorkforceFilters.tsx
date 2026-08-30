@@ -159,9 +159,29 @@ export default function WorkforceFilters() {
                 </div>
               </ScrollArea>
             </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <Button size="sm" className="flex-1" onClick={saveFilters}>
+                Save filter
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={clearFilters}
+              >
+                Clear filter
+              </Button>
+            </div>
+            {hasSavedFilters && (
+              <p className="text-[11px] text-muted-foreground">
+                Saved filter is applied on every refresh.
+              </p>
+            )}
           </div>
         </PopoverContent>
       </Popover>
+
 
       <Badge className="bg-primary/10 text-primary border border-primary/20 font-normal">
         {presetLabels[preset]}: {rangeLabel}
