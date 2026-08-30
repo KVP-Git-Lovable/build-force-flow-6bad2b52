@@ -41,8 +41,12 @@ export default function WorkforceFilters() {
     selectedUsers,
     setSelectedUsers,
     rangeLabel,
+    saveFilters,
+    clearFilters,
+    hasSavedFilters,
   } = useWorkforceFilterContext();
   const [search, setSearch] = useState("");
+
 
   const toggleUser = (id: string) => {
     if (selectedUsers.includes(id)) {
