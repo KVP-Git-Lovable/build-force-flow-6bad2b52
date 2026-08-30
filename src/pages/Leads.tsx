@@ -103,8 +103,9 @@ export default function Leads() {
 
   const {
     allViews, loading, userId, activeView, selectView, saveView, saveCharts,
-    deleteView, pinDefault, updateStandardColumns, reload,
+    deleteView, pinDefault, updateStandardColumns, updateStandardFilters, updateStandardCharts, reload,
   } = useLeadListViews(SECTION, "Leads");
+
 
   const rollups = useMemo(() => buildLeadRollups(leadActivities), [leadActivities]);
 
@@ -348,8 +349,11 @@ export default function Leads() {
                 view={activeView}
                 canManage={canManageActive}
                 picklistOptions={picklistOptions}
-                onSave={(filters: { match: "all" | "any"; conditions: FilterCondition[] }) =>
-                  activeView && saveView({ ...activeView, name: activeView.name, filters })}
+                onSave={(filters: { match: "all" | "any"; conditions: FilterCondition[] }) => {
+                  if (!activeView) return;
+                  if (activeView.is_standard) updateStandardFilters(activeView.id, filters);
+                  else saveView({ ...activeView, name: activeView.name, filters });
+                }}
                 onClose={() => setFiltersOpen(false)}
               />
             )}
@@ -358,10 +362,15 @@ export default function Leads() {
                 charts={activeView?.charts ?? []}
                 rows={viewRows}
                 canManage={canManageActive}
-                onChange={(charts) => activeView && saveCharts(activeView.id, charts)}
+                onChange={(charts) => {
+                  if (!activeView) return;
+                  if (activeView.is_standard) updateStandardCharts(activeView.id, charts);
+                  else saveCharts(activeView.id, charts);
+                }}
                 onClose={() => setChartsOpen(false)}
               />
             )}
+
           </div>
         )}
       </div>
