@@ -163,9 +163,9 @@ export interface ListView {
 }
 
 /** Fields that can drive Kanban columns (picklists only). */
-export const KANBAN_GROUP_FIELDS = PATIENT_FIELDS.filter((f) => f.type === "picklist");
+export const KANBAN_GROUP_FIELDS = LEAD_FIELDS.filter((f) => f.type === "picklist");
 /** Fields that can be summarised on a Kanban column header. */
-export const KANBAN_SUMMARY_FIELDS = PATIENT_FIELDS.filter((f) => f.type === "number");
+export const KANBAN_SUMMARY_FIELDS = LEAD_FIELDS.filter((f) => f.type === "number");
 
 
 /** Group + aggregate rows for a saved view chart. */
