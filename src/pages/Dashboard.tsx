@@ -65,7 +65,12 @@ function OverviewSkeleton() {
   );
 }
 
-export default function Dashboard() {
+function openReport(navigate: ReturnType<typeof useNavigate>, tab: string) {
+  sessionStorage.setItem("analytics-tab", tab);
+  navigate("/reports");
+}
+
+function DashboardContent() {
   const navigate = useNavigate();
   const { profile, isAdmin, initials, loading: profileLoading } = useUserProfile();
   const { hasModuleAccess } = useProfilePermissions();
@@ -77,11 +82,30 @@ export default function Dashboard() {
     dayStarted,
     attendance,
     isLoading,
-    isSummaryLoading,
-    myActivities,
-    pendingLeaves,
-    todayActivities,
   } = useDashboard(userId);
+
+  const {
+    data: workforce,
+    isLoading: workforceLoading,
+    rangeLabel,
+  } = useWorkforceFilterContext();
+
+  const workforceKpis = useMemo(() => {
+    const attendanceRows = workforce?.attendanceRows || [];
+    const activityRows = workforce?.activityRows || [];
+    const present = attendanceRows.filter((r) => !!r.check_in_time).length;
+    const totalHours = attendanceRows.reduce((s, r) => s + (r.active_hours || 0), 0);
+    const productive = activityRows.filter(
+      (a) => String(a.outcome || "").trim().toLowerCase() === "productive"
+    ).length;
+    return {
+      present,
+      totalHours,
+      productive,
+      activities: activityRows.length,
+      wonDeals: workforce?.wonDeals || 0,
+    };
+  }, [workforce]);
 
   const { data: leads = [] } = useLeads();
   const leadKpis = useMemo(() => {
@@ -101,20 +125,20 @@ export default function Dashboard() {
     navigate("/attendance");
   };
 
-
-
   const overviewCards = [
-    { label: "My Activities", value: myActivities.total, icon: ListTodo, colorClass: "bg-info/5 text-info", path: "/activities", module: "module_activities" },
-    { label: "Completed", value: myActivities.completed, icon: CheckSquare, colorClass: "bg-success/5 text-success", path: "/activities?status=completed", module: "module_activities" },
-    { label: "Today's Activities", value: todayActivities, icon: Activity, colorClass: "bg-primary/5 text-primary", path: "/activities", module: "module_activities" },
-    { label: "Total Pipeline", value: money(leadKpis.pipeline), icon: TrendingUp, colorClass: "bg-info/5 text-info", path: "/leads", module: "module_leads" },
-    { label: "Closing This Month", value: money(leadKpis.closingValue), icon: CalendarClock, colorClass: "bg-warning/5 text-warning", path: "/leads", module: "module_leads" },
-    { label: "Pending Leaves", value: pendingLeaves, icon: CalendarOff, colorClass: "bg-accent/5 text-accent", path: "/attendance", module: "module_attendance" },
+    { label: "Present (Days)", value: workforceKpis.present, icon: Users, colorClass: "bg-primary/5 text-primary", onClick: () => openReport(navigate, "attendance"), module: "module_attendance" },
+    { label: "Active Hours", value: `${workforceKpis.totalHours.toFixed(1)}h`, icon: Timer, colorClass: "bg-info/5 text-info", onClick: () => openReport(navigate, "attendance"), module: "module_attendance" },
+    { label: "Productive Activities", value: workforceKpis.productive, icon: ThumbsUp, colorClass: "bg-success/5 text-success", onClick: () => openReport(navigate, "activities"), module: "module_activities" },
+    { label: "Activities", value: workforceKpis.activities, icon: Activity, colorClass: "bg-warning/5 text-warning", onClick: () => openReport(navigate, "activities"), module: "module_activities" },
+    { label: "Won Deals", value: workforceKpis.wonDeals, icon: Trophy, colorClass: "bg-success/5 text-success", onClick: () => openReport(navigate, "leads"), module: "module_leads" },
+    { label: "Total Pipeline", value: money(leadKpis.pipeline), icon: TrendingUp, colorClass: "bg-info/5 text-info", onClick: () => openReport(navigate, "leads"), module: "module_leads" },
+    { label: "Closing This Month", value: money(leadKpis.closingValue), icon: CalendarClock, colorClass: "bg-warning/5 text-warning", onClick: () => openReport(navigate, "leads"), module: "module_leads" },
   ];
 
   // Filter cards by module access for all users (including admins)
   // Only show cards for enabled modules
   const visibleCards = overviewCards.filter((c) => !c.module || hasModuleAccess(c.module));
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
