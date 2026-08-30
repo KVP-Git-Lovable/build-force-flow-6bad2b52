@@ -484,12 +484,16 @@ export default function LeadDetail() {
 
             <CardHeader><CardTitle className="text-base">Audit &amp; System Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field icon={CalendarDays} label="Created" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
-              <Field icon={User} label="Created By" value={createdByName || "—"} />
-              <Field icon={CalendarDays} label="Last Modified" value={(lead as any).updated_at ? format(new Date((lead as any).updated_at), "dd MMM yyyy, HH:mm") : "—"} />
-              <Field icon={User} label="Modified By" value={modifiedByName || "—"} />
-
+              <div className="space-y-3">
+                <Field icon={User} label="Created By" value={createdByName || "—"} />
+                <Field icon={CalendarDays} label="Created Date" value={lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy, HH:mm") : "—"} />
+              </div>
+              <div className="space-y-3">
+                <Field icon={User} label="Last Modified By" value={modifiedByName || "—"} />
+                <Field icon={CalendarDays} label="Last Modified Date" value={(lead as any).updated_at ? format(new Date((lead as any).updated_at), "dd MMM yyyy, HH:mm") : "—"} />
+              </div>
             </CardContent>
+
           </Card>
 
 
