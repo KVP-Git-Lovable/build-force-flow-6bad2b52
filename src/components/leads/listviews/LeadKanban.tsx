@@ -43,7 +43,7 @@ export default function LeadKanban({ rows, config, options, columns, avatars = {
 
   const summaryLabel = config.summarize_field ? fieldDef(config.summarize_field)?.label : null;
 
-  const secondary = columns.filter((c) => c !== "full_name" && c !== config.group_field).slice(0, 3);
+  const secondary = columns.filter((c) => c !== "name" && c !== config.group_field).slice(0, 3);
 
   return (
     <div className="overflow-x-auto p-4">
@@ -102,7 +102,7 @@ export default function LeadKanban({ rows, config, options, columns, avatars = {
                         photoUrl={avatars[row.id]}
                         className="h-8 w-8"
                       />
-                      <p className="truncate text-sm font-medium text-primary">{formatCell(row, "full_name")}</p>
+                      <p className="truncate text-sm font-medium text-primary">{formatCell(row, "name")}</p>
                     </div>
                     <div className="mt-2 space-y-0.5">
                       {secondary.map((key) => (

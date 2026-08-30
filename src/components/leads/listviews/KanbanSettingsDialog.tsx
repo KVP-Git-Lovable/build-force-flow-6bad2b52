@@ -15,12 +15,12 @@ interface Props {
 const NONE = "__none__";
 
 export default function KanbanSettingsDialog({ open, onOpenChange, config, onSave }: Props) {
-  const [groupField, setGroupField] = useState(config.group_field || "status");
+  const [groupField, setGroupField] = useState(config.group_field || "status_name");
   const [summarize, setSummarize] = useState(config.summarize_field || NONE);
 
   useEffect(() => {
     if (!open) return;
-    setGroupField(config.group_field || "status");
+    setGroupField(config.group_field || "status_name");
     setSummarize(config.summarize_field || NONE);
   }, [open, config]);
 

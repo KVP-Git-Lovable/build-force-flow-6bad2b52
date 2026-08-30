@@ -35,14 +35,17 @@ const labelFor = (key: string) => LEAD_FIELDS.find((f) => f.key === key)?.label 
 
 /** Columns that are computed / read-only and cannot be edited inline. */
 const READ_ONLY = new Set([
-  "full_name",
   "created_at",
   "updated_at",
-  "total_visits",
-  "lifetime_value",
-  "days_since_last_visit",
-  "engagement_tier",
-  "age",
+  "owner_name",
+  "created_by_name",
+  "activity_count",
+  "productive_count",
+  "days_since_last_activity",
+  "total_effort_hours",
+  "last_activity_date",
+  "next_activity_date",
+  "converted_label",
 ]);
 
 export default function LeadListViewTable({
@@ -178,16 +181,16 @@ export default function LeadListViewTable({
                   </button>
                 );
 
-                if (key === "status") {
+                if (key === "status_name") {
                   return (
                     <td key={key} className="p-4 group/cell" data-label={labelFor(key)}>
                       <span className="inline-flex items-center gap-2">
                         <span
                           className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                            row.status === "Active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                            row.status_name ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {row.status || "—"}
+                          {row.status_name || "—"}
                         </span>
                         {editAffordance}
                       </span>
@@ -195,7 +198,7 @@ export default function LeadListViewTable({
                   );
                 }
 
-                if (key === "full_name") {
+                if (key === "name") {
                   return (
                     <td key={key} className="p-4 text-sm font-medium" data-label={labelFor(key)}>
                       <div className="flex items-center gap-3">

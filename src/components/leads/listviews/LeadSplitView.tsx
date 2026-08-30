@@ -12,9 +12,9 @@ interface Props {
 }
 
 const DETAIL_FIELDS = [
-  "phone", "email", "gender", "age", "date_of_birth", "status", "skin_type",
-  "blood_group", "city", "source", "total_visits", "lifetime_value",
-  "last_visit_date", "engagement_tier", "created_at",
+  "phone", "email", "company", "title", "industry", "contact_role", "status_name",
+  "source_name", "owner_name", "opportunity_value", "activity_count",
+  "productive_count", "days_since_last_activity", "last_activity_date", "created_at",
 ];
 
 export default function LeadSplitView({ rows, columns, avatars = {}, onOpen }: Props) {
@@ -25,7 +25,7 @@ export default function LeadSplitView({ rows, columns, avatars = {}, onOpen }: P
   }, [rows, selectedId]);
 
   const selected = rows.find((r) => r.id === selectedId) ?? null;
-  const secondary = columns.filter((c) => c !== "full_name").slice(0, 2);
+  const secondary = columns.filter((c) => c !== "name").slice(0, 2);
 
   return (
     <div className="flex flex-col md:flex-row md:h-[70vh]">
@@ -46,7 +46,7 @@ export default function LeadSplitView({ rows, columns, avatars = {}, onOpen }: P
                 className="h-8 w-8"
               />
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{formatCell(row, "full_name")}</p>
+                <p className="truncate text-sm font-medium">{formatCell(row, "name")}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {secondary.map((k) => formatCell(row, k)).filter((v) => v !== "—").join(" · ") || "—"}
                 </p>
@@ -70,7 +70,7 @@ export default function LeadSplitView({ rows, columns, avatars = {}, onOpen }: P
                   className="h-12 w-12"
                 />
                 <div>
-                  <h3 className="text-lg font-semibold">{formatCell(selected, "full_name")}</h3>
+                  <h3 className="text-lg font-semibold">{formatCell(selected, "name")}</h3>
                   <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                     {selected.phone && (
                       <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{selected.phone}</span>
