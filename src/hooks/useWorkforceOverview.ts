@@ -172,7 +172,33 @@ export function useWorkforceOverview(filters: WorkforceFilters) {
         wonDeals = count || 0;
       }
 
-      return { attendanceRows, activityRows, wonDeals };
+      // New leads created in the range
+      let newLeadsQuery = supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", `${start}T00:00:00`)
+        .lte("created_at", `${end}T23:59:59`);
+      if (userIds.length > 0) newLeadsQuery = newLeadsQuery.in("owner_id", userIds);
+      const { count: newLeadsCount } = await newLeadsQuery;
+
+      // New opportunities created in the range
+      let newOppsQuery = supabase
+        .from("customer_opportunities")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", `${start}T00:00:00`)
+        .lte("created_at", `${end}T23:59:59`);
+      if (userIds.length > 0) newOppsQuery = newOppsQuery.in("owner_id", userIds);
+      const { count: newOppsCount } = await newOppsQuery;
+
+      return {
+        attendanceRows,
+        activityRows,
+        wonDeals,
+        wonStatusIds,
+        newLeads: newLeadsCount || 0,
+        newOpportunities: newOppsCount || 0,
+      };
+
     },
     staleTime: 0,
     refetchOnMount: "always",
