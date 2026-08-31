@@ -22,6 +22,7 @@ import ExpenseDateRangeFilter, { type ExpenseDatePreset } from "@/components/exp
 import Pager from "@/components/expenses/Pager";
 import ExpenseSummaryCards from "@/components/expenses/ExpenseSummaryCards";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useDaApplicable } from "@/hooks/useDaApplicable";
 import { useExpenseSummaryRange, type DailyBreakdownRow } from "@/hooks/useMonthlyExpenseSummary";
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -154,6 +155,7 @@ export default function Expenses() {
   const rangeLabel = preset === "today" ? "Today" : preset === "yesterday" ? "Yesterday" : `${format(start, "dd MMM yyyy")} - ${format(end, "dd MMM yyyy")}`;
 
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useExpenseSummaryRange(userId, start, end);
+  const { daApplicable } = useDaApplicable();
   const [policy, setPolicy] = useState<{ ta_type: "from_gps" | "fixed"; ta_per_km_rate: number; fixed_ta_amount: number; fixed_da_amount: number; da_calculation_basis: "per_day" | "per_half_day" } | null>(null);
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -164,7 +166,7 @@ export default function Expenses() {
 
   const additionalApproved = useMemo(() => expenses.filter((e) => e.status === "approved").reduce((s, e) => s + Number(e.amount), 0), [expenses]);
   const additionalPending = useMemo(() => expenses.filter((e) => e.status === "submitted" || e.status === "pending").reduce((s, e) => s + Number(e.amount), 0), [expenses]);
-  const totalExpenses = (summary?.ta || 0) + (summary?.da || 0) + additionalApproved;
+  const totalExpenses = (summary?.ta || 0) + (daApplicable ? (summary?.da || 0) : 0) + additionalApproved;
 
   // Add/Edit dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -271,12 +273,14 @@ export default function Expenses() {
     ]);
     XLSX.utils.book_append_sheet(wb, taSheet, "TA");
 
-    const daRows = (summary?.daily || []).filter((d) => d.present > 0 || d.da > 0);
-    const daSheet = XLSX.utils.json_to_sheet([
-      ...daRows.map((d) => ({ Date: format(new Date(d.date), "dd-MMM-yyyy"), Present: d.present === 1 ? "Full" : d.present === 0.5 ? "Half" : "-", "DA Amount (₹)": d.da })),
-      { Date: "TOTAL", Present: "", "DA Amount (₹)": summary?.da || 0 },
-    ]);
-    XLSX.utils.book_append_sheet(wb, daSheet, "DA");
+    if (daApplicable) {
+      const daRows = (summary?.daily || []).filter((d) => d.present > 0 || d.da > 0);
+      const daSheet = XLSX.utils.json_to_sheet([
+        ...daRows.map((d) => ({ Date: format(new Date(d.date), "dd-MMM-yyyy"), Present: d.present === 1 ? "Full" : d.present === 0.5 ? "Half" : "-", "DA Amount (₹)": d.da })),
+        { Date: "TOTAL", Present: "", "DA Amount (₹)": summary?.da || 0 },
+      ]);
+      XLSX.utils.book_append_sheet(wb, daSheet, "DA");
+    }
 
     const addlSheet = XLSX.utils.json_to_sheet([
       ...expenses.map((e) => ({
@@ -325,6 +329,7 @@ export default function Expenses() {
         fixedTaAmount={Number(policy?.fixed_ta_amount || 0)}
         daBasis={policy?.da_calculation_basis}
         daAmount={Number(policy?.fixed_da_amount || 0)}
+        daApplicable={daApplicable}
       />
 
       {policy && (
@@ -335,10 +340,12 @@ export default function Expenses() {
                 ? <>From GPS tracking · <span className="font-medium text-foreground">₹{Number(policy.ta_per_km_rate || 0)}/km</span> × total km driven in this period ({(summary?.total_km || 0).toFixed(1)} km = ₹{Math.round(summary?.ta || 0).toLocaleString("en-IN")})</>
                 : <>Fixed · <span className="font-medium text-foreground">₹{Number(policy.fixed_ta_amount || 0)}/day</span> per present day</>}
             </p>
-            <p><span className="font-semibold text-foreground">DA policy:</span>{" "}
-              <span className="font-medium text-foreground">₹{Number(policy.fixed_da_amount || 0)}</span>{" "}
-              {policy.da_calculation_basis === "per_half_day" ? "per half-day (half-day = 0.5)" : "per present day"}
-            </p>
+            {daApplicable && (
+              <p><span className="font-semibold text-foreground">DA policy:</span>{" "}
+                <span className="font-medium text-foreground">₹{Number(policy.fixed_da_amount || 0)}</span>{" "}
+                {policy.da_calculation_basis === "per_half_day" ? "per half-day (half-day = 0.5)" : "per present day"}
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -359,10 +366,10 @@ export default function Expenses() {
           <p className="text-xs text-muted-foreground">{rangeLabel}</p>
         </CardHeader>
         <CardContent>
-          <Tabs value={detailsTab} onValueChange={(v) => setDetailsTab(v as typeof detailsTab)}>
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs value={!daApplicable && detailsTab === "da" ? "ta" : detailsTab} onValueChange={(v) => setDetailsTab(v as typeof detailsTab)}>
+            <TabsList className={daApplicable ? "grid w-full grid-cols-3" : "grid w-full grid-cols-2"}>
               <TabsTrigger value="ta" className="text-xs">TA</TabsTrigger>
-              <TabsTrigger value="da" className="text-xs">DA</TabsTrigger>
+              {daApplicable && <TabsTrigger value="da" className="text-xs">DA</TabsTrigger>}
               <TabsTrigger value="additional" className="text-xs">Additional Expenses</TabsTrigger>
             </TabsList>
 
@@ -374,9 +381,11 @@ export default function Expenses() {
                   {summary && <TATable days={summary.daily} totalTa={summary.ta} totalKm={summary.total_km} />}
                 </TabsContent>
 
-                <TabsContent value="da" className="mt-3">
-                  {summary && <DATable days={summary.daily} totalDa={summary.da} />}
-                </TabsContent>
+                {daApplicable && (
+                  <TabsContent value="da" className="mt-3">
+                    {summary && <DATable days={summary.daily} totalDa={summary.da} />}
+                  </TabsContent>
+                )}
 
                 <TabsContent value="additional" className="mt-3">
                   {loading ? (
