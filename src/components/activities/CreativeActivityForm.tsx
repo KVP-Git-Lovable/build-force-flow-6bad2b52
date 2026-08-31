@@ -1028,30 +1028,6 @@ export default function CreativeActivityForm({
                       ))}
                     </div>
                   )}
-                  {/* Effort — below Next Follow-up, above Timeline */}
-                  <ActivityEffortSection activity={editActivity as any} />
-                  {/* Timeline */}
-                  {(editActivity.status_history || []).length > 0 && (
-                    <div className="pt-2 border-t border-border/60 min-w-0 max-w-full overflow-hidden">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Timeline</p>
-                      <div className="space-y-2 min-w-0">
-                        {[...editActivity.status_history]
-                          .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
-                          .map((h, i) => (
-                            <div key={i} className="grid grid-cols-[0.375rem_minmax(0,1fr)] items-start gap-2 text-[11px] min-w-0 max-w-full">
-                              <span className={cn("mt-1.5 h-1.5 w-1.5 rounded-full", STATUS_DOT[h.status] || "bg-muted-foreground")} />
-                              <div className="min-w-0 max-w-full">
-                                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
-                                  <span className="font-medium break-words [overflow-wrap:anywhere]">{STATUS_LABELS[h.status] || h.status}</span>
-                                  <span className="text-muted-foreground break-words">· {format(parseISO(h.at), "MMM d, h:mm a")}</span>
-                                </div>
-                                {h.address && <p className="text-muted-foreground break-words [overflow-wrap:anywhere]">{h.address}</p>}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
                   {/* Attachments */}
                   {editActivity.attachment_urls && editActivity.attachment_urls.length > 0 && (
                     <div className="pt-2 border-t border-border/60 min-w-0">
@@ -1698,6 +1674,35 @@ export default function CreativeActivityForm({
                 )}
               </div>
 
+
+              {isEdit && editActivity && (
+                <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm space-y-3 overflow-hidden min-w-0 max-w-full">
+                {/* Effort */}
+                <ActivityEffortSection activity={editActivity as any} onNavigateAway={() => onOpenChange(false)} />
+                {/* Timeline */}
+                {(editActivity.status_history || []).length > 0 && (
+                  <div className="pt-2 border-t border-border/60 min-w-0 max-w-full overflow-hidden">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Timeline</p>
+                    <div className="space-y-2 min-w-0">
+                      {[...editActivity.status_history]
+                        .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+                        .map((h, i) => (
+                          <div key={i} className="grid grid-cols-[0.375rem_minmax(0,1fr)] items-start gap-2 text-[11px] min-w-0 max-w-full">
+                            <span className={cn("mt-1.5 h-1.5 w-1.5 rounded-full", STATUS_DOT[h.status] || "bg-muted-foreground")} />
+                            <div className="min-w-0 max-w-full">
+                              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
+                                <span className="font-medium break-words [overflow-wrap:anywhere]">{STATUS_LABELS[h.status] || h.status}</span>
+                                <span className="text-muted-foreground break-words">· {format(parseISO(h.at), "MMM d, h:mm a")}</span>
+                              </div>
+                              {h.address && <p className="text-muted-foreground break-words [overflow-wrap:anywhere]">{h.address}</p>}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+                </div>
+              )}
 
               {/* GRN — Goods Receipt (only when Activity Type contains "GRN") */}
               {isGrnType && (

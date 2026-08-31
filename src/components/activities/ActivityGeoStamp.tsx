@@ -75,19 +75,19 @@ export default function ActivityGeoStamp({ activity, className }: Props) {
     if (distanceKm <= 0.5) {
       match = {
         icon: <CheckCircle2 className="h-3.5 w-3.5" />,
-        label: `Matches lead address (${Math.round(distanceKm * 1000)} m)`,
+        label: `Match (${Math.round(distanceKm * 1000)} m)`,
         cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
       };
     } else if (distanceKm <= 1) {
       match = {
         icon: <AlertTriangle className="h-3.5 w-3.5" />,
-        label: `Near lead address (${Math.round(distanceKm * 1000)} m)`,
+        label: `Partial Match (${Math.round(distanceKm * 1000)} m)`,
         cls: "bg-amber-50 text-amber-700 border-amber-200",
       };
     } else {
       match = {
         icon: <XCircle className="h-3.5 w-3.5" />,
-        label: `Away from lead address (${distanceKm.toFixed(1)} km)`,
+        label: `Not Matching (${distanceKm.toFixed(1)} km)`,
         cls: "bg-red-50 text-red-700 border-red-200",
       };
     }
@@ -113,7 +113,7 @@ export default function ActivityGeoStamp({ activity, className }: Props) {
         ) : leadAddress && lat && lng ? (
           <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-700 border-amber-200">
             <AlertTriangle className="h-3.5 w-3.5" />
-            <span>Lead address not verifiable</span>
+            <span>Not verifiable</span>
           </span>
         ) : null}
       </div>
