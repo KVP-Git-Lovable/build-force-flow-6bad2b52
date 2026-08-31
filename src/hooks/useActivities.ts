@@ -82,6 +82,17 @@ export interface Activity {
   risk?: string | null;
   next_follow_up_date?: string | null;
 
+  // Travel effort
+  travel_distance_km?: number | null;
+  travel_time_mins?: number | null;
+  travel_from_type?: "attendance" | "activity" | null;
+  travel_from_activity_id?: string | null;
+  travel_from_at?: string | null;
+  manual_distance_km?: number | null;
+  manual_distance_note?: string | null;
+  manual_distance_attachments?: { url: string; name: string; at: string }[];
+
+
   // Offline queue metadata
   _pending?: boolean;
   _sync_error?: string | null;
