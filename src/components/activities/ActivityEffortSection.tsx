@@ -50,7 +50,9 @@ export default function ActivityEffortSection({
   onNavigateAway?: () => void;
 }) {
   const navigate = useNavigate();
+  const { rateFor } = useTaRates();
   const existingProofs = (activity.manual_distance_attachments || []) as TravelProofEntry[];
+
   const [manualKm, setManualKm] = useState(
     activity.manual_distance_km != null ? String(activity.manual_distance_km) : ""
   );
