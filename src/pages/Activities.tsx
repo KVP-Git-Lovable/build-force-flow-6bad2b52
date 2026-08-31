@@ -2182,8 +2182,14 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
                   </button>
                 )}
               </div>
+
+              {/* Effort — travel distance/time, meeting time & manual override */}
+              <div className="pt-2" onClick={(e) => e.stopPropagation()}>
+                <ActivityEffortSection activity={a as any} onSaved={onStatusChanged} />
+              </div>
             </div>
           </div>
+
 
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             <Badge variant="outline" className={statusColors[a.status] || ""}>
