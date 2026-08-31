@@ -1954,7 +1954,27 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
       updates.status_history = [...(a.status_history || []), historyEntry];
 
       const targetId = await getStatusUpdateTargetId(a, selectedDateStr);
+
+      // Travel effort: measured on check-in, from the previous activity's
+      // check-out (or the day's attendance check-in for the first activity).
+      if (newStatus === "in_progress" && updates.status_change_lat != null) {
+        try {
+          const travel = await computeTravelForCheckIn({
+            userId: a.user_id,
+            activityId: targetId,
+            activityDate: a.activity_date,
+            checkInAt: now,
+            lat: updates.status_change_lat,
+            lng: updates.status_change_lng,
+          });
+          if (travel) Object.assign(updates, travel);
+        } catch (e) {
+          console.warn("travel effort calculation failed", e);
+        }
+      }
+
       await updateActivity(targetId, updates);
+
       toast.success(`Status changed to ${statusLabels[newStatus]}`);
       onStatusChanged();
 
