@@ -73,6 +73,7 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
   const [leadCoords, setLeadCoords] = useState<Coords | null>(null);
   const [checking, setChecking] = useState(false);
   const [recapturing, setRecapturing] = useState(false);
+  const [autoTried, setAutoTried] = useState(false);
 
   useEffect(() => {
     let alive = true;
