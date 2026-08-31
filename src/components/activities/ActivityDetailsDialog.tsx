@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Activity, MapPin, Clock, CheckCircle2, PlayCircle, CircleDot, Pencil, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import ActivityPhotoManager from "@/components/activities/ActivityPhotoManager";
+import ActivityEffortSection from "@/components/activities/ActivityEffortSection";
 import type { Activity as ActivityType, ActivityPhotoEntry } from "@/hooks/useActivities";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -33,9 +34,10 @@ interface ActivityDetailsDialogProps {
   attendance?: { check_in_time: string | null; check_out_time: string | null } | null;
   onEdit?: (activity: ActivityType) => void;
   onDelete?: (id: string) => void;
+  onSavedEffort?: () => void;
 }
 
-export default function ActivityDetailsDialog({ activity, open, onClose, onSavePhotos, attendance, onEdit, onDelete }: ActivityDetailsDialogProps) {
+export default function ActivityDetailsDialog({ activity, open, onClose, onSavePhotos, attendance, onEdit, onDelete, onSavedEffort }: ActivityDetailsDialogProps) {
   if (!activity) return null;
 
   const history = [...(activity.status_history || [])].sort(
