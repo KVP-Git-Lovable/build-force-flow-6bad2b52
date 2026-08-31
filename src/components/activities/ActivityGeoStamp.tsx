@@ -236,7 +236,7 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
         </div>
       )}
 
-      {distanceKm !== null && distanceKm > 0.5 && (
+      {(distanceKm === null || distanceKm > 0.5) && (
 
         <button
           type="button"
