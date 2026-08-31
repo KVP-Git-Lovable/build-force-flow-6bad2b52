@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,10 +41,13 @@ function Field({ icon, label, help, value }: { icon: React.ReactNode; label: str
 export default function ActivityEffortSection({
   activity,
   onSaved,
+  onNavigateAway,
 }: {
   activity: Activity;
   onSaved?: () => void;
+  onNavigateAway?: () => void;
 }) {
+  const navigate = useNavigate();
   const existingProofs = (activity.manual_distance_attachments || []) as TravelProofEntry[];
   const [manualKm, setManualKm] = useState(
     activity.manual_distance_km != null ? String(activity.manual_distance_km) : ""
@@ -147,12 +150,16 @@ export default function ActivityEffortSection({
             <Help text="The record used as the starting point for the travel calculation" />
           </p>
           {activity.travel_from_activity_id ? (
-            <Link
-              to={`/activities?activity=${activity.travel_from_activity_id}`}
-              className="mt-0.5 block text-sm font-semibold text-primary underline underline-offset-2"
+            <button
+              type="button"
+              className="mt-0.5 block text-left text-sm font-semibold text-primary underline underline-offset-2"
+              onClick={() => {
+                onNavigateAway?.();
+                navigate(`/activities?id=${activity.travel_from_activity_id}`);
+              }}
             >
               {prevLabel}
-            </Link>
+            </button>
           ) : (
             <p className="mt-0.5 text-sm font-semibold">{prevLabel}</p>
           )}
