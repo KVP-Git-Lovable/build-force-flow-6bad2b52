@@ -344,7 +344,7 @@ export default function Leads() {
         </Card>
 
         {(filtersOpen || chartsOpen) && (
-          <div className="space-y-4 md:order-2 md:sticky md:top-4 md:self-start">
+          <div className="order-first space-y-4 md:order-2 md:sticky md:top-4 md:self-start">
 
             {filtersOpen && (
               <ViewFiltersPanel
