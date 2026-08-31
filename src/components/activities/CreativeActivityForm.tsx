@@ -1677,8 +1677,8 @@ export default function CreativeActivityForm({
 
               {isEdit && editActivity && (
                 <div className="rounded-2xl bg-card border border-border px-3 sm:px-4 py-3 shadow-sm space-y-3 overflow-hidden min-w-0 max-w-full">
-                {/* Effort — below Next Follow-up, above Timeline */}
-                <ActivityEffortSection activity={editActivity as any} />
+                {/* Effort */}
+                <ActivityEffortSection activity={editActivity as any} onNavigateAway={() => onOpenChange(false)} />
                 {/* Timeline */}
                 {(editActivity.status_history || []).length > 0 && (
                   <div className="pt-2 border-t border-border/60 min-w-0 max-w-full overflow-hidden">
