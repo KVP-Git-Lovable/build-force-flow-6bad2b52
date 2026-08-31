@@ -99,7 +99,9 @@ function AnalyticsInner() {
             {tab === "procurement" && isOn("procurement") && <ProcurementReport />}
             {tab === "activities" && isOn("activities") && <ActivityReport />}
             {tab === "leads" && isOn("leads") && <LeadReport />}
+            {tab === "opportunities" && isOn("opportunities") && <OpportunityReport />}
             {tab === "expenses" && isOn("expenses") && <ExpenseReport />}
+            {tab === "travel" && isOn("travel") && <TravelExpenseReport />}
             {tab === "leave" && isOn("leave") && <LeaveReport />}
 
           </Suspense>
