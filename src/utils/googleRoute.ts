@@ -117,18 +117,22 @@ function splitSegments(points: RoutePoint[]): RoutePoint[][] {
 
 async function snapBatch(batch: RoutePoint[]): Promise<{ path: LatLng[]; meters: number; snapped: boolean }> {
   const raw = batch.map(toLatLng);
+  if (routingUnavailable()) return { path: raw, meters: legMeters(batch), snapped: false };
   try {
     const { data, error } = await supabase.functions.invoke("snap-roads", { body: { points: raw } });
     if (error) throw error;
     const path = (data?.path ?? []) as LatLng[];
     const meters = Number(data?.distanceMeters);
     if (path.length < 2 || !Number.isFinite(meters)) throw new Error("empty snap");
+    noteRoutingSuccess();
     return { path, meters, snapped: data?.snapped === true };
   } catch (e) {
+    noteRoutingFailure();
     console.warn("snap-roads batch failed, using raw track", e);
     return { path: raw, meters: legMeters(batch), snapped: false };
   }
 }
+
 
 // Sanity guards for bridging a blackout: beyond these the two fixes are not a
 // plausible single road journey (flight, stale fix, day rollover) — skip them.
