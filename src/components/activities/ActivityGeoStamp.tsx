@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { MapPin, CheckCircle2, AlertTriangle, XCircle, Loader2 } from "lucide-react";
+import { MapPin, CheckCircle2, AlertTriangle, XCircle, Loader2, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 import type { Activity as ActivityType } from "@/hooks/useActivities";
 
 type Coords = { lat: number; lng: number };
@@ -39,19 +41,36 @@ async function geocode(address: string): Promise<Coords | null> {
   }
 }
 
+async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+    );
+    const json = await res.json();
+    return json?.display_name || null;
+  } catch {
+    return null;
+  }
+}
+
 interface Props {
   activity: ActivityType;
   className?: string;
+  /** Called after the visited location is re-captured and saved */
+  onUpdated?: (patch: { location_lat: number; location_lng: number; location_address: string | null }) => void;
 }
 
-export default function ActivityGeoStamp({ activity, className }: Props) {
+export default function ActivityGeoStamp({ activity, className, onUpdated }: Props) {
   const leadAddress = (activity as any).lead_address as string | undefined;
-  const lat = activity.location_lat ?? activity.status_change_lat;
-  const lng = activity.location_lng ?? activity.status_change_lng;
-  const hasVisited = !!(lat && lng) || !!activity.location_address;
+  const [override, setOverride] = useState<{ lat: number; lng: number; address: string | null } | null>(null);
+  const lat = override?.lat ?? activity.location_lat ?? activity.status_change_lat;
+  const lng = override?.lng ?? activity.location_lng ?? activity.status_change_lng;
+  const visitedAddress = override ? override.address : activity.location_address;
+  const hasVisited = !!(lat && lng) || !!visitedAddress;
 
   const [leadCoords, setLeadCoords] = useState<Coords | null>(null);
   const [checking, setChecking] = useState(false);
+  const [recapturing, setRecapturing] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -64,6 +83,42 @@ export default function ActivityGeoStamp({ activity, className }: Props) {
     });
     return () => { alive = false; };
   }, [leadAddress, lat, lng]);
+
+  const handleRecapture = async () => {
+    if (recapturing) return;
+    setRecapturing(true);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) return reject(new Error("Location is not available on this device"));
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0,
+        });
+      });
+      const nLat = pos.coords.latitude;
+      const nLng = pos.coords.longitude;
+      const address = await reverseGeocode(nLat, nLng);
+
+      const { error } = await supabase
+        .from("activity_events")
+        .update({ location_lat: nLat, location_lng: nLng, location_address: address })
+        .eq("id", activity.id);
+      if (error) throw error;
+
+      setOverride({ lat: nLat, lng: nLng, address });
+      onUpdated?.({ location_lat: nLat, location_lng: nLng, location_address: address });
+      toast({ title: "Location re-submitted", description: "Verification updated with your current position." });
+    } catch (e: any) {
+      toast({
+        title: "Could not capture location",
+        description: e?.message || "Please allow location access and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setRecapturing(false);
+    }
+  };
 
   if (!leadAddress && !hasVisited) return null;
 
@@ -118,6 +173,18 @@ export default function ActivityGeoStamp({ activity, className }: Props) {
         ) : null}
       </div>
 
+      {distanceKm !== null && distanceKm > 0.5 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); void handleRecapture(); }}
+          disabled={recapturing}
+          className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 text-sky-700 px-2 py-1.5 text-[11px] font-medium hover:bg-sky-100 disabled:opacity-60"
+        >
+          {recapturing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+          {recapturing ? "Capturing your current location…" : "Re-submit visited location"}
+        </button>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-md bg-muted/40 p-2">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Address in Lead</p>
@@ -133,11 +200,11 @@ export default function ActivityGeoStamp({ activity, className }: Props) {
               className="text-xs text-sky-600 dark:text-sky-400 underline underline-offset-2 text-left break-words mt-0.5"
               onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
             >
-              {activity.location_address || "View location"}
+            {visitedAddress || "View location"}
             </button>
           ) : (
             <p className="text-xs text-foreground/90 break-words mt-0.5">
-              {activity.location_address || "Not captured"}
+              {visitedAddress || "Not captured"}
             </p>
           )}
           {lat && lng && (
