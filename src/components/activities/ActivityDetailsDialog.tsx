@@ -6,6 +6,7 @@ import { Activity, MapPin, Clock, CheckCircle2, PlayCircle, CircleDot, Pencil, T
 import { format, parseISO } from "date-fns";
 import ActivityPhotoManager from "@/components/activities/ActivityPhotoManager";
 import ActivityEffortSection from "@/components/activities/ActivityEffortSection";
+import ActivityGeoStamp from "@/components/activities/ActivityGeoStamp";
 import type { Activity as ActivityType, ActivityPhotoEntry } from "@/hooks/useActivities";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -136,21 +137,7 @@ export default function ActivityDetailsDialog({ activity, open, onClose, onSaveP
           )}
 
           {/* Geo stamp */}
-          {(activity.location_address || (activity.location_lat && activity.location_lng)) && (
-            <div className="rounded-lg border p-3 space-y-1">
-              <p className="text-xs font-semibold flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" /> Geo Stamp
-              </p>
-              {activity.location_address && (
-                <p className="text-xs text-muted-foreground">{activity.location_address}</p>
-              )}
-              {activity.location_lat && activity.location_lng && (
-                <p className="text-[11px] text-muted-foreground font-mono">
-                  {Number(activity.location_lat).toFixed(5)}, {Number(activity.location_lng).toFixed(5)}
-                </p>
-              )}
-            </div>
-          )}
+          <ActivityGeoStamp activity={activity} />
 
           {/* Next follow-up */}
           {(activity as any).next_follow_up_date && (

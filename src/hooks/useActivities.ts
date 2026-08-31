@@ -77,6 +77,7 @@ export interface Activity {
   lead_name?: string;
   lead_company?: string;
   lead_designation?: string;
+  lead_address?: string;
 
   outcome?: string | null;
   risk?: string | null;
@@ -181,11 +182,11 @@ export function useActivities() {
 
       // Fetch lead names
       const leadIds = [...new Set((data || []).filter((a: any) => a.lead_id).map((a: any) => a.lead_id))];
-      let leadMap: Record<string, { name: string; company: string; designation: string }> = {};
+      let leadMap: Record<string, { name: string; company: string; designation: string; address: string }> = {};
       if (leadIds.length > 0) {
-        const { data: leadData } = await supabase.from("leads").select("id, company, name, title").in("id", leadIds);
+        const { data: leadData } = await supabase.from("leads").select("id, company, name, title, address").in("id", leadIds);
         (leadData || []).forEach((l: any) => {
-          leadMap[l.id] = { name: l.name || l.company || "Lead", company: l.company || "", designation: l.title || "" };
+          leadMap[l.id] = { name: l.name || l.company || "Lead", company: l.company || "", designation: l.title || "", address: l.address || "" };
         });
       }
 
@@ -209,6 +210,7 @@ export function useActivities() {
           lead_name: leadInfo?.name || "",
           lead_company: leadInfo?.company || "",
           lead_designation: leadInfo?.designation || "",
+          lead_address: leadInfo?.address || "",
 
         };
       });
