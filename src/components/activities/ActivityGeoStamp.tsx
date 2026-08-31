@@ -187,35 +187,37 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
         </button>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-md bg-muted/40 p-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Address in Lead</p>
-          <p className="text-xs text-foreground/90 break-words mt-0.5">
-            {leadAddress || "No address on the lead record"}
-          </p>
-        </div>
-        <div className="rounded-md bg-muted/40 p-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Visited Address</p>
-          {mapsUrl ? (
-            <button
-              type="button"
-              className="text-xs text-sky-600 dark:text-sky-400 underline underline-offset-2 text-left break-words mt-0.5"
-              onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
-            >
-            {visitedAddress || "View location"}
-            </button>
-          ) : (
+      {!compact && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-md bg-muted/40 p-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Address in Lead</p>
             <p className="text-xs text-foreground/90 break-words mt-0.5">
-              {visitedAddress || "Not captured"}
+              {leadAddress || "No address on the lead record"}
             </p>
-          )}
-          {lat && lng && (
-            <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
-              {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
-            </p>
-          )}
+          </div>
+          <div className="rounded-md bg-muted/40 p-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Visited Address</p>
+            {mapsUrl ? (
+              <button
+                type="button"
+                className="text-xs text-sky-600 dark:text-sky-400 underline underline-offset-2 text-left break-words mt-0.5"
+                onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
+              >
+              {visitedAddress || "View location"}
+              </button>
+            ) : (
+              <p className="text-xs text-foreground/90 break-words mt-0.5">
+                {visitedAddress || "Not captured"}
+              </p>
+            )}
+            {lat && lng && (
+              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
