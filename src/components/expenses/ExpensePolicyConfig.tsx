@@ -292,6 +292,8 @@ export default function ExpensePolicyConfig() {
                     onChange={(e) => setConfig({ ...config, ta_per_km_rate: Number(e.target.value) })} className="max-w-[200px]" />
                   <p className="text-[11px] text-muted-foreground">Example: If rate is ₹8/km and user travels 45 km, TA = ₹360</p>
                 </div>
+                <TaRateHistory onCurrentRateChange={(r) => setConfig((c) => (c ? { ...c, ta_per_km_rate: r } : c))} />
+
               </>
             ) : (
               <div className="space-y-1">
