@@ -110,10 +110,15 @@ export default function ActivityGeoStamp({ activity, className }: Props) {
             {match.icon}
             <span>{match.label}</span>
           </span>
+        ) : leadAddress && lat && lng ? (
+          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-700 border-amber-200">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>Lead address not verifiable</span>
+          </span>
         ) : null}
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2">
         <div className="rounded-md bg-muted/40 p-2">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Address in Lead</p>
           <p className="text-xs text-foreground/90 break-words mt-0.5">
