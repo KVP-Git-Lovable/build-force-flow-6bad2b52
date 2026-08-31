@@ -86,30 +86,35 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
     return () => { alive = false; };
   }, [leadAddress, lat, lng]);
 
+  const captureAndSave = async () => {
+    const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error("Location is not available on this device"));
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0,
+      });
+    });
+    const nLat = pos.coords.latitude;
+    const nLng = pos.coords.longitude;
+    const address = await reverseGeocode(nLat, nLng);
+
+    const { error } = await supabase
+      .from("activity_events")
+      .update({ location_lat: nLat, location_lng: nLng, location_address: address })
+      .eq("id", activity.id);
+    if (error) throw error;
+
+    setOverride({ lat: nLat, lng: nLng, address });
+    onUpdated?.({ location_lat: nLat, location_lng: nLng, location_address: address });
+    return address;
+  };
+
   const handleRecapture = async () => {
     if (recapturing) return;
     setRecapturing(true);
     try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        if (!navigator.geolocation) return reject(new Error("Location is not available on this device"));
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 20000,
-          maximumAge: 0,
-        });
-      });
-      const nLat = pos.coords.latitude;
-      const nLng = pos.coords.longitude;
-      const address = await reverseGeocode(nLat, nLng);
-
-      const { error } = await supabase
-        .from("activity_events")
-        .update({ location_lat: nLat, location_lng: nLng, location_address: address })
-        .eq("id", activity.id);
-      if (error) throw error;
-
-      setOverride({ lat: nLat, lng: nLng, address });
-      onUpdated?.({ location_lat: nLat, location_lng: nLng, location_address: address });
+      await captureAndSave();
       toast({ title: "Location re-submitted", description: "Verification updated with your current position." });
     } catch (e: any) {
       toast({
@@ -122,7 +127,22 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
     }
   };
 
+  // Auto-capture the visited location once the member has checked in, so the
+  // card shows a geo stamp without needing the manual re-submit button.
+  const status = (activity as any).status as string | undefined;
+  useEffect(() => {
+    if (hasVisited || autoTried) return;
+    if (status !== "in_progress" && status !== "completed") return;
+    setAutoTried(true);
+    setRecapturing(true);
+    captureAndSave()
+      .catch(() => { /* silent: user can still use the re-submit button */ })
+      .finally(() => setRecapturing(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasVisited, autoTried, status, activity.id]);
+
   if (!leadAddress && !hasVisited) return null;
+
 
   const distanceKm =
     leadCoords && lat && lng ? haversineKm(leadCoords, { lat: Number(lat), lng: Number(lng) }) : null;
