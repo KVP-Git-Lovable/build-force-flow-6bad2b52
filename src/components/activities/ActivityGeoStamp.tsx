@@ -200,11 +200,11 @@ export default function ActivityGeoStamp({ activity, className, onUpdated }: Pro
               className="text-xs text-sky-600 dark:text-sky-400 underline underline-offset-2 text-left break-words mt-0.5"
               onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
             >
-              {activity.location_address || "View location"}
+            {visitedAddress || "View location"}
             </button>
           ) : (
             <p className="text-xs text-foreground/90 break-words mt-0.5">
-              {activity.location_address || "Not captured"}
+              {visitedAddress || "Not captured"}
             </p>
           )}
           {lat && lng && (
