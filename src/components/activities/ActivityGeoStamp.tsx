@@ -200,7 +200,44 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
         ) : null}
       </div>
 
+      {(travelKm != null || travelMins != null) && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {travelKm != null && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+              <Route className="h-3 w-3" />
+              {Number(travelKm).toFixed(1)} km travelled
+            </span>
+          )}
+          {travelMins != null && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+              <Clock className="h-3 w-3" />
+              {Number(travelMins)} min travel time
+            </span>
+          )}
+        </div>
+      )}
+
+      {compact && (
+        <div className="flex items-start gap-1.5 text-[11px]">
+          <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
+          {recapturing && !visitedAddress ? (
+            <span className="text-muted-foreground">Capturing visited location…</span>
+          ) : mapsUrl ? (
+            <button
+              type="button"
+              className="text-sky-600 dark:text-sky-400 underline underline-offset-2 text-left line-clamp-2 break-words"
+              onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
+            >
+              {visitedAddress || `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`}
+            </button>
+          ) : (
+            <span className="text-muted-foreground">Visited location not captured</span>
+          )}
+        </div>
+      )}
+
       {distanceKm !== null && distanceKm > 0.5 && (
+
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); void handleRecapture(); }}
