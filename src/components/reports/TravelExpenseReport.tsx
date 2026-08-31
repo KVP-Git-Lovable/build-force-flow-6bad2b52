@@ -64,14 +64,12 @@ export default function TravelExpenseReport() {
       .order("sort_order")
       .then(({ data }) => setActTypes((data || []).map((a) => ({ value: a.name, label: a.name }))));
     supabase
-      .from("expense_master_config" as never)
+      .from("expense_master_config")
       .select("ta_per_km_rate")
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle()
-      .then(({ data }: { data: { ta_per_km_rate?: number } | null }) =>
-        setRate(Number(data?.ta_per_km_rate || 0))
-      );
+      .then(({ data }) => setRate(Number(data?.ta_per_km_rate || 0)));
   }, []);
 
   const generate = async () => {
