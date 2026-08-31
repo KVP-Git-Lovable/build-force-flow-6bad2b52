@@ -43,6 +43,36 @@ const GAP_METERS = 500;
 // Safety cap on outbound calls for a very dense day.
 const MAX_CALLS = 60;
 
+/**
+ * Circuit breaker: when the edge runtime is degraded (503
+ * SUPABASE_EDGE_RUNTIME_SERVICE_DEGRADED) every call fails the same way. After
+ * a couple of failures we stop calling for a cool-off window and silently use
+ * the raw GPS track instead of hammering the gateway.
+ */
+const BREAKER_THRESHOLD = 2;
+const BREAKER_COOLDOWN_MS = 60_000;
+let breakerFailures = 0;
+let breakerOpenedAt = 0;
+
+function routingUnavailable(): boolean {
+  if (breakerFailures < BREAKER_THRESHOLD) return false;
+  if (Date.now() - breakerOpenedAt > BREAKER_COOLDOWN_MS) {
+    breakerFailures = 0;
+    return false;
+  }
+  return true;
+}
+
+function noteRoutingFailure() {
+  breakerFailures++;
+  if (breakerFailures === BREAKER_THRESHOLD) breakerOpenedAt = Date.now();
+}
+
+function noteRoutingSuccess() {
+  breakerFailures = 0;
+}
+
+
 function legMeters(points: RoutePoint[]): number {
   let m = 0;
   for (let i = 1; i < points.length; i++) {
