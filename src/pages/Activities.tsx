@@ -97,6 +97,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import ActivityEffortSection from "@/components/activities/ActivityEffortSection";
+
 
 const LeafletMap = lazy(() => import("@/components/LeafletMap"));
 
