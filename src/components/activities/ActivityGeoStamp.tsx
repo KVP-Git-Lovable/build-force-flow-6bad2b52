@@ -58,9 +58,11 @@ interface Props {
   className?: string;
   /** Called after the visited location is re-captured and saved */
   onUpdated?: (patch: { location_lat: number; location_lng: number; location_address: string | null }) => void;
+  /** Hide the address columns; keeps the verification badge + re-submit button. Useful for mobile card surfaces. */
+  compact?: boolean;
 }
 
-export default function ActivityGeoStamp({ activity, className, onUpdated }: Props) {
+export default function ActivityGeoStamp({ activity, className, onUpdated, compact }: Props) {
   const leadAddress = (activity as any).lead_address as string | undefined;
   const [override, setOverride] = useState<{ lat: number; lng: number; address: string | null } | null>(null);
   const lat = override?.lat ?? activity.location_lat ?? activity.status_change_lat;
