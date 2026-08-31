@@ -366,7 +366,7 @@ export default function Expenses() {
           <p className="text-xs text-muted-foreground">{rangeLabel}</p>
         </CardHeader>
         <CardContent>
-          <Tabs value={detailsTab} onValueChange={(v) => setDetailsTab(v as typeof detailsTab)}>
+          <Tabs value={!daApplicable && detailsTab === "da" ? "ta" : detailsTab} onValueChange={(v) => setDetailsTab(v as typeof detailsTab)}>
             <TabsList className={daApplicable ? "grid w-full grid-cols-3" : "grid w-full grid-cols-2"}>
               <TabsTrigger value="ta" className="text-xs">TA</TabsTrigger>
               {daApplicable && <TabsTrigger value="da" className="text-xs">DA</TabsTrigger>}
