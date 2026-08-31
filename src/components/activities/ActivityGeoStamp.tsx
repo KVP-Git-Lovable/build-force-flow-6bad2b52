@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapPin, CheckCircle2, AlertTriangle, XCircle, Loader2, RefreshCw } from "lucide-react";
+import { MapPin, CheckCircle2, AlertTriangle, XCircle, Loader2, RefreshCw, Route, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import type { Activity as ActivityType } from "@/hooks/useActivities";
@@ -73,6 +73,7 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
   const [leadCoords, setLeadCoords] = useState<Coords | null>(null);
   const [checking, setChecking] = useState(false);
   const [recapturing, setRecapturing] = useState(false);
+  const [autoTried, setAutoTried] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -86,30 +87,35 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
     return () => { alive = false; };
   }, [leadAddress, lat, lng]);
 
+  const captureAndSave = async () => {
+    const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error("Location is not available on this device"));
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0,
+      });
+    });
+    const nLat = pos.coords.latitude;
+    const nLng = pos.coords.longitude;
+    const address = await reverseGeocode(nLat, nLng);
+
+    const { error } = await supabase
+      .from("activity_events")
+      .update({ location_lat: nLat, location_lng: nLng, location_address: address })
+      .eq("id", activity.id);
+    if (error) throw error;
+
+    setOverride({ lat: nLat, lng: nLng, address });
+    onUpdated?.({ location_lat: nLat, location_lng: nLng, location_address: address });
+    return address;
+  };
+
   const handleRecapture = async () => {
     if (recapturing) return;
     setRecapturing(true);
     try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        if (!navigator.geolocation) return reject(new Error("Location is not available on this device"));
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 20000,
-          maximumAge: 0,
-        });
-      });
-      const nLat = pos.coords.latitude;
-      const nLng = pos.coords.longitude;
-      const address = await reverseGeocode(nLat, nLng);
-
-      const { error } = await supabase
-        .from("activity_events")
-        .update({ location_lat: nLat, location_lng: nLng, location_address: address })
-        .eq("id", activity.id);
-      if (error) throw error;
-
-      setOverride({ lat: nLat, lng: nLng, address });
-      onUpdated?.({ location_lat: nLat, location_lng: nLng, location_address: address });
+      await captureAndSave();
       toast({ title: "Location re-submitted", description: "Verification updated with your current position." });
     } catch (e: any) {
       toast({
@@ -122,7 +128,22 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
     }
   };
 
+  // Auto-capture the visited location once the member has checked in, so the
+  // card shows a geo stamp without needing the manual re-submit button.
+  const status = (activity as any).status as string | undefined;
+  useEffect(() => {
+    if (hasVisited || autoTried) return;
+    if (status !== "in_progress" && status !== "completed") return;
+    setAutoTried(true);
+    setRecapturing(true);
+    captureAndSave()
+      .catch(() => { /* silent: user can still use the re-submit button */ })
+      .finally(() => setRecapturing(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasVisited, autoTried, status, activity.id]);
+
   if (!leadAddress && !hasVisited) return null;
+
 
   const distanceKm =
     leadCoords && lat && lng ? haversineKm(leadCoords, { lat: Number(lat), lng: Number(lng) }) : null;
@@ -152,6 +173,10 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
 
   const mapsUrl = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : null;
 
+  const travelKm = (activity as any).travel_distance_km;
+  const travelMins = (activity as any).travel_time_mins;
+
+
   return (
     <div className={`rounded-lg border p-3 space-y-2 ${className || ""}`}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -175,7 +200,44 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
         ) : null}
       </div>
 
+      {(travelKm != null || travelMins != null) && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {travelKm != null && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+              <Route className="h-3 w-3" />
+              {Number(travelKm).toFixed(1)} km travelled
+            </span>
+          )}
+          {travelMins != null && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+              <Clock className="h-3 w-3" />
+              {Number(travelMins)} min travel time
+            </span>
+          )}
+        </div>
+      )}
+
+      {compact && (
+        <div className="flex items-start gap-1.5 text-[11px]">
+          <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
+          {recapturing && !visitedAddress ? (
+            <span className="text-muted-foreground">Capturing visited location…</span>
+          ) : mapsUrl ? (
+            <button
+              type="button"
+              className="text-sky-600 dark:text-sky-400 underline underline-offset-2 text-left line-clamp-2 break-words"
+              onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
+            >
+              {visitedAddress || `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`}
+            </button>
+          ) : (
+            <span className="text-muted-foreground">Visited location not captured</span>
+          )}
+        </div>
+      )}
+
       {distanceKm !== null && distanceKm > 0.5 && (
+
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); void handleRecapture(); }}
