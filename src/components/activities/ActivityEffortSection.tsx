@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { Gauge, HelpCircle, Loader2, Paperclip, Route, Timer, X } from "lucide-react";
+import { Gauge, HelpCircle, IndianRupee, Loader2, Paperclip, Route, Timer, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadTravelProof, TRAVEL_PROOF_BUCKET, type TravelProofEntry } from "@/utils/activityTravel";
 import { resolveSignedUrl } from "@/utils/signedStorage";
+import { useTaRates } from "@/hooks/useTaRates";
 import type { Activity } from "@/hooks/useActivities";
+
 
 function Help({ text }: { text: string }) {
   return (
