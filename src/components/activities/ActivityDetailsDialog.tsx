@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Activity, MapPin, Clock, CheckCircle2, PlayCircle, CircleDot, Pencil, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import ActivityPhotoManager from "@/components/activities/ActivityPhotoManager";
+import ActivityEffortSection from "@/components/activities/ActivityEffortSection";
 import type { Activity as ActivityType, ActivityPhotoEntry } from "@/hooks/useActivities";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -33,9 +34,10 @@ interface ActivityDetailsDialogProps {
   attendance?: { check_in_time: string | null; check_out_time: string | null } | null;
   onEdit?: (activity: ActivityType) => void;
   onDelete?: (id: string) => void;
+  onSavedEffort?: () => void;
 }
 
-export default function ActivityDetailsDialog({ activity, open, onClose, onSavePhotos, attendance, onEdit, onDelete }: ActivityDetailsDialogProps) {
+export default function ActivityDetailsDialog({ activity, open, onClose, onSavePhotos, attendance, onEdit, onDelete, onSavedEffort }: ActivityDetailsDialogProps) {
   if (!activity) return null;
 
   const history = [...(activity.status_history || [])].sort(
@@ -149,6 +151,22 @@ export default function ActivityDetailsDialog({ activity, open, onClose, onSaveP
               )}
             </div>
           )}
+
+          {/* Next follow-up */}
+          {(activity as any).next_follow_up_date && (
+            <div className="rounded-lg border p-3">
+              <p className="text-xs font-semibold flex items-center gap-1.5 mb-0.5">
+                <Clock className="h-3.5 w-3.5" /> Next Follow-up
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {format(parseISO(String((activity as any).next_follow_up_date).slice(0, 10)), "MMM d, yyyy")}
+              </p>
+            </div>
+          )}
+
+          {/* Effort */}
+          <ActivityEffortSection activity={activity} onSaved={onSavedEffort} />
+
 
           {/* Status history */}
           <div>

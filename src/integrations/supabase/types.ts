@@ -36,6 +36,9 @@ export type Database = {
           location_address: string | null
           location_lat: number | null
           location_lng: number | null
+          manual_distance_attachments: Json
+          manual_distance_km: number | null
+          manual_distance_note: string | null
           milestone_id: string | null
           next_follow_up_date: string | null
           opportunity_id: string | null
@@ -55,6 +58,11 @@ export type Database = {
           to_date: string | null
           total_days: number | null
           total_hours: number | null
+          travel_distance_km: number | null
+          travel_from_activity_id: string | null
+          travel_from_at: string | null
+          travel_from_type: string | null
+          travel_time_mins: number | null
           user_id: string
           visit_id: string | null
         }
@@ -79,6 +87,9 @@ export type Database = {
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
+          manual_distance_attachments?: Json
+          manual_distance_km?: number | null
+          manual_distance_note?: string | null
           milestone_id?: string | null
           next_follow_up_date?: string | null
           opportunity_id?: string | null
@@ -98,6 +109,11 @@ export type Database = {
           to_date?: string | null
           total_days?: number | null
           total_hours?: number | null
+          travel_distance_km?: number | null
+          travel_from_activity_id?: string | null
+          travel_from_at?: string | null
+          travel_from_type?: string | null
+          travel_time_mins?: number | null
           user_id: string
           visit_id?: string | null
         }
@@ -122,6 +138,9 @@ export type Database = {
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
+          manual_distance_attachments?: Json
+          manual_distance_km?: number | null
+          manual_distance_note?: string | null
           milestone_id?: string | null
           next_follow_up_date?: string | null
           opportunity_id?: string | null
@@ -141,6 +160,11 @@ export type Database = {
           to_date?: string | null
           total_days?: number | null
           total_hours?: number | null
+          travel_distance_km?: number | null
+          travel_from_activity_id?: string | null
+          travel_from_at?: string | null
+          travel_from_type?: string | null
+          travel_time_mins?: number | null
           user_id?: string
           visit_id?: string | null
         }
@@ -199,6 +223,13 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "project_sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_events_travel_from_activity_id_fkey"
+            columns: ["travel_from_activity_id"]
+            isOneToOne: false
+            referencedRelation: "activity_events"
             referencedColumns: ["id"]
           },
           {
