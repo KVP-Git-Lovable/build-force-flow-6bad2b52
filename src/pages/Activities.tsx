@@ -1,3 +1,4 @@
+import { computeTravelForCheckIn } from "@/utils/activityTravel";
 import { SignedAudio, SignedImage } from "@/components/ui/signed-image";
 import { useState, useEffect, useMemo, useRef, Suspense, lazy, useCallback } from "react";
 import { motion } from "framer-motion";
