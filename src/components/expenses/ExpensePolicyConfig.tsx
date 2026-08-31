@@ -375,6 +375,8 @@ export default function ExpensePolicyConfig() {
               <ExpenseGroupsInline field="da" groups={groups} reload={fetchAll} />
             </>
           )}
+          </>)}
+
         </CardContent>
       </Card>
 
