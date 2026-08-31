@@ -23,6 +23,7 @@ interface ExpenseConfig {
   ta_per_km_rate: number;
   fixed_da_amount: number;
   da_calculation_basis: "per_day" | "per_half_day";
+  da_applicable: boolean;
 }
 interface PolicyRow {
   id: string;
@@ -91,6 +92,7 @@ export default function ExpensePolicyConfig() {
       ta_per_km_rate: Number(cfgRow.ta_per_km_rate || 0),
       fixed_da_amount: Number(cfgRow.fixed_da_amount || 0),
       da_calculation_basis: cfgRow.da_calculation_basis || "per_day",
+      da_applicable: cfgRow.da_applicable !== false,
     });
 
     // policy
@@ -152,6 +154,7 @@ export default function ExpensePolicyConfig() {
         ta_per_km_rate: config.ta_per_km_rate,
         fixed_da_amount: config.fixed_da_amount,
         da_calculation_basis: config.da_calculation_basis,
+        da_applicable: config.da_applicable,
       }).eq("id", config.id),
       supabase.from("expense_policy").update({
         max_additional_expense_per_day: policy.max_additional_expense_per_day,
