@@ -414,6 +414,9 @@ export function useActivities() {
       'status_changed_at', 'status_change_lat', 'status_change_lng',
       'location_lat', 'location_lng', 'attachment_urls',
       'status_history', 'photo_urls',
+      'travel_distance_km', 'travel_time_mins', 'travel_from_type', 'travel_from_activity_id',
+      'travel_from_at', 'manual_distance_km', 'manual_distance_note', 'manual_distance_attachments',
+
     ];
     fields.forEach((f) => {
       if ((updates as any)[f] !== undefined) updatePayload[f] = (updates as any)[f];
