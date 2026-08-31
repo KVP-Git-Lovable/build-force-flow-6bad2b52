@@ -153,6 +153,7 @@ function isBridgeable(a: RoutePoint, b: RoutePoint): boolean {
 async function bridgeGap(a: RoutePoint, b: RoutePoint): Promise<{ path: LatLng[]; meters: number; snapped: boolean }> {
   const straight = haversineMeters(a.latitude, a.longitude, b.latitude, b.longitude);
   if (straight < 50) return { path: [toLatLng(b)], meters: straight, snapped: true };
+  if (routingUnavailable()) return { path: [toLatLng(b)], meters: straight, snapped: false };
   try {
     const { data, error } = await supabase.functions.invoke("snap-gps-route", {
       body: { points: [toLatLng(a), toLatLng(b)] },
@@ -162,10 +163,13 @@ async function bridgeGap(a: RoutePoint, b: RoutePoint): Promise<{ path: LatLng[]
     const meters = Number(data?.distanceMeters);
     const path = encoded ? decodePolyline(encoded) : [];
     if (path.length < 2 || !Number.isFinite(meters)) throw new Error("empty bridge");
+    noteRoutingSuccess();
     return { path, meters, snapped: true };
   } catch (e) {
+    noteRoutingFailure();
     console.warn("gap bridge failed, using straight line", e);
     return { path: [toLatLng(b)], meters: straight, snapped: false };
+
   }
 }
 
