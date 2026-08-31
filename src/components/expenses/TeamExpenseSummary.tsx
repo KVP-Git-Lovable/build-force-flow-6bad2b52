@@ -427,7 +427,7 @@ export default function TeamExpenseSummary() {
                               <p className="font-semibold text-sm">{u.name}</p>
                               <p className="text-[11px] text-muted-foreground">{u.present_days} present · {u.total_km.toFixed(1)} km</p>
                             </div>
-                            <span className="font-bold text-sm">₹{u.total.toFixed(0)}</span>
+                            <span className="font-bold text-sm">₹{(daApplicable ? u.total : u.total - u.da).toFixed(0)}</span>
                           </div>
                           <div className={`grid ${daApplicable ? 'grid-cols-3' : 'grid-cols-2'} gap-2 text-xs`}>
                             <div className="rounded bg-blue-50 dark:bg-blue-950/30 p-1.5 text-center">
