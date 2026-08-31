@@ -327,6 +327,21 @@ export default function ExpensePolicyConfig() {
           <CardTitle className="text-base flex items-center gap-2"><Utensils className="h-4 w-4 text-emerald-500" />Daily Allowance (DA) Policy</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div>
+              <Label className="text-xs font-medium">DA applicable</Label>
+              <p className="text-[11px] text-muted-foreground">
+                If turned off, Daily Allowance is hidden everywhere in the Expenses module.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{config.da_applicable ? "Yes" : "No"}</span>
+              <Switch checked={config.da_applicable}
+                onCheckedChange={(v) => setConfig({ ...config, da_applicable: v })} />
+            </div>
+          </div>
+
+          {config.da_applicable && (<>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1"><Label className="text-xs">DA Amount (₹)</Label>
               <Input type="number" min="0" value={config.fixed_da_amount}
@@ -341,6 +356,7 @@ export default function ExpensePolicyConfig() {
               </Select>
             </div>
           </div>
+
 
           <div className="space-y-1.5">
             <Label className="text-xs">Distribution</Label>
