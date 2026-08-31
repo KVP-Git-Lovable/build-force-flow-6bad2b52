@@ -269,8 +269,9 @@ export default function Leads() {
         onToggleFilters={() => setFiltersOpen((o) => !o)}
       />
 
-      <div className={filtersOpen || chartsOpen ? "grid gap-4 lg:grid-cols-[1fr_340px]" : ""}>
-        <Card className="overflow-hidden">
+      <div className={filtersOpen || chartsOpen ? "grid gap-4 md:grid-cols-[1fr_340px]" : ""}>
+        <Card className="overflow-hidden md:order-1">
+
           <CardContent className="p-0">
             {loading ? (
               <p className="p-8 text-center text-sm text-muted-foreground">Loading views…</p>
@@ -343,7 +344,8 @@ export default function Leads() {
         </Card>
 
         {(filtersOpen || chartsOpen) && (
-          <div className="space-y-4">
+          <div className="order-first space-y-4 md:order-2 md:sticky md:top-4 md:self-start">
+
             {filtersOpen && (
               <ViewFiltersPanel
                 view={activeView}
