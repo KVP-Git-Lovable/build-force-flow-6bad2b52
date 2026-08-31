@@ -41,19 +41,36 @@ async function geocode(address: string): Promise<Coords | null> {
   }
 }
 
+async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+    );
+    const json = await res.json();
+    return json?.display_name || null;
+  } catch {
+    return null;
+  }
+}
+
 interface Props {
   activity: ActivityType;
   className?: string;
+  /** Called after the visited location is re-captured and saved */
+  onUpdated?: (patch: { location_lat: number; location_lng: number; location_address: string | null }) => void;
 }
 
-export default function ActivityGeoStamp({ activity, className }: Props) {
+export default function ActivityGeoStamp({ activity, className, onUpdated }: Props) {
   const leadAddress = (activity as any).lead_address as string | undefined;
-  const lat = activity.location_lat ?? activity.status_change_lat;
-  const lng = activity.location_lng ?? activity.status_change_lng;
-  const hasVisited = !!(lat && lng) || !!activity.location_address;
+  const [override, setOverride] = useState<{ lat: number; lng: number; address: string | null } | null>(null);
+  const lat = override?.lat ?? activity.location_lat ?? activity.status_change_lat;
+  const lng = override?.lng ?? activity.location_lng ?? activity.status_change_lng;
+  const visitedAddress = override ? override.address : activity.location_address;
+  const hasVisited = !!(lat && lng) || !!visitedAddress;
 
   const [leadCoords, setLeadCoords] = useState<Coords | null>(null);
   const [checking, setChecking] = useState(false);
+  const [recapturing, setRecapturing] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -66,6 +83,42 @@ export default function ActivityGeoStamp({ activity, className }: Props) {
     });
     return () => { alive = false; };
   }, [leadAddress, lat, lng]);
+
+  const handleRecapture = async () => {
+    if (recapturing) return;
+    setRecapturing(true);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) return reject(new Error("Location is not available on this device"));
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0,
+        });
+      });
+      const nLat = pos.coords.latitude;
+      const nLng = pos.coords.longitude;
+      const address = await reverseGeocode(nLat, nLng);
+
+      const { error } = await supabase
+        .from("activity_events")
+        .update({ location_lat: nLat, location_lng: nLng, location_address: address })
+        .eq("id", activity.id);
+      if (error) throw error;
+
+      setOverride({ lat: nLat, lng: nLng, address });
+      onUpdated?.({ location_lat: nLat, location_lng: nLng, location_address: address });
+      toast({ title: "Location re-submitted", description: "Verification updated with your current position." });
+    } catch (e: any) {
+      toast({
+        title: "Could not capture location",
+        description: e?.message || "Please allow location access and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setRecapturing(false);
+    }
+  };
 
   if (!leadAddress && !hasVisited) return null;
 
