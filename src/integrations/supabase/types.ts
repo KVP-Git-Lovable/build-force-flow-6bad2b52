@@ -1319,6 +1319,7 @@ export type Database = {
       expense_master_config: {
         Row: {
           created_at: string
+          da_applicable: boolean
           da_calculation_basis: string
           da_type: string
           fixed_da_amount: number | null
@@ -1330,6 +1331,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          da_applicable?: boolean
           da_calculation_basis?: string
           da_type?: string
           fixed_da_amount?: number | null
@@ -1341,6 +1343,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          da_applicable?: boolean
           da_calculation_basis?: string
           da_type?: string
           fixed_da_amount?: number | null
