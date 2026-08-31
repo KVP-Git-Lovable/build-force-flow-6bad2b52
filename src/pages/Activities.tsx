@@ -97,7 +97,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import ActivityEffortSection from "@/components/activities/ActivityEffortSection";
+import ActivityGeoStamp from "@/components/activities/ActivityGeoStamp";
 
 
 const LeafletMap = lazy(() => import("@/components/LeafletMap"));
@@ -2170,25 +2170,9 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
                     : "No status update yet"}
                   {a.user_full_name ? ` by ${a.user_full_name}` : ""}
                 </p>
-                {mapsUrl && (
-                  <button
-                    type="button"
-                    className="flex items-start gap-1 text-left text-sky-600 dark:text-sky-400 underline underline-offset-2"
-                    onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
-                  >
-                    <MapPin className="h-3 w-3 mt-[1px] shrink-0" />
-                    <span className="break-words">
-                      {a.location_address || "View location"}
-                      {lat && lng ? ` (${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})` : ""}
-                    </span>
-                  </button>
-                )}
               </div>
 
-              {/* Effort — travel distance/time, meeting time & manual override */}
-              <div className="pt-2" onClick={(e) => e.stopPropagation()}>
-                <ActivityEffortSection activity={a as any} onSaved={onStatusChanged} />
-              </div>
+              <ActivityGeoStamp activity={a as any} className="mt-2" />
             </div>
           </div>
 
