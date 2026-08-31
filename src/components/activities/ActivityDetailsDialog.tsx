@@ -150,6 +150,22 @@ export default function ActivityDetailsDialog({ activity, open, onClose, onSaveP
             </div>
           )}
 
+          {/* Next follow-up */}
+          {(activity as any).next_follow_up_date && (
+            <div className="rounded-lg border p-3">
+              <p className="text-xs font-semibold flex items-center gap-1.5 mb-0.5">
+                <Clock className="h-3.5 w-3.5" /> Next Follow-up
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {format(parseISO(String((activity as any).next_follow_up_date).slice(0, 10)), "MMM d, yyyy")}
+              </p>
+            </div>
+          )}
+
+          {/* Effort */}
+          <ActivityEffortSection activity={activity} onSaved={onSavedEffort} />
+
+
           {/* Status history */}
           <div>
             <p className="text-xs font-semibold mb-2">Status History</p>
