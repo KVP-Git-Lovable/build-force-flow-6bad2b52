@@ -121,6 +121,15 @@ export default function ActivityEffortSection({
     }
   };
 
+  const effectiveKm =
+    activity.manual_distance_km != null
+      ? Number(activity.manual_distance_km)
+      : activity.travel_distance_km != null
+        ? Number(activity.travel_distance_km)
+        : null;
+  const perKmRate = rateFor(activity.activity_date);
+  const travelCost = effectiveKm != null ? effectiveKm * perKmRate : null;
+
   return (
     <div className="rounded-lg border p-3 space-y-3">
       <p className="text-xs font-semibold">Effort</p>
@@ -144,7 +153,13 @@ export default function ActivityEffortSection({
           help="Time spent with the customer (check-out time − check-in time)"
           value={meetingMins != null ? `${meetingMins} min` : "—"}
         />
-        <div className="rounded-lg border bg-muted/30 p-2.5">
+        <Field
+          icon={<IndianRupee className="h-3 w-3" />}
+          label="Travel expense"
+          help={`Distance × the per KM rate effective on this activity's date (₹${perKmRate}/km)`}
+          value={travelCost != null ? `₹${travelCost.toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : "—"}
+        />
+        <div className="col-span-2 rounded-lg border bg-muted/30 p-2.5">
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             Previous activity considered
             <Help text="The record used as the starting point for the travel calculation" />
@@ -165,6 +180,7 @@ export default function ActivityEffortSection({
           )}
         </div>
       </div>
+
 
       {/* Manual (contested) distance */}
       <div className="space-y-2 rounded-lg border border-dashed p-2.5">
