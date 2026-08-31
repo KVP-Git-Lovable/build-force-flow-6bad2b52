@@ -173,6 +173,18 @@ export default function ActivityGeoStamp({ activity, className, onUpdated }: Pro
         ) : null}
       </div>
 
+      {distanceKm !== null && distanceKm > 0.5 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); void handleRecapture(); }}
+          disabled={recapturing}
+          className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 text-sky-700 px-2 py-1.5 text-[11px] font-medium hover:bg-sky-100 disabled:opacity-60"
+        >
+          {recapturing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+          {recapturing ? "Capturing your current location…" : "Re-submit visited location"}
+        </button>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-md bg-muted/40 p-2">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Address in Lead</p>
