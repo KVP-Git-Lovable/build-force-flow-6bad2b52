@@ -9,6 +9,7 @@ import { ReportWorkspace } from "./ReportWorkspace";
 import type { ReportColumn } from "./reportTypes";
 import { DateFieldOption, PresetKey, presetLabel, useDateScope } from "./dateScope";
 import { useOutcomes } from "@/hooks/useOutcomes";
+import { fetchTaRates, rateForDate, type TaRate } from "@/hooks/useTaRates";
 
 const DATE_FIELDS: DateFieldOption[] = [
   { value: "activity_date", label: "Activity Date" },
@@ -33,6 +34,7 @@ interface Row {
   km: number;
   is_manual: boolean;
   travel_mins: number;
+  rate: number;
   start_time: string | null;
   end_time: string | null;
   hours: number;
@@ -52,6 +54,7 @@ export default function TravelExpenseReport() {
   const [status, setStatus] = useState("all");
   const [actTypes, setActTypes] = useState<{ value: string; label: string }[]>([]);
   const [rate, setRate] = useState(0);
+  const [taRates, setTaRates] = useState<TaRate[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
@@ -70,6 +73,7 @@ export default function TravelExpenseReport() {
       .limit(1)
       .maybeSingle()
       .then(({ data }) => setRate(Number(data?.ta_per_km_rate || 0)));
+    fetchTaRates().then(setTaRates).catch(() => setTaRates([]));
   }, []);
 
   const generate = async () => {
@@ -108,6 +112,7 @@ export default function TravelExpenseReport() {
         (data || []).map((r) => {
           const manual = r.manual_distance_km != null;
           const km = Number((manual ? r.manual_distance_km : r.travel_distance_km) || 0);
+          const dayRate = taRates.length ? rateForDate(taRates, r.activity_date) : rate;
           return {
             id: r.id,
             full_name: nameMap.get(r.user_id) || "Unknown",
@@ -123,7 +128,8 @@ export default function TravelExpenseReport() {
             start_time: r.start_time,
             end_time: r.end_time,
             hours: Number(r.total_hours || 0),
-            amount: km * rate,
+            rate: dayRate,
+            amount: km * dayRate,
           };
         })
       );
@@ -194,6 +200,15 @@ export default function TravelExpenseReport() {
         defaultHidden: true,
       },
       {
+        key: "rate",
+        header: "Rate (/km)",
+        value: (r) => Number(r.rate.toFixed(2)),
+        numeric: true,
+        align: "right",
+        render: (r) => inr(r.rate),
+        pdfWidth: 1.3,
+      },
+      {
         key: "amount",
         header: "Travel Expense",
         value: (r) => Number(r.amount.toFixed(2)),
@@ -217,7 +232,7 @@ export default function TravelExpenseReport() {
       { label: "Activities", value: String(rows.length) },
       { label: "Total KM", value: km.toFixed(1) },
       { label: "Travel Time", value: `${Math.floor(mins / 60)}h ${mins % 60}m` },
-      { label: `Travel Expense @ ${inr(rate)}/km`, value: inr(amt) },
+      { label: "Travel Expense", value: inr(amt) },
       { label: "Team Members", value: String(people) },
     ];
   }, [rows, rate]);
@@ -293,7 +308,7 @@ export default function TravelExpenseReport() {
         `Activity Type: ${actType === "all" ? "All" : actType}`,
         `Outcome: ${outcome === "all" ? "All" : outcome}`,
         `Status: ${status === "all" ? "All" : status}`,
-        `TA Rate: ${inr(rate)} per km`,
+        `TA Rate: date-effective (current ${inr(taRates.length ? rateForDate(taRates, new Date().toISOString().slice(0, 10)) : rate)}/km)`,
       ]}
       filters={
         <>
