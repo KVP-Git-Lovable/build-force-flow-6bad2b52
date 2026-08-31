@@ -173,6 +173,10 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
 
   const mapsUrl = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : null;
 
+  const travelKm = (activity as any).travel_distance_km;
+  const travelMins = (activity as any).travel_time_mins;
+
+
   return (
     <div className={`rounded-lg border p-3 space-y-2 ${className || ""}`}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
