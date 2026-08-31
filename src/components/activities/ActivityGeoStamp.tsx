@@ -58,9 +58,11 @@ interface Props {
   className?: string;
   /** Called after the visited location is re-captured and saved */
   onUpdated?: (patch: { location_lat: number; location_lng: number; location_address: string | null }) => void;
+  /** Hide the address columns; keeps the verification badge + re-submit button. Useful for mobile card surfaces. */
+  compact?: boolean;
 }
 
-export default function ActivityGeoStamp({ activity, className, onUpdated }: Props) {
+export default function ActivityGeoStamp({ activity, className, onUpdated, compact }: Props) {
   const leadAddress = (activity as any).lead_address as string | undefined;
   const [override, setOverride] = useState<{ lat: number; lng: number; address: string | null } | null>(null);
   const lat = override?.lat ?? activity.location_lat ?? activity.status_change_lat;
@@ -185,35 +187,37 @@ export default function ActivityGeoStamp({ activity, className, onUpdated }: Pro
         </button>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-md bg-muted/40 p-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Address in Lead</p>
-          <p className="text-xs text-foreground/90 break-words mt-0.5">
-            {leadAddress || "No address on the lead record"}
-          </p>
-        </div>
-        <div className="rounded-md bg-muted/40 p-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Visited Address</p>
-          {mapsUrl ? (
-            <button
-              type="button"
-              className="text-xs text-sky-600 dark:text-sky-400 underline underline-offset-2 text-left break-words mt-0.5"
-              onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
-            >
-            {visitedAddress || "View location"}
-            </button>
-          ) : (
+      {!compact && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-md bg-muted/40 p-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Address in Lead</p>
             <p className="text-xs text-foreground/90 break-words mt-0.5">
-              {visitedAddress || "Not captured"}
+              {leadAddress || "No address on the lead record"}
             </p>
-          )}
-          {lat && lng && (
-            <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
-              {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
-            </p>
-          )}
+          </div>
+          <div className="rounded-md bg-muted/40 p-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Visited Address</p>
+            {mapsUrl ? (
+              <button
+                type="button"
+                className="text-xs text-sky-600 dark:text-sky-400 underline underline-offset-2 text-left break-words mt-0.5"
+                onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
+              >
+              {visitedAddress || "View location"}
+              </button>
+            ) : (
+              <p className="text-xs text-foreground/90 break-words mt-0.5">
+                {visitedAddress || "Not captured"}
+              </p>
+            )}
+            {lat && lng && (
+              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

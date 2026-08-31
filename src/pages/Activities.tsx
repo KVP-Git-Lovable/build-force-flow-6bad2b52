@@ -2172,7 +2172,7 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
                 </p>
               </div>
 
-              <ActivityGeoStamp activity={a as any} className="mt-2" />
+              <ActivityGeoStamp activity={a as any} className="mt-2" compact />
             </div>
           </div>
 
