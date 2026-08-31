@@ -22,6 +22,7 @@ import ExpenseDateRangeFilter, { type ExpenseDatePreset } from "@/components/exp
 import Pager from "@/components/expenses/Pager";
 import ExpenseSummaryCards from "@/components/expenses/ExpenseSummaryCards";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useDaApplicable } from "@/hooks/useDaApplicable";
 import { useExpenseSummaryRange, type DailyBreakdownRow } from "@/hooks/useMonthlyExpenseSummary";
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -272,12 +273,14 @@ export default function Expenses() {
     ]);
     XLSX.utils.book_append_sheet(wb, taSheet, "TA");
 
-    const daRows = (summary?.daily || []).filter((d) => d.present > 0 || d.da > 0);
-    const daSheet = XLSX.utils.json_to_sheet([
-      ...daRows.map((d) => ({ Date: format(new Date(d.date), "dd-MMM-yyyy"), Present: d.present === 1 ? "Full" : d.present === 0.5 ? "Half" : "-", "DA Amount (₹)": d.da })),
-      { Date: "TOTAL", Present: "", "DA Amount (₹)": summary?.da || 0 },
-    ]);
-    XLSX.utils.book_append_sheet(wb, daSheet, "DA");
+    if (daApplicable) {
+      const daRows = (summary?.daily || []).filter((d) => d.present > 0 || d.da > 0);
+      const daSheet = XLSX.utils.json_to_sheet([
+        ...daRows.map((d) => ({ Date: format(new Date(d.date), "dd-MMM-yyyy"), Present: d.present === 1 ? "Full" : d.present === 0.5 ? "Half" : "-", "DA Amount (₹)": d.da })),
+        { Date: "TOTAL", Present: "", "DA Amount (₹)": summary?.da || 0 },
+      ]);
+      XLSX.utils.book_append_sheet(wb, daSheet, "DA");
+    }
 
     const addlSheet = XLSX.utils.json_to_sheet([
       ...expenses.map((e) => ({
