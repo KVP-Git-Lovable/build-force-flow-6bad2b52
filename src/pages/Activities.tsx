@@ -2107,9 +2107,11 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
 
             <div className="ml-9 space-y-1">
               <Row icon={<Clock className="h-3 w-3 text-sky-500" />}>
-                {a.start_time
-                  ? `${format(parseISO(a.start_time), "h:mm a")}${a.end_time ? ` - ${format(parseISO(a.end_time), "h:mm a")}` : ""}${a.total_hours ? ` (${a.total_hours}h)` : ""}`
-                  : "—"}
+                {effectiveStart
+                  ? `${format(parseISO(effectiveStart), "h:mm a")}${a.end_time ? ` - ${format(parseISO(a.end_time), "h:mm a")}` : ""}${a.total_hours ? ` (${a.total_hours}h)` : ""}`
+                  : a.end_time
+                    ? `Completed ${format(parseISO(a.end_time), "h:mm a")}`
+                    : "—"}
               </Row>
 
               {followUpDate && (
