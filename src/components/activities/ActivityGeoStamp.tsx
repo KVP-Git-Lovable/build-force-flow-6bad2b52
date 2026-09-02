@@ -137,7 +137,7 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
   // card shows a geo stamp without needing the manual re-submit button.
   const status = (activity as any).status as string | undefined;
   useEffect(() => {
-    if (hasVisited || autoTried) return;
+    if (!isOwner || hasVisited || autoTried) return;
     if (status !== "in_progress" && status !== "completed") return;
     setAutoTried(true);
     setRecapturing(true);
@@ -145,7 +145,7 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
       .catch(() => { /* silent: user can still use the re-submit button */ })
       .finally(() => setRecapturing(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasVisited, autoTried, status, activity.id]);
+  }, [isOwner, hasVisited, autoTried, status, activity.id]);
 
   if (!leadAddress && !hasVisited) return null;
 
