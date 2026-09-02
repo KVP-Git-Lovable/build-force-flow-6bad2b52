@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MapPin, CheckCircle2, AlertTriangle, XCircle, Loader2, RefreshCw, Route, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import type { Activity as ActivityType } from "@/hooks/useActivities";
 
 type Coords = { lat: number; lng: number };
