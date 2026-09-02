@@ -20,38 +20,43 @@ export function useGPSTeamMembers() {
       if (!user || cancelled) return;
       setCurrentUserId(user.id);
 
-      // Check if admin
+      // A user may hold more than one role — never use .single() here.
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
-        .single();
-      const admin = roleData?.role === "admin";
+        .eq("user_id", user.id);
+      const admin = (roleData || []).some((r: any) => r.role === "admin");
       if (!cancelled) setIsAdmin(admin);
 
-      if (admin) {
-        // Admin sees all active users
+      const byId = new Map<string, TeamMember>();
+
+      // Everyone the viewer is allowed to see (RLS already scopes this to
+      // admins → all users, managers → their reporting tree).
+      const { data: visible } = await supabase
+        .from("users")
+        .select("id, full_name")
+        .eq("is_active", true)
+        .order("full_name");
+      (visible || []).forEach((u: any) => byId.set(u.id, { id: u.id, full_name: u.full_name || u.id }));
+
+      // Union with the explicit hierarchy so indirect reports are never missed.
+      const { data: subs } = await supabase.rpc("get_user_hierarchy", { _manager_id: user.id });
+      const missingIds = (subs || []).map((s: any) => s.user_id).filter((id: string) => !byId.has(id));
+      if (missingIds.length > 0) {
         const { data } = await supabase
           .from("users")
           .select("id, full_name")
-          .eq("is_active", true)
-          .order("full_name");
-        if (!cancelled) setTeamMembers((data || []).map((u: any) => ({ id: u.id, full_name: u.full_name || u.id })));
-      } else {
-        // Get subordinates via hierarchy
-        const { data: subs } = await supabase.rpc("get_user_hierarchy", { _manager_id: user.id });
-        if (subs && subs.length > 0) {
-          const subIds = subs.map((s: any) => s.user_id);
-          const { data } = await supabase
-            .from("users")
-            .select("id, full_name")
-            .in("id", subIds)
-            .eq("is_active", true)
-            .order("full_name");
-          if (!cancelled) setTeamMembers((data || []).map((u: any) => ({ id: u.id, full_name: u.full_name || u.id })));
-        }
+          .in("id", missingIds)
+          .eq("is_active", true);
+        (data || []).forEach((u: any) => byId.set(u.id, { id: u.id, full_name: u.full_name || u.id }));
       }
-      if (!cancelled) setLoading(false);
+
+      if (!cancelled) {
+        setTeamMembers(
+          Array.from(byId.values()).sort((a, b) => a.full_name.localeCompare(b.full_name))
+        );
+        setLoading(false);
+      }
     };
 
     init();
