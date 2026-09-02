@@ -2034,8 +2034,15 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
   };
   const outcomeStyle = outcome ? outcomeStyles[outcome] : undefined;
 
-  const spentMins = a.start_time && a.end_time
-    ? Math.max(0, Math.round((new Date(a.end_time).getTime() - new Date(a.start_time).getTime()) / 60000))
+  // Older records completed without a check-in have no start_time — fall back
+  // to the status history so the card shows a real range instead of "—".
+  const historyStart =
+    [...((a.status_history as any[]) || [])].reverse().find((h: any) => h?.status === "in_progress")?.at ||
+    ((a.status_history as any[]) || [])[0]?.at ||
+    null;
+  const effectiveStart = a.start_time || (a.end_time ? historyStart : null);
+  const spentMins = effectiveStart && a.end_time
+    ? Math.max(0, Math.round((new Date(a.end_time).getTime() - new Date(effectiveStart).getTime()) / 60000))
     : null;
 
   const Row = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
