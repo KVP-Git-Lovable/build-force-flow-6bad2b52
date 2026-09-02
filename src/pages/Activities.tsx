@@ -1952,6 +1952,14 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
         updates.start_time = now;
       } else if (newStatus === "completed") {
         updates.end_time = now;
+        // Completing without a check-in leaves no start time, which renders as
+        // "—" on the card. Back-fill it from the last in-progress transition.
+        if (!a.start_time) {
+          const startedAt = [...(a.status_history || [])]
+            .reverse()
+            .find((h: any) => h?.status === "in_progress")?.at;
+          if (startedAt) updates.start_time = startedAt;
+        }
       }
 
       updates.status_history = [...(a.status_history || []), historyEntry];
