@@ -65,6 +65,10 @@ interface Props {
 
 export default function ActivityGeoStamp({ activity, className, onUpdated, compact }: Props) {
   const leadAddress = (activity as any).lead_address as string | undefined;
+  const { userId } = useCurrentUser();
+  // Only the field member who owns the activity may stamp a location — a
+  // manager viewing the record must never overwrite it with their own position.
+  const isOwner = !!userId && userId === (activity as any).user_id;
   const [override, setOverride] = useState<{ lat: number; lng: number; address: string | null } | null>(null);
   const lat = override?.lat ?? activity.location_lat ?? activity.status_change_lat;
   const lng = override?.lng ?? activity.location_lng ?? activity.status_change_lng;
