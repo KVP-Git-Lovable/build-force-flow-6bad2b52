@@ -26,7 +26,7 @@ const corsHeaders = {
 };
 
 const BATCH_SIZE = 1000;
-const EXPORT_TO = "Abhishek.S@kvpcorp.com";
+const EXPORT_TO = "abhishek.s@kvpcorp.com";
 const EXPORT_FROM = "SBEE Exports <onboarding@resend.dev>";
 
 function csvEscape(v: unknown): string {
@@ -69,15 +69,25 @@ Deno.serve(async (req) => {
     });
   }
 
+  const supabase = createClient(supabaseUrl, serviceKey);
+
   // Self-guard: the platform's JWT check admits anon tokens too — this export
-  // must only run for the scheduled job (which sends the shared cron secret)
-  // or for a manual call carrying the service-role key.
+  // must only run for the scheduled job (which sends the shared token kept in
+  // the service-role-only export_job_auth table) or for a manual call carrying
+  // the service-role key itself.
   const auth = req.headers.get("authorization") ?? "";
-  const cronSecret = Deno.env.get("DATA_EXPORT_CRON_SECRET");
-  const providedCronSecret = req.headers.get("x-export-secret") ?? "";
-  const authorized =
-    auth === `Bearer ${serviceKey}` ||
-    (!!cronSecret && providedCronSecret === cronSecret);
+  let authorized = auth === `Bearer ${serviceKey}`;
+  if (!authorized) {
+    const provided = req.headers.get("x-export-secret") ?? "";
+    if (provided) {
+      const { data: tokenRow } = await supabase
+        .from("export_job_auth")
+        .select("token")
+        .eq("token", provided)
+        .maybeSingle();
+      authorized = !!tokenRow;
+    }
+  }
   if (!authorized) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       status: 403,
@@ -85,14 +95,15 @@ Deno.serve(async (req) => {
     });
   }
 
-  const supabase = createClient(supabaseUrl, serviceKey);
 
   try {
     const { data: tableRows, error: listError } = await supabase.rpc("list_export_tables");
     if (listError) throw new Error(`list_export_tables failed: ${listError.message}`);
     const tables: string[] = (tableRows ?? [])
       .map((t: unknown) => (typeof t === "string" ? t : (t as { table_name?: string })?.table_name))
-      .filter((t: unknown): t is string => typeof t === "string" && t.length > 0);
+      .filter((t: unknown): t is string => typeof t === "string" && t.length > 0)
+      // Never ship the job's own credential table inside the export bundle.
+      .filter((t: string) => t !== "export_job_auth");
 
     const files: Record<string, Uint8Array> = {};
     let totalRows = 0;

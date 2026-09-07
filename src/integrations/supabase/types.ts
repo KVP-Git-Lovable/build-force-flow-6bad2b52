@@ -1430,6 +1430,24 @@ export type Database = {
         }
         Relationships: []
       }
+      export_job_auth: {
+        Row: {
+          created_at: string
+          id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token?: string
+        }
+        Relationships: []
+      }
       global_leave_policy: {
         Row: {
           allow_backdated_leave: boolean
