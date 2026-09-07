@@ -5808,6 +5808,7 @@ export type Database = {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
       }
+      list_export_tables: { Args: never; Returns: string[] }
       recalculate_monthly_leave_accruals: {
         Args: { _target_user_id?: string }
         Returns: undefined
