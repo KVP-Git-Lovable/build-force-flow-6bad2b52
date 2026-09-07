@@ -101,7 +101,9 @@ Deno.serve(async (req) => {
     if (listError) throw new Error(`list_export_tables failed: ${listError.message}`);
     const tables: string[] = (tableRows ?? [])
       .map((t: unknown) => (typeof t === "string" ? t : (t as { table_name?: string })?.table_name))
-      .filter((t: unknown): t is string => typeof t === "string" && t.length > 0);
+      .filter((t: unknown): t is string => typeof t === "string" && t.length > 0)
+      // Never ship the job's own credential table inside the export bundle.
+      .filter((t: string) => t !== "export_job_auth");
 
     const files: Record<string, Uint8Array> = {};
     let totalRows = 0;
