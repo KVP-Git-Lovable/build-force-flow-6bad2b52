@@ -70,10 +70,15 @@ Deno.serve(async (req) => {
   }
 
   // Self-guard: the platform's JWT check admits anon tokens too — this export
-  // must only run with the service-role key (which is what the pg_cron job
-  // sends).
+  // must only run for the scheduled job (which sends the shared cron secret)
+  // or for a manual call carrying the service-role key.
   const auth = req.headers.get("authorization") ?? "";
-  if (auth !== `Bearer ${serviceKey}`) {
+  const cronSecret = Deno.env.get("DATA_EXPORT_CRON_SECRET");
+  const providedCronSecret = req.headers.get("x-export-secret") ?? "";
+  const authorized =
+    auth === `Bearer ${serviceKey}` ||
+    (!!cronSecret && providedCronSecret === cronSecret);
+  if (!authorized) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
