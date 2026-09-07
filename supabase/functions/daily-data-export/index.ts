@@ -26,7 +26,7 @@ const corsHeaders = {
 };
 
 const BATCH_SIZE = 1000;
-const EXPORT_TO = "Abhishek.S@kvpcorp.com";
+const EXPORT_TO = "abhishek.s@kvpcorp.com";
 const EXPORT_FROM = "SBEE Exports <onboarding@resend.dev>";
 
 function csvEscape(v: unknown): string {
