@@ -69,15 +69,25 @@ Deno.serve(async (req) => {
     });
   }
 
+  const supabase = createClient(supabaseUrl, serviceKey);
+
   // Self-guard: the platform's JWT check admits anon tokens too — this export
-  // must only run for the scheduled job (which sends the shared cron secret)
-  // or for a manual call carrying the service-role key.
+  // must only run for the scheduled job (which sends the shared token kept in
+  // the service-role-only export_job_auth table) or for a manual call carrying
+  // the service-role key itself.
   const auth = req.headers.get("authorization") ?? "";
-  const cronSecret = Deno.env.get("DATA_EXPORT_CRON_SECRET");
-  const providedCronSecret = req.headers.get("x-export-secret") ?? "";
-  const authorized =
-    auth === `Bearer ${serviceKey}` ||
-    (!!cronSecret && providedCronSecret === cronSecret);
+  let authorized = auth === `Bearer ${serviceKey}`;
+  if (!authorized) {
+    const provided = req.headers.get("x-export-secret") ?? "";
+    if (provided) {
+      const { data: tokenRow } = await supabase
+        .from("export_job_auth")
+        .select("token")
+        .eq("token", provided)
+        .maybeSingle();
+      authorized = !!tokenRow;
+    }
+  }
   if (!authorized) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       status: 403,
@@ -85,7 +95,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  const supabase = createClient(supabaseUrl, serviceKey);
 
   try {
     const { data: tableRows, error: listError } = await supabase.rpc("list_export_tables");
