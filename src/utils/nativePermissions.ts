@@ -41,12 +41,20 @@ async function nativeGetPosition(opts: { enableHighAccuracy: boolean; timeout: n
     latitude: pos.coords.latitude,
     longitude: pos.coords.longitude,
     accuracy: pos.coords.accuracy,
+    speed: pos.coords.speed ?? null,
+    heading: pos.coords.heading ?? null,
   };
 }
 
-type NativeLocationPowerStatus = {
+export type NativeLocationPowerStatus = {
   foregroundLocation?: 'granted' | 'denied' | string;
   backgroundLocation?: 'granted' | 'denied' | string;
+  /** ACCESS_FINE_LOCATION specifically — approximate-only reads false. */
+  preciseLocation?: boolean;
+  /** Android device Location Services master toggle. */
+  locationServicesEnabled?: boolean;
+  /** POST_NOTIFICATIONS state — controls tracking-notification visibility (13+). */
+  notificationsEnabled?: boolean;
   ignoringBatteryOptimizations?: boolean;
   sdkInt?: number;
   opened?: boolean;
@@ -79,6 +87,18 @@ export async function requestBatteryOptimizationExemption(): Promise<NativeLocat
   }
 }
 
+/** Open the system Location Services screen (device location on/off). */
+export async function openLocationSettings(): Promise<NativeLocationPowerStatus | null> {
+  if (!isNative()) return null;
+  try {
+    const DeviceSettings = await getDeviceSettingsPlugin();
+    return await DeviceSettings.openLocationSettings();
+  } catch (e) {
+    console.warn('Could not open location settings:', e);
+    return null;
+  }
+}
+
 export async function requestBackgroundLocationAccess(): Promise<NativeLocationPowerStatus | null> {
   if (!isNative()) return null;
   try {
@@ -106,6 +126,16 @@ export async function prepareNativeLocationSettings(): Promise<NativeLocationPow
   }
 
   const status = await getNativeLocationPowerStatus();
+  // Android 13+: the tracking foreground-service notification is invisible
+  // until POST_NOTIFICATIONS is granted — request it in the same flow.
+  if (status?.notificationsEnabled === false) {
+    try {
+      const DeviceSettings = await getDeviceSettingsPlugin();
+      await DeviceSettings.requestPostNotifications();
+    } catch (e) {
+      console.warn('Could not request notification permission:', e);
+    }
+  }
   if (status?.ignoringBatteryOptimizations === false) {
     await requestBatteryOptimizationExemption();
   }
@@ -121,13 +151,21 @@ export async function prepareNativeLocationSettings(): Promise<NativeLocationPow
  * since a single getCurrentPosition call often returns a cached/low-accuracy fix
  * (especially on desktop where Wi-Fi/IP geolocation can be off by kilometers).
  */
-function webGetPosition(opts: { enableHighAccuracy: boolean; timeout: number }): Promise<{ latitude: number; longitude: number; accuracy: number }> {
+type PositionFix = {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  speed: number | null;
+  heading: number | null;
+};
+
+function webGetPosition(opts: { enableHighAccuracy: boolean; timeout: number }): Promise<PositionFix> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       return reject(new Error('Geolocation not supported'));
     }
 
-    let best: { latitude: number; longitude: number; accuracy: number } | null = null;
+    let best: PositionFix | null = null;
     let settled = false;
     const ACCEPT_ACCURACY_M = 50; // return early if we get a reading this good
     const SAMPLE_MS = Math.min(8000, Math.max(3000, opts.timeout / 2));
@@ -148,6 +186,8 @@ function webGetPosition(opts: { enableHighAccuracy: boolean; timeout: number }):
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
+          speed: pos.coords.speed ?? null,
+          heading: pos.coords.heading ?? null,
         };
         if (!best || reading.accuracy < best.accuracy) best = reading;
         if (reading.accuracy <= ACCEPT_ACCURACY_M) finish();
@@ -294,6 +334,26 @@ export async function openAppSettings(): Promise<boolean> {
     return true;
   } catch (e) {
     console.warn('Could not open app settings:', e);
+    return false;
+  }
+}
+
+/**
+ * Open the OEM "autostart" / "protected apps" screen (Xiaomi, Oppo, Vivo,
+ * Realme, Transsion…). These vendors kill the background location foreground
+ * service unless the app is whitelisted there, which is the single most
+ * common cause of a day's tracking stopping mid-trip. Falls back to the app
+ * details screen on stock Android. No-ops on web (returns false).
+ */
+export async function openAutoStartSettings(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const DeviceSettings = await getDeviceSettingsPlugin();
+    if (!DeviceSettings?.openAutoStartSettings) return await openAppSettings();
+    await DeviceSettings.openAutoStartSettings();
+    return true;
+  } catch (e) {
+    console.warn('Could not open autostart settings:', e);
     return false;
   }
 }

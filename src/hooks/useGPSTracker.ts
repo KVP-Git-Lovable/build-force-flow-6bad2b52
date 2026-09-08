@@ -1,52 +1,107 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentPosition, isNative, prepareNativeLocationSettings } from "@/utils/nativePermissions";
-import { shouldAcceptMove } from "@/utils/gpsCaptureGate";
+import { shouldAcceptMove, isCoarseFix, GPS_CAPTURE_CONFIG } from "@/utils/gpsCaptureGate";
+import { GPS_PROCESSING_CONFIG, haversineMeters as haversine } from "@/utils/gpsDistance";
+import {
+  initGpsSyncQueue,
+  enqueueGpsPoint,
+  flushPendingGpsPoints,
+  peekNewestQueuedPoint,
+  setGpsQueueOwner,
+
+} from "@/services/gpsSyncQueue";
+import { logTrackerEvent } from "@/services/trackerHealth";
+import { setTrackerStatus } from "@/services/trackerStatus";
 import { format } from "date-fns";
 
-const INTERVAL_MS = 15_000;          // safety heartbeat: sample at least every 15s
-const FOREGROUND_POLL_MS = 15_000;   // web / non-native fallback
-const WATCHDOG_MS = 5 * 60_000;      // no point written for 5 min while the day is
-                                     // open ⇒ the OS killed the watcher: re-register
-const MAX_ACCURACY_M = 150;          // reject fixes worse than 150m (cell-tower guesses create phantom distance)
+
+const MIN_FORCED_WRITE_MS = 15_000;  // min spacing for non-moving trail-density writes
+const FOREGROUND_POLL_MS = 15_000;   // web / non-native fallback (screen-on only)
+// Watcher-health: no watcher CALLBACK for this long while the day is open ⇒
+// the OS killed the watcher: re-register. (Checked on a slow tick that does
+// NOT acquire GPS itself — the watcher is the single acquisition source.)
+const WATCHDOG_MS = GPS_CAPTURE_CONFIG.WATCHDOG_MS;
+const WATCHDOG_TICK_MS = GPS_CAPTURE_CONFIG.WATCHDOG_TICK_MS;
+// Silence this long while the day is open ⇒ take ONE high-accuracy probe fix
+// so a stationary device still leaves a trail.
+const STATIONARY_PROBE_MS = GPS_CAPTURE_CONFIG.STATIONARY_PROBE_MS;
+// Probe fixes worse than this are discarded (coarse network guesses).
+const PROBE_MAX_ACCURACY_M = GPS_CAPTURE_CONFIG.PROBE_MAX_ACCURACY_M;
+
+// Reject fixes worse than this (cell-tower guesses create phantom distance) —
+// same threshold the display-side trajectory engine uses.
+const MAX_ACCURACY_M = GPS_PROCESSING_CONFIG.MAX_ACCURACY_METERS;
 const MAX_JUMP_METERS = 10000;       // reject teleport jumps >10km between consecutive samples
+// A check-in still open after this long means the user forgot to check out —
+// stop tracking instead of running (and draining) all night.
+const MAX_OPEN_DAY_MS = 16 * 60 * 60_000;
+// How often the tracker re-checks attendance state while actively tracking.
+const DAY_RECHECK_MS = 15 * 60_000;
+// On app resume, watcher silence longer than this is treated as a dead
+// watcher and the watcher is rebuilt immediately (JS timers cannot run while
+// the WebView is frozen, so resume is our only repair opportunity).
+const RESUME_SILENCE_MS = 60_000;
+
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371000;
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-  const dLon = ((b.lng - a.lng) * Math.PI) / 180;
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+  return haversine(a.lat, a.lng, b.lat, b.lng);
 }
 
 /**
- * Continuously captures GPS points into `gps_tracking` while the user's
- * attendance day is active (checked in, not checked out).
+ * Continuously captures GPS points while the user's attendance day is active
+ * (checked in, not checked out).
  *
- * On native (Capacitor) it uses @capacitor-community/background-geolocation
- * so tracking survives the app being backgrounded / screen-locked. A
- * persistent Android notification lets the user know tracking is active.
+ * On native (Capacitor) the @capacitor-community/background-geolocation
+ * watcher is the SINGLE authoritative GPS acquisition source — tracking
+ * survives the app being backgrounded / screen-locked via the plugin's
+ * foreground location service. No timers acquire GPS on native; the only
+ * periodic tick is a watchdog that re-registers a dead watcher.
  *
- * On web it falls back to foreground polling.
+ * On web it falls back to foreground polling (screen-on only).
  *
- * Sampling rule: a point is written whenever the accuracy-aware movement
- * gate (see gpsCaptureGate.ts) confirms real movement, or forced every 30s
- * for trail density (without moving the gating anchor if it wasn't a
- * confirmed real move).
+ * Persistence: accepted fixes are enqueued into the local GPS sync queue
+ * (gpsSyncQueue.ts) and uploaded in batches — never one network write per
+ * fix, and GPS collection never depends on network availability.
  */
 export function useGPSTracker(userId: string | null | undefined) {
   const activeRef = useRef(false);
   const lastPointRef = useRef<{ lat: number; lng: number; ts: number; accuracy: number | null } | null>(null);
-  const pendingJumpRef = useRef<{ lat: number; lng: number; accuracy: number | null; ts: number } | null>(null);
+  const pendingJumpRef = useRef<{
+    lat: number;
+    lng: number;
+    accuracy: number | null;
+    ts: number;
+    speed: number | null;
+    heading: number | null;
+  } | null>(null);
   const timerRef = useRef<number | null>(null);
   const watcherIdRef = useRef<string | null>(null);
   const foregroundBusyRef = useRef(false);
-  const insertChainRef = useRef<Promise<void>>(Promise.resolve());
   const lastWriteRef = useRef<number>(0);
+  // Watcher-health signal: updated on EVERY watcher delivery, even fixes the
+  // gates reject — write recency no longer proxies callback receipt now that
+  // writes are batched.
+  const lastCallbackTsRef = useRef<number>(0);
+  /** Diagnostics: has the plugin watcher ever delivered a fix this session? */
+  const firstCallbackSeenRef = useRef(false);
+  /** Diagnostics: fixes too coarse to anchor on (fused/network provider). */
+  const coarseFixCountRef = useRef(0);
+  /** Throttle for the periodic attendance-state recheck while tracking. */
+  const lastDayCheckRef = useRef<number>(Date.now());
+  /**
+   * Force a fresh native watcher (set once the watcher is registered).
+   * Called by the watchdog and by the app-resume recovery path.
+   */
+  const forceReregisterRef = useRef<((reason: string) => Promise<void>) | null>(null);
+  /** Single-flight guard: overlapping re-registrations must never create two watchers. */
+  const reRegisteringRef = useRef(false);
+  /** Drains the plugin's native observation buffer (set while native tracking runs). */
+  const drainNativeBufferRef = useRef<((reason: string) => Promise<void>) | null>(null);
+  /** Newest OS fix timestamp already processed — live callbacks and the native
+   *  buffer deliver the SAME real fixes; each is processed exactly once. */
+  const lastSeenFixTimeRef = useRef(0);
+
 
   useEffect(() => {
     if (!userId) return;
@@ -54,15 +109,40 @@ export function useGPSTracker(userId: string | null | undefined) {
     let stopBackground: (() => Promise<void>) | null = null;
     let pollTimer: number | null = null;
 
-    async function isDayOpen(): Promise<boolean> {
+    /**
+     * Whether the attendance day is open. Returns null when the answer is
+     * UNKNOWN — the query failed (offline / server unreachable). "I couldn't
+     * reach the server" must never be read as "checked out": doing so used to
+     * silently kill tracking the moment the app was foregrounded without
+     * internet, and it never recovered.
+     */
+    async function isDayOpen(): Promise<boolean | null> {
       const today = format(new Date(), "yyyy-MM-dd");
-      const { data: att } = await supabase
+      const { data: att, error } = await supabase
         .from("attendance")
         .select("check_in_time, check_out_time")
         .eq("user_id", userId!)
         .eq("date", today)
         .maybeSingle();
-      return !!att?.check_in_time && !att?.check_out_time;
+      if (error) {
+        console.warn("[GPSTracker] attendance check failed (offline?) — keeping current tracking state", error.message);
+        return null;
+      }
+      if (!att?.check_in_time || att?.check_out_time) return false;
+      // Forgotten check-out guard: an attendance row that has been open longer
+      // than a plausible workday keeps the tracker (and the battery drain)
+      // running all night and pollutes the next day's totals. Treat it as
+      // closed for tracking purposes — the attendance record is untouched.
+      const openMs = Date.now() - new Date(att.check_in_time).getTime();
+      if (openMs > MAX_OPEN_DAY_MS) {
+        console.warn(
+          "[GPSTracker] attendance open for",
+          Math.round(openMs / 3_600_000),
+          "h with no check-out — stopping tracking"
+        );
+        return false;
+      }
+      return true;
     }
 
     async function bootstrapLastPoint() {
@@ -75,52 +155,102 @@ export function useGPSTracker(userId: string | null | undefined) {
         .order("timestamp", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (data && !lastPointRef.current) {
-        lastPointRef.current = {
-          lat: data.latitude,
-          lng: data.longitude,
-          ts: new Date(data.timestamp).getTime(),
-          accuracy: data.accuracy ?? null,
-        };
+      // A restart may leave unsynced points in the local queue that are newer
+      // than anything in the DB — anchor on whichever is most recent, or the
+      // first post-restart fix would look like a jump from the past.
+      const queued = peekNewestQueuedPoint(userId!, today);
+      const dbTs = data ? new Date(data.timestamp).getTime() : -Infinity;
+      const qTs = queued ? new Date(queued.timestamp).getTime() : -Infinity;
+      if (!lastPointRef.current && (data || queued)) {
+        lastPointRef.current =
+          qTs > dbTs
+            ? {
+                lat: queued!.latitude,
+                lng: queued!.longitude,
+                ts: qTs,
+                accuracy: queued!.accuracy ?? null,
+              }
+            : {
+                lat: data!.latitude,
+                lng: data!.longitude,
+                ts: dbTs,
+                accuracy: data!.accuracy ?? null,
+              };
       }
     }
 
-    async function persistPoint(
+    // Local-buffer persistence: synchronous enqueue, batched upload by the
+    // sync coordinator. Capture never waits on (or fails with) the network.
+    function persistPoint(
       lat: number,
       lng: number,
       accuracy: number | null,
       ts: number,
-      advanceAnchor: boolean
+      advanceAnchor: boolean,
+      speed: number | null = null,
+      heading: number | null = null
     ) {
       if (advanceAnchor) lastPointRef.current = { lat, lng, ts, accuracy };
       lastWriteRef.current = Date.now();
-      const today = format(new Date(), "yyyy-MM-dd");
-      await supabase.from("gps_tracking").insert({
+      setTrackerStatus({ lastFixAt: ts });
+
+      enqueueGpsPoint({
         user_id: userId!,
         latitude: lat,
         longitude: lng,
         accuracy,
+        // Device speed (m/s) and heading feed the trajectory engine's
+        // plausibility checks — store them whenever the fix provides them.
+        speed,
+        heading,
         timestamp: new Date(ts).toISOString(),
-        date: today,
+        date: format(new Date(ts), "yyyy-MM-dd"),
       });
     }
 
-    async function insertPoint(lat: number, lng: number, accuracy: number | null) {
+    function insertPoint(
+      lat: number,
+      lng: number,
+      accuracy: number | null,
+      speed: number | null = null,
+      heading: number | null = null,
+      /**
+       * The OS timestamp of the fix itself. Batched fused-location delivery
+       * (and a WebView that was frozen while backgrounded) can hand several
+       * fixes to JS at once, long after they were taken — stamping them with
+       * "now" collapses a real trail into one instant. Only trusted when it
+       * is recent and not in the future; otherwise we fall back to wall time.
+       */
+      fixTimeMs: number | null = null
+    ) {
+      // Live-callback / native-buffer overlap guard: a fix carrying an OS
+      // timestamp is processed exactly once no matter which path delivered it.
+      if (fixTimeMs != null && Number.isFinite(fixTimeMs)) {
+        if (fixTimeMs <= lastSeenFixTimeRef.current) return;
+        lastSeenFixTimeRef.current = fixTimeMs;
+      }
       // Reject low-accuracy fixes (IP/Wi-Fi guesses can be 10s of km off)
       if (accuracy != null && accuracy > MAX_ACCURACY_M) {
         console.debug("[GPSTracker] rejected low-accuracy fix", accuracy);
         return;
       }
-      const now = Date.now();
+      const wall = Date.now();
+      const fixUsable =
+        fixTimeMs != null &&
+        Number.isFinite(fixTimeMs) &&
+        fixTimeMs <= wall + 60_000 &&
+        wall - fixTimeMs < 30 * 60_000;
+      const now = fixUsable ? (fixTimeMs as number) : wall;
       const last = lastPointRef.current;
       if (last) {
         const dist = haversineMeters(last, { lat, lng });
-        const elapsed = now - last.ts;
+        const elapsed = Math.max(0, now - last.ts);
         // Reject unrealistic teleport jumps (e.g. sudden 50km hop while stationary)
         if (dist > MAX_JUMP_METERS && elapsed < 5 * 60_000) {
           console.debug("[GPSTracker] rejected teleport jump", dist, "m in", elapsed, "ms");
           return;
         }
+
         // Ping-pong guard: on native, the background watcher and the heartbeat
         // poll use different location providers — one can return a stale cached
         // fix, producing alternating A→B→A jumps (seen as ~1.4km hops every
@@ -132,47 +262,75 @@ export function useGPSTracker(userId: string | null | undefined) {
           const pending = pendingJumpRef.current;
           if (pending && haversineMeters(pending, { lat, lng }) <= 100) {
             // Confirmed: genuine relocation — flush the held point first.
-            await persistPoint(pending.lat, pending.lng, pending.accuracy, pending.ts, true);
+            persistPoint(
+              pending.lat,
+              pending.lng,
+              pending.accuracy,
+              pending.ts,
+              true,
+              pending.speed,
+              pending.heading
+            );
             pendingJumpRef.current = null;
           } else {
-            pendingJumpRef.current = { lat, lng, accuracy, ts: now };
+            pendingJumpRef.current = { lat, lng, accuracy, ts: now, speed, heading };
             return;
           }
         } else if (pendingJumpRef.current) {
           // Returned near the last good point — drop the held outlier.
           pendingJumpRef.current = null;
         }
+        // Coarse (fused/network) fixes — typically the tell-tale flat 35 m —
+        // are kept for trail/last-known purposes but must never become the
+        // movement anchor: anchoring on them is what flattened whole days to
+        // 0 km. They are written without advancing the anchor.
+        if (isCoarseFix(accuracy)) {
+          coarseFixCountRef.current += 1;
+          if (coarseFixCountRef.current % 20 === 1) {
+            console.debug("[GPSTracker] coarse fix kept as trail-only", {
+              accuracy,
+              coarseFixes: coarseFixCountRef.current,
+            });
+          }
+          if (elapsed < MIN_FORCED_WRITE_MS) return;
+          persistPoint(lat, lng, accuracy, now, false, speed, heading);
+          return;
+        }
         // Accuracy-aware movement gate: don't credit — or anchor on — a jump
-        // smaller than the combined declared error radius of both fixes.
-        // Ordinary GPS jitter (accuracy up to MAX_ACCURACY_M is accepted
-        // above) can otherwise silently drift the anchor every heartbeat,
-        // making each subsequent noisy fix measure from an already-drifted
-        // point instead of the last confirmed real position.
+        // smaller than the combined declared error radius of both fixes
+        // (clamped by MOVEMENT_THRESHOLD_CAP_M). Ordinary GPS jitter
+        // (accuracy up to MAX_ACCURACY_M is accepted above) can otherwise
+        // silently drift the anchor every heartbeat, making each subsequent
+        // noisy fix measure from an already-drifted point instead of the last
+        // confirmed real position.
         const { isRealMove } = shouldAcceptMove(last, { lat, lng, ts: now, accuracy });
         if (!isRealMove) {
-          if (elapsed < INTERVAL_MS) return; // too soon, no real movement — skip write entirely
-          // Heartbeat-forced sample: keep the trail dense, but don't move the
+          if (elapsed < MIN_FORCED_WRITE_MS) return; // too soon, no real movement — skip write entirely
+          // Trail-density sample: keep the trail dense, but don't move the
           // gating anchor — it wasn't a confirmed real move.
-          await persistPoint(lat, lng, accuracy, now, false);
+          persistPoint(lat, lng, accuracy, now, false, speed, heading);
           return;
         }
       }
-      await persistPoint(lat, lng, accuracy, now, true);
-    }
-
-    function queueInsert(lat: number, lng: number, accuracy: number | null) {
-      // Native has two independent producers (background watcher + heartbeat
-      // poll) calling insertPoint; serialize them so they can't interleave
-      // across insertPoint's await boundaries and race pendingJumpRef/lastPointRef.
-      insertChainRef.current = insertChainRef.current
-        .catch(() => {})
-        .then(() => insertPoint(lat, lng, accuracy));
-      return insertChainRef.current;
+      persistPoint(lat, lng, accuracy, now, true, speed, heading);
     }
 
     async function startNativeBackground() {
+      // Idempotent start: never create a second watcher/location stream.
+      if (watcherIdRef.current) {
+        console.debug("[GPSTracker] duplicate start attempt ignored — watcher already active");
+        return true;
+      }
       try {
-        await prepareNativeLocationSettings();
+        // Foreground-service prerequisites: fine location, background
+        // location and the battery-optimisation exemption. Logged so a
+        // workday's logs show whether Android is allowed to keep us alive.
+        const powerStatus = await prepareNativeLocationSettings();
+        console.info("[GPSTracker] native location power status", powerStatus);
+        void logTrackerEvent(userId, "permission_status", { ...(powerStatus ?? {}) });
+
+
+
 
         // Only register the watcher once the OS has actually granted location.
         // Requesting here too would race the startup permission request and
@@ -180,6 +338,15 @@ export function useGPSTracker(userId: string | null | undefined) {
         try {
           const { Geolocation } = await import("@capacitor/geolocation");
           const perm = await Geolocation.checkPermissions();
+          if (perm.location !== "granted") {
+            // Approximate-only is NOT precise: fused ~35 m guesses flatten a
+            // day to 0 km. Surface it (health card + event log) instead of
+            // silently tracking coarse.
+            void logTrackerEvent(userId, "permission_status", {
+              precise: false,
+              approximateOnly: perm.coarseLocation === "granted",
+            });
+          }
           if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
             console.warn("[GPSTracker] Location not granted yet — skipping background watcher");
             return false;
@@ -201,48 +368,216 @@ export function useGPSTracker(userId: string | null | undefined) {
               requestPermissions: false,
 
               stale: false,
-              distanceFilter: 5, // OS-level filter; we further throttle in insertPoint
+              // OS-level delivery filter; insertPoint gates further.
+              distanceFilter: GPS_CAPTURE_CONFIG.MOVING.distanceFilter,
+              // LocationRequest tuning (needs the patched plugin, see
+              // patches/): batched delivery lets the radio duty-cycle
+              // instead of upstream's hardcoded 1 Hz. High accuracy is
+              // retained. Unpatched builds ignore these keys.
+              interval: GPS_CAPTURE_CONFIG.MOVING.intervalMs,
+              fastestInterval: GPS_CAPTURE_CONFIG.MOVING.fastestIntervalMs,
+              maxWaitTime: GPS_CAPTURE_CONFIG.MOVING.maxWaitMs,
             },
-            async (location: any, error: any) => {
-              if (error || !location) return;
+            (location: any, error: any) => {
+              if (error) {
+                console.warn("[GPSTracker] watcher error", error);
+                void logTrackerEvent(userId, "watcher_error", {
+                  code: error?.code ?? null,
+                  message: error?.message ?? String(error),
+                });
+                return;
+              }
+              if (!location) return;
+              // Health signal first — even fixes the gates reject prove the
+              // watcher is alive.
+              if (!firstCallbackSeenRef.current) {
+                firstCallbackSeenRef.current = true;
+                console.info("[GPSTracker] first watcher callback", {
+                  accuracy: location.accuracy,
+                  speed: location.speed,
+                });
+              }
+              lastCallbackTsRef.current = Date.now();
+              setTrackerStatus({ lastCallbackAt: lastCallbackTsRef.current, watcherAlive: true });
+
               if (!activeRef.current) return;
               if (cancelled) return;
               try {
-                await queueInsert(location.latitude, location.longitude, location.accuracy ?? null);
+                insertPoint(
+                  location.latitude,
+                  location.longitude,
+                  location.accuracy ?? null,
+                  location.speed ?? null,
+                  location.bearing ?? null,
+                  // Batched / post-wake deliveries carry their own capture
+                  // time — keep the trail on the real clock.
+                  typeof location.time === "number" ? location.time : null
+                );
               } catch { /* ignore */ }
             }
           );
           watcherIdRef.current = id;
         };
 
+        /**
+         * Drain the native observation buffer: real fixes the service wrote
+         * to disk independently of the JS bridge (frozen-WebView windows,
+         * missed broadcasts, previous process). They flow through the exact
+         * same gates as live callbacks; the OS-timestamp guard in insertPoint
+         * makes double-processing impossible. Also imports the native health
+         * timestamps, so a frozen bridge is not mistaken for a dead watcher.
+         */
+        drainNativeBufferRef.current = async (reason: string) => {
+          if (!BackgroundGeolocation?.drainNativeLocationBuffer) return;
+          try {
+            const res = await BackgroundGeolocation.drainNativeLocationBuffer();
+            const nativeCallbackAt = Number(res?.lastNativeCallbackAt) || 0;
+            if (nativeCallbackAt > lastCallbackTsRef.current) {
+              lastCallbackTsRef.current = nativeCallbackAt;
+              setTrackerStatus({ lastCallbackAt: nativeCallbackAt, watcherAlive: true });
+            }
+            const rows: any[] = Array.isArray(res?.locations) ? res.locations : [];
+            if (rows.length === 0) return;
+            rows.sort((a, b) => (Number(a?.time) || 0) - (Number(b?.time) || 0));
+            let processed = 0;
+            for (const r of rows) {
+              if (cancelled || !activeRef.current) break;
+              if (typeof r?.latitude !== "number" || typeof r?.longitude !== "number") continue;
+              insertPoint(
+                r.latitude,
+                r.longitude,
+                typeof r.accuracy === "number" ? r.accuracy : null,
+                typeof r.speed === "number" ? r.speed : null,
+                typeof r.bearing === "number" ? r.bearing : null,
+                typeof r.time === "number" ? r.time : null
+              );
+              processed++;
+            }
+            if (processed > 0) {
+              void logTrackerEvent(userId, "native_buffer_drained", { count: processed, reason });
+              void flushPendingGpsPoints();
+            }
+          } catch { /* best-effort; never blocks acquisition */ }
+        };
+
+        /**
+         * Force a fresh watcher. Used both by the watchdog and — critically —
+         * on every app resume: while the WebView is frozen no JS timer runs,
+         * so a watcher Android killed in the background can only be noticed
+         * and replaced the moment the user brings the app back.
+         */
+        forceReregisterRef.current = async (reason: string) => {
+          if (cancelled || !activeRef.current) return;
+          if (reRegisteringRef.current) return; // single-flight: never two watchers
+          reRegisteringRef.current = true;
+          try {
+            if (watcherIdRef.current) {
+              await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
+              watcherIdRef.current = null;
+            }
+            await register();
+            lastCallbackTsRef.current = Date.now();
+            setTrackerStatus({ watcherAlive: true, lastCallbackAt: lastCallbackTsRef.current });
+            console.info("[GPSTracker] watcher re-registered", { reason, id: watcherIdRef.current });
+            void logTrackerEvent(userId, "watcher_reregistered", { reason });
+          } catch (e: any) {
+            console.warn("[GPSTracker] watcher re-registration failed", e);
+            setTrackerStatus({ watcherAlive: false });
+            void logTrackerEvent(userId, "watcher_register_failed", {
+              reason,
+              message: e?.message ?? String(e),
+            });
+          } finally {
+            reRegisteringRef.current = false;
+          }
+        };
+
+
         await register();
         lastWriteRef.current = Date.now();
+        lastCallbackTsRef.current = Date.now();
+        setTrackerStatus({
+          native: true,
+          watcherAlive: true,
+          lastCallbackAt: lastCallbackTsRef.current,
+        });
 
-        // Heartbeat — force a sample even when stationary, and act as a
-        // watchdog: Android's Doze / battery optimiser silently kills the
-        // background watcher, which is what leaves multi-hour holes in the
-        // trail. If nothing has been written for WATCHDOG_MS while the day is
-        // open, tear the watcher down and register a fresh one.
+        console.info("[GPSTracker] watcher registered", {
+          id: watcherIdRef.current,
+          config: GPS_CAPTURE_CONFIG.MOVING,
+        });
+        void logTrackerEvent(userId, "watcher_registered", {
+          id: watcherIdRef.current,
+          ...GPS_CAPTURE_CONFIG.MOVING,
+        });
+        // Pick up fixes buffered natively before this session (or before a
+        // WebView reload) — real observations, never lost to a JS restart.
+        void drainNativeBufferRef.current?.("startup");
+
+        // Watchdog + stationary probe.
+        //  - Probe: after STATIONARY_PROBE_MS of watcher silence take ONE
+        //    HIGH-ACCURACY fix so a parked device still leaves a usable trail.
+        //    Coarse fixes (network provider, ~35 m) are discarded — writing
+        //    them poisons the movement anchor and flattens the day to 0 km.
+        //  - Health: watcher silence beyond WATCHDOG_MS means Android killed
+        //    the watcher, whether or not the probe succeeded — re-register.
         pollTimer = window.setInterval(async () => {
           if (!activeRef.current || cancelled) return;
-          try {
-            const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
-            await queueInsert(pos.latitude, pos.longitude, pos.accuracy ?? null);
-          } catch { /* ignore */ }
-          if (Date.now() - lastWriteRef.current > WATCHDOG_MS) {
-            console.warn("[GPSTracker] watcher appears dead — re-registering");
-            try {
-              if (watcherIdRef.current) {
-                await BackgroundGeolocation.removeWatcher({ id: watcherIdRef.current });
-                watcherIdRef.current = null;
-              }
-              await register();
-              lastWriteRef.current = Date.now();
-            } catch (e) {
-              console.warn("[GPSTracker] watcher re-registration failed", e);
-            }
+          // Cheap periodic day-state check (every DAY_RECHECK_MS, not every
+          // tick) so a forgotten check-out or a real check-out that happened
+          // while the app was backgrounded stops the tracker.
+          if (Date.now() - lastDayCheckRef.current > DAY_RECHECK_MS) {
+            lastDayCheckRef.current = Date.now();
+            await evaluate();
+            if (!activeRef.current || cancelled) return;
           }
-        }, INTERVAL_MS);
+          // Import natively-buffered fixes first — this also refreshes the
+          // callback clock from the service's own heartbeat, so a frozen JS
+          // bridge is never misdiagnosed as a dead watcher.
+          await drainNativeBufferRef.current?.("watchdog");
+          const silenceMs = Date.now() - lastCallbackTsRef.current;
+          if (silenceMs < STATIONARY_PROBE_MS) return;
+
+          try {
+            const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 20000 });
+            const acc = pos.accuracy ?? null;
+            if (acc != null && acc > PROBE_MAX_ACCURACY_M) {
+              console.debug("[GPSTracker] discarded coarse probe fix", acc);
+              void logTrackerEvent(userId, "probe_discarded", { accuracy: acc });
+            } else if (!cancelled && activeRef.current) {
+              // Trail-density sample: insertPoint's gates decide whether this
+              // counts as movement — distance maths is untouched.
+              insertPoint(
+                pos.latitude,
+                pos.longitude,
+                acc,
+                pos.speed ?? null,
+                pos.heading ?? null
+              );
+            }
+          } catch (e: any) {
+            console.warn("[GPSTracker] stationary probe failed", e);
+            void logTrackerEvent(userId, "probe_failed", { message: e?.message ?? String(e) });
+          }
+
+          // Health test is independent of the probe: prolonged watcher
+          // silence alone is proof enough that the watcher is gone.
+          const silenceNow = Date.now() - lastCallbackTsRef.current;
+          if (silenceNow > WATCHDOG_MS) {
+            console.warn(
+              "[GPSTracker] no watcher callback for",
+              Math.round(silenceNow / 1000),
+              "s — re-registering watcher"
+            );
+            void logTrackerEvent(userId, "watcher_silence", {
+              silence_seconds: Math.round(silenceNow / 1000),
+            });
+            await forceReregisterRef.current?.("watchdog_silence");
+          }
+
+        }, WATCHDOG_TICK_MS);
+
+
 
 
         stopBackground = async () => {
@@ -260,6 +595,9 @@ export function useGPSTracker(userId: string | null | undefined) {
       }
     }
 
+    // Web / non-native fallback ONLY (screen-on): here the poll IS the
+    // acquisition source — on native the watcher is the single source and
+    // this never runs.
     async function startForeground() {
       const tick = async () => {
         if (cancelled || foregroundBusyRef.current) return;
@@ -267,7 +605,13 @@ export function useGPSTracker(userId: string | null | undefined) {
         foregroundBusyRef.current = true;
         try {
           const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
-          await queueInsert(pos.latitude, pos.longitude, pos.accuracy ?? null);
+          insertPoint(
+            pos.latitude,
+            pos.longitude,
+            pos.accuracy ?? null,
+            pos.speed ?? null,
+            pos.heading ?? null
+          );
         } catch { /* ignore */ } finally {
           foregroundBusyRef.current = false;
         }
@@ -276,56 +620,128 @@ export function useGPSTracker(userId: string | null | undefined) {
       timerRef.current = window.setInterval(tick, FOREGROUND_POLL_MS);
     }
 
-    async function evaluate() {
-      const open = await isDayOpen();
-      activeRef.current = open;
-      if (!open) {
-        // Day closed → stop background watcher if any
-        if (stopBackground) { await stopBackground(); stopBackground = null; }
-        if (pollTimer) { window.clearInterval(pollTimer); pollTimer = null; }
-        if (timerRef.current) { window.clearInterval(timerRef.current); timerRef.current = null; }
+    // Self-healing start: (re)start acquisition when the day is open but no
+    // watcher/poll is running (e.g. after a transient stop, or when the user
+    // checks in later). Single-flight + idempotent-start guards make it safe
+    // to call from every evaluate() — it can never create a second stream.
+    let startingAcquisition = false;
+    async function ensureAcquisitionRunning() {
+      if (startingAcquisition || cancelled || !activeRef.current) return;
+      if (watcherIdRef.current != null || timerRef.current != null) return;
+      startingAcquisition = true;
+      try {
+        if (isNative()) {
+          const ok = await startNativeBackground();
+          if (!ok) await startForeground();
+        } else {
+          await startForeground();
+        }
+      } finally {
+        startingAcquisition = false;
       }
     }
 
-    (async () => {
-      await bootstrapLastPoint();
+    async function evaluate() {
+      const open = await isDayOpen();
+      if (open === null) return; // unknown (offline) — keep the current state
+      const wasActive = activeRef.current;
+      activeRef.current = open;
+      setTrackerStatus({ active: open, native: isNative() });
+      if (!open) {
+        // Day closed → stop background watcher if any, then drain the queue
+        if (stopBackground) { await stopBackground(); stopBackground = null; }
+        if (pollTimer) { window.clearInterval(pollTimer); pollTimer = null; }
+        if (timerRef.current) { window.clearInterval(timerRef.current); timerRef.current = null; }
+        await drainNativeBufferRef.current?.("tracking_stopped");
+        drainNativeBufferRef.current = null;
+        forceReregisterRef.current = null;
+        setTrackerStatus({ watcherAlive: false });
+        if (wasActive) void logTrackerEvent(userId, "tracking_stopped", {});
+        void flushPendingGpsPoints();
+      } else {
+        if (!wasActive) void logTrackerEvent(userId, "tracker_started", {});
+        void ensureAcquisitionRunning();
+      }
+    }
+
+    /**
+     * App-resume recovery. Android freezes WebView timers in the background,
+     * so the watchdog cannot notice — let alone repair — a watcher the OS
+     * killed while the phone was pocketed. The instant the app becomes
+     * visible again we therefore treat prolonged watcher silence as a dead
+     * watcher and rebuild it immediately, before anything else.
+     */
+    async function recoverOnResume() {
+      if (cancelled) return;
       await evaluate();
+      if (!activeRef.current || cancelled) return;
+      // Import fixes captured natively while the WebView was frozen, and let
+      // the service's own heartbeat correct the silence clock before deciding
+      // whether the watcher actually died.
+      await drainNativeBufferRef.current?.("app_resume");
+      const silenceMs = Date.now() - lastCallbackTsRef.current;
+      if (!isNative()) return;
+      if (watcherIdRef.current == null) {
+        void ensureAcquisitionRunning();
+        return;
+      }
+      if (silenceMs > RESUME_SILENCE_MS) {
+        void logTrackerEvent(userId, "resume_recovery", {
+          silence_seconds: Math.round(silenceMs / 1000),
+        });
+        setTrackerStatus({ watcherAlive: false });
+        await forceReregisterRef.current?.("app_resume");
+      }
+      void flushPendingGpsPoints();
+    }
+
+    (async () => {
+      initGpsSyncQueue();
+      // Shared-device safety: discard any points buffered for another user —
+      // the server would reject them forever and block this user's uploads.
+      setGpsQueueOwner(userId!);
+
+      await bootstrapLastPoint();
+      await evaluate(); // starts acquisition itself when the day is open
       if (!activeRef.current) {
         // Re-check periodically in case user checks in later
         const recheck = window.setInterval(async () => {
           if (cancelled) return;
           await evaluate();
-          if (activeRef.current) {
-            window.clearInterval(recheck);
-            if (isNative()) {
-              const ok = await startNativeBackground();
-              if (!ok) await startForeground();
-            } else {
-              await startForeground();
-            }
-          }
+          if (activeRef.current) window.clearInterval(recheck);
         }, 30_000);
-        return;
-      }
-      if (isNative()) {
-        const ok = await startNativeBackground();
-        if (!ok) await startForeground();
-      } else {
-        await startForeground();
       }
     })();
 
-    // Re-evaluate day status when tab becomes visible (catches check-out)
+    // Re-evaluate day status AND repair a background-killed watcher whenever
+    // the app comes back to the foreground (catches check-out too).
     const onVisibility = () => {
-      if (document.visibilityState === "visible") evaluate();
+      if (document.visibilityState === "visible") void recoverOnResume();
     };
     document.addEventListener("visibilitychange", onVisibility);
+    // Capacitor's own resume signal: fires on native even when the WebView
+    // never reports a visibility change (screen-off / task-switch cases).
+    let removeAppListener: (() => void) | null = null;
+    if (isNative()) {
+      void (async () => {
+        try {
+          const { App } = await import("@capacitor/app");
+          const handle = await App.addListener("appStateChange", ({ isActive }) => {
+            if (isActive) void recoverOnResume();
+          });
+          if (cancelled) { handle.remove(); return; }
+          removeAppListener = () => handle.remove();
+        } catch (e) {
+          console.debug("[GPSTracker] app state listener unavailable", e);
+        }
+      })();
+    }
 
     // Re-evaluate immediately when useAttendance signals a successful
     // check-in/check-out, instead of waiting for the next visibility-change
-    // or the 30s recheck loop. evaluate() only ever stops tracking when the
-    // day is closed — it never starts a watcher on its own — so this can't
-    // start a second tracking path.
+    // or the 30s recheck loop. evaluate() starts acquisition only through
+    // ensureAcquisitionRunning, whose guards make a second tracking path
+    // impossible.
     const onAttendanceChanged = () => evaluate();
     window.addEventListener("attendance-changed", onAttendanceChanged);
 
@@ -334,9 +750,11 @@ export function useGPSTracker(userId: string | null | undefined) {
       activeRef.current = false;
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("attendance-changed", onAttendanceChanged);
+      removeAppListener?.();
       if (timerRef.current) window.clearInterval(timerRef.current);
       if (pollTimer) window.clearInterval(pollTimer);
       if (stopBackground) stopBackground();
     };
+
   }, [userId]);
 }

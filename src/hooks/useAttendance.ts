@@ -204,19 +204,40 @@ export function useAttendance(userId: string | undefined) {
     const checkInTime = new Date(todayRecord.check_in_time!);
     const totalHours = (new Date(now).getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
 
-    // Lock the day's final GPS distance at check-out so it never
-    // fluctuates afterwards (shared algorithm with Day Tracking page)
+    // Lock the day's final GPS distance at check-out so it never fluctuates
+    // afterwards. SOURCE OF TRUTH: this locked value is authoritative for
+    // payroll (get_monthly_expense_summary prefers it); the SQL
+    // compute_filtered_distance_km RPC is only a fallback for days that were
+    // never checked out. Computed through the shared trajectory engine +
+    // road snapping (same number Day Tracking displays); falls back to the
+    // validated-trajectory distance if road snapping is unavailable — never
+    // to raw unfiltered GPS.
     let lockedDistanceKm: number | null = null;
     try {
+      // Drain the local GPS buffer first so the locked distance includes the
+      // tail points that haven't been batch-uploaded yet. If some points
+      // remain unflushable, proceed anyway — same exposure as a failed write
+      // before buffering existed, and the SQL fallback still covers the day.
+      try {
+        const { flushPendingGpsPoints, getQueueSize } = await import("@/services/gpsSyncQueue");
+        await flushPendingGpsPoints();
+        if (getQueueSize() > 0) {
+          console.warn(`[Attendance] ${getQueueSize()} GPS points still unsynced at checkout`);
+        }
+      } catch { /* queue module unavailable — nothing buffered */ }
       const { data: track } = await supabase
         .from("gps_tracking")
-        .select("latitude, longitude, timestamp, accuracy, speed")
+        .select("latitude, longitude, timestamp, accuracy, speed, heading")
         .eq("user_id", userId)
         .eq("date", today)
         .order("timestamp", { ascending: true });
       if (track && track.length >= 2) {
-        const { computeFilteredDistanceKm } = await import("@/utils/gpsDistance");
-        lockedDistanceKm = Math.round(computeFilteredDistanceKm(track as any) * 100) / 100;
+        const { computeSnappedDistanceKm } = await import("@/utils/gpsDistance");
+        const result = await computeSnappedDistanceKm(track as any, {
+          checkInTime: todayRecord.check_in_time!,
+          checkOutTime: now,
+        });
+        lockedDistanceKm = Math.round(result.totalKm * 100) / 100;
       }
     } catch (e) {
       console.warn("[Attendance] Could not compute final distance:", e);
