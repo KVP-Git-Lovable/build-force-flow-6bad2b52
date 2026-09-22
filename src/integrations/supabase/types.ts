@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      accrual_config: {
+        Row: {
+          created_at: string
+          credit_day: number
+          divisor: number
+          frequency: string
+          id: string
+          leave_type_id: string | null
+          prorate_joining: boolean
+          round_mode: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credit_day?: number
+          divisor?: number
+          frequency?: string
+          id?: string
+          leave_type_id?: string | null
+          prorate_joining?: boolean
+          round_mode?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credit_day?: number
+          divisor?: number
+          frequency?: string
+          id?: string
+          leave_type_id?: string | null
+          prorate_joining?: boolean
+          round_mode?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accrual_config_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_events: {
         Row: {
           activity_code: string | null
@@ -496,6 +540,54 @@ export type Database = {
           id?: string
           policy_key?: string
           policy_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      auto_end_day_policy: {
+        Row: {
+          auto_close_time: string
+          cancel_planned_visits: boolean
+          close_in_progress_visits: boolean
+          created_at: string
+          id: string
+          is_enabled: boolean
+          last_activity_source: string
+          mark_unproductive: boolean
+          pre_warning_enabled: boolean
+          pre_warning_minutes_before: number
+          pre_warning_time: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          auto_close_time?: string
+          cancel_planned_visits?: boolean
+          close_in_progress_visits?: boolean
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_activity_source?: string
+          mark_unproductive?: boolean
+          pre_warning_enabled?: boolean
+          pre_warning_minutes_before?: number
+          pre_warning_time?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_close_time?: string
+          cancel_planned_visits?: boolean
+          close_in_progress_visits?: boolean
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_activity_source?: string
+          mark_unproductive?: boolean
+          pre_warning_enabled?: boolean
+          pre_warning_minutes_before?: number
+          pre_warning_time?: string
+          timezone?: string
           updated_at?: string
         }
         Relationships: []
@@ -1453,13 +1545,23 @@ export type Database = {
           allow_backdated_leave: boolean
           allow_negative_balance: boolean
           carry_forward_enabled: boolean
+          carry_forward_expiry_months: number | null
           created_at: string
+          custom_reset_date: string | null
+          enable_carry_forward: boolean
+          enable_half_day: boolean
+          enable_sandwich_rule: boolean
           half_day_enabled: boolean
           id: string
+          is_enabled: boolean
           max_backdate_days: number
           max_carry_forward_days: number
+          max_carry_forward_limit: number
           max_continuous_days: number
+          max_continuous_leave_days: number | null
           max_negative_days: number
+          max_negative_limit: number
+          min_notice_period_days: number
           notice_period_days: number
           reset_cycle: string
           sandwich_rule_enabled: boolean
@@ -1469,13 +1571,23 @@ export type Database = {
           allow_backdated_leave?: boolean
           allow_negative_balance?: boolean
           carry_forward_enabled?: boolean
+          carry_forward_expiry_months?: number | null
           created_at?: string
+          custom_reset_date?: string | null
+          enable_carry_forward?: boolean
+          enable_half_day?: boolean
+          enable_sandwich_rule?: boolean
           half_day_enabled?: boolean
           id?: string
+          is_enabled?: boolean
           max_backdate_days?: number
           max_carry_forward_days?: number
+          max_carry_forward_limit?: number
           max_continuous_days?: number
+          max_continuous_leave_days?: number | null
           max_negative_days?: number
+          max_negative_limit?: number
+          min_notice_period_days?: number
           notice_period_days?: number
           reset_cycle?: string
           sandwich_rule_enabled?: boolean
@@ -1485,13 +1597,23 @@ export type Database = {
           allow_backdated_leave?: boolean
           allow_negative_balance?: boolean
           carry_forward_enabled?: boolean
+          carry_forward_expiry_months?: number | null
           created_at?: string
+          custom_reset_date?: string | null
+          enable_carry_forward?: boolean
+          enable_half_day?: boolean
+          enable_sandwich_rule?: boolean
           half_day_enabled?: boolean
           id?: string
+          is_enabled?: boolean
           max_backdate_days?: number
           max_carry_forward_days?: number
+          max_carry_forward_limit?: number
           max_continuous_days?: number
+          max_continuous_leave_days?: number | null
           max_negative_days?: number
+          max_negative_limit?: number
+          min_notice_period_days?: number
           notice_period_days?: number
           reset_cycle?: string
           sandwich_rule_enabled?: boolean
@@ -1904,6 +2026,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          last_update_mode: string | null
           leave_type_id: string
           max_carry_forward: number
           monthly_accrual: number | null
@@ -1916,6 +2039,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          last_update_mode?: string | null
           leave_type_id: string
           max_carry_forward?: number
           monthly_accrual?: number | null
@@ -1928,6 +2052,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          last_update_mode?: string | null
           leave_type_id?: string
           max_carry_forward?: number
           monthly_accrual?: number | null
@@ -1946,41 +2071,59 @@ export type Database = {
       }
       leave_type_policy_override: {
         Row: {
+          allow_negative_balance: boolean | null
+          carry_forward_expiry_months: number | null
           created_at: string
           custom_reset_cycle: string | null
+          enable_carry_forward: boolean | null
           id: string
           leave_type_id: string
           max_carry_forward_days: number | null
+          max_carry_forward_limit: number | null
           max_continuous_days: number | null
           max_negative_days: number | null
+          max_negative_limit: number | null
           min_notice_days: number | null
           override_carry_forward: boolean | null
+          override_enabled: boolean
           override_negative_balance: boolean | null
           updated_at: string
         }
         Insert: {
+          allow_negative_balance?: boolean | null
+          carry_forward_expiry_months?: number | null
           created_at?: string
           custom_reset_cycle?: string | null
+          enable_carry_forward?: boolean | null
           id?: string
           leave_type_id: string
           max_carry_forward_days?: number | null
+          max_carry_forward_limit?: number | null
           max_continuous_days?: number | null
           max_negative_days?: number | null
+          max_negative_limit?: number | null
           min_notice_days?: number | null
           override_carry_forward?: boolean | null
+          override_enabled?: boolean
           override_negative_balance?: boolean | null
           updated_at?: string
         }
         Update: {
+          allow_negative_balance?: boolean | null
+          carry_forward_expiry_months?: number | null
           created_at?: string
           custom_reset_cycle?: string | null
+          enable_carry_forward?: boolean | null
           id?: string
           leave_type_id?: string
           max_carry_forward_days?: number | null
+          max_carry_forward_limit?: number | null
           max_continuous_days?: number | null
           max_negative_days?: number | null
+          max_negative_limit?: number | null
           min_notice_days?: number | null
           override_carry_forward?: boolean | null
+          override_enabled?: boolean
           override_negative_balance?: boolean | null
           updated_at?: string
         }
@@ -4968,39 +5111,69 @@ export type Database = {
       }
       regularization_policy: {
         Row: {
+          adjust_leave_balance: boolean
+          allow_checkin_edit: boolean
+          allow_checkout_edit: boolean
+          allow_previous_month: boolean
+          allow_status_edit: boolean
           approval_mode: string
           auto_approve_within_hours: number | null
           created_at: string
           daily_limit: number
           id: string
+          is_enabled: boolean
           max_backdate_days: number
-          monthly_limit: number
+          monthly_limit: number | null
           post_approval_status: string
+          reason_mandatory: boolean
+          recalculate_hours: boolean
           require_reason: boolean
+          restrict_after_payroll_lock: boolean
+          update_attendance_on_approval: boolean
           updated_at: string
         }
         Insert: {
+          adjust_leave_balance?: boolean
+          allow_checkin_edit?: boolean
+          allow_checkout_edit?: boolean
+          allow_previous_month?: boolean
+          allow_status_edit?: boolean
           approval_mode?: string
           auto_approve_within_hours?: number | null
           created_at?: string
           daily_limit?: number
           id?: string
+          is_enabled?: boolean
           max_backdate_days?: number
-          monthly_limit?: number
+          monthly_limit?: number | null
           post_approval_status?: string
+          reason_mandatory?: boolean
+          recalculate_hours?: boolean
           require_reason?: boolean
+          restrict_after_payroll_lock?: boolean
+          update_attendance_on_approval?: boolean
           updated_at?: string
         }
         Update: {
+          adjust_leave_balance?: boolean
+          allow_checkin_edit?: boolean
+          allow_checkout_edit?: boolean
+          allow_previous_month?: boolean
+          allow_status_edit?: boolean
           approval_mode?: string
           auto_approve_within_hours?: number | null
           created_at?: string
           daily_limit?: number
           id?: string
+          is_enabled?: boolean
           max_backdate_days?: number
-          monthly_limit?: number
+          monthly_limit?: number | null
           post_approval_status?: string
+          reason_mandatory?: boolean
+          recalculate_hours?: boolean
           require_reason?: boolean
+          restrict_after_payroll_lock?: boolean
+          update_attendance_on_approval?: boolean
           updated_at?: string
         }
         Relationships: []
