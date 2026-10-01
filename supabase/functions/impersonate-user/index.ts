@@ -111,17 +111,22 @@ serve(async (req) => {
       )
     }
 
-    // Log impersonation to audit table
-    await supabaseAdmin.from("audit_logs").insert({
-      action: "admin_impersonate_user",
-      actor_user_id: currentUser.id,
-      target_user_id: target_user_id,
-      details: {
-        admin_email: currentUser.email,
-        target_email: targetUser.email,
-        timestamp: new Date().toISOString(),
-      },
-    }).catch((err) => console.warn("Audit log error:", err))
+    // Log impersonation to audit table (best-effort; never blocks impersonation)
+    try {
+      const { error: auditError } = await supabaseAdmin.from("audit_logs").insert({
+        action: "admin_impersonate_user",
+        actor_user_id: currentUser.id,
+        target_user_id: target_user_id,
+        details: {
+          admin_email: currentUser.email,
+          target_email: targetUser.email,
+          timestamp: new Date().toISOString(),
+        },
+      })
+      if (auditError) console.warn("Audit log error:", auditError.message)
+    } catch (err) {
+      console.warn("Audit log error:", err)
+    }
 
     // Generate a magic-link token for the target user and exchange it
     // server-side for a session, so the client can call setSession().
