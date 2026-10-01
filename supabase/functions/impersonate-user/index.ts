@@ -123,16 +123,15 @@ serve(async (req) => {
       },
     }).catch((err) => console.warn("Audit log error:", err))
 
-    // Generate passwordless link for target user (email signin)
+    // Generate a magic-link token for the target user and exchange it
+    // server-side for a session, so the client can call setSession().
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: "email_signin",
+      type: "magiclink",
       email: targetUser.email,
-      options: {
-        redirectTo: new URL(req.url).origin + "/auth/impersonate-callback",
-      }
     })
 
-    if (linkError || !linkData?.properties?.email_link) {
+    const tokenHash = linkData?.properties?.hashed_token
+    if (linkError || !tokenHash) {
       console.error("Link generation error:", linkError)
       return new Response(
         JSON.stringify({ error: "Failed to generate impersonation link" }),
@@ -140,23 +139,27 @@ serve(async (req) => {
       )
     }
 
-    // Extract access token from the magic link
-    // The link contains a token parameter that can be used to authenticate
-    const emailLink = linkData.properties.email_link
-    const linkUrl = new URL(emailLink)
-    const accessToken = linkUrl.searchParams.get("token_hash")
+    const { data: otpData, error: otpError } = await supabaseUser.auth.verifyOtp({
+      type: "magiclink",
+      token_hash: tokenHash,
+    })
 
-    // Return impersonation link and user details
+    if (otpError || !otpData?.session) {
+      console.error("Session exchange error:", otpError)
+      return new Response(
+        JSON.stringify({ error: "Failed to create impersonation session" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      )
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        impersonate_link: emailLink,
-        direct_link: emailLink.split("?")[0] + "?token_hash=" + accessToken,
-        user: {
-          id: target_user_id,
-          email: targetUser.email,
+        session: {
+          access_token: otpData.session.access_token,
+          refresh_token: otpData.session.refresh_token,
         },
-        instructions: "Admin can click the impersonate_link or use the token_hash to authenticate as this user",
+        user: { id: target_user_id, email: targetUser.email },
       }),
       {
         status: 200,
