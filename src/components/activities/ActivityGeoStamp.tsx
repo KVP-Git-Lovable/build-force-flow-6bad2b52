@@ -138,7 +138,11 @@ export default function ActivityGeoStamp({ activity, className, onUpdated, compa
   const status = (activity as any).status as string | undefined;
   useEffect(() => {
     if (!isOwner || hasVisited || autoTried) return;
-    if (status !== "in_progress" && status !== "completed") return;
+    // Only auto-stamp a live visit: checked in today. Old/completed visits must
+    // not receive today's location — the owner can still use Re-submit.
+    if (status !== "in_progress") return;
+    const startedAt = (activity as any).start_time as string | undefined;
+    if (!startedAt || new Date(startedAt).toDateString() !== new Date().toDateString()) return;
     setAutoTried(true);
     setRecapturing(true);
     captureAndSave()
