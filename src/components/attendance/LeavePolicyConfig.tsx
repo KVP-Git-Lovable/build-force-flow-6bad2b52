@@ -322,6 +322,10 @@ const LeavePolicyConfig = () => {
         if (error) throw error;
       }
 
+      // Apply the new entitlements to employee balances right away
+      const { error: recalcError } = await supabase.rpc('recalculate_monthly_leave_accruals', { _target_user_id: null } as any);
+      if (recalcError) console.error('Leave recalculation failed:', recalcError);
+
       // Update originals to reflect saved state
       setOriginalAccrualForms(JSON.parse(JSON.stringify(accrualForms)));
       setChangedLeaveTypeIds([]);
