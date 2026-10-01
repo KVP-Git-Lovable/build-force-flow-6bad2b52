@@ -6043,6 +6043,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      run_auto_end_day: { Args: never; Returns: Json }
       send_notification: {
         Args: {
           message_param: string
