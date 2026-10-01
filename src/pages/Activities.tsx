@@ -2038,7 +2038,6 @@ function ActivityCard({ a, isAdmin, onEdit, onDelete, onOpenDetails, onReceiveGo
   // to the status history so the card shows a real range instead of "—".
   const historyStart =
     [...((a.status_history as any[]) || [])].reverse().find((h: any) => h?.status === "in_progress")?.at ||
-    ((a.status_history as any[]) || [])[0]?.at ||
     null;
   const effectiveStart = a.start_time || (a.end_time ? historyStart : null);
   const spentMins = effectiveStart && a.end_time

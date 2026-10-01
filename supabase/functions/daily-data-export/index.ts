@@ -114,10 +114,17 @@ Deno.serve(async (req) => {
         const rows: Record<string, unknown>[] = [];
         let offset = 0;
         for (;;) {
-          const { data, error } = await supabase
+          // Stable ordering is required for correct offset pagination; fall
+          // back to unordered only for tables without an `id` column.
+          let res = await supabase
             .from(table)
             .select("*")
+            .order("id", { ascending: true })
             .range(offset, offset + BATCH_SIZE - 1);
+          if (res.error && /column .*id.* does not exist/i.test(res.error.message)) {
+            res = await supabase.from(table).select("*").range(offset, offset + BATCH_SIZE - 1);
+          }
+          const { data, error } = res;
           if (error) throw new Error(error.message);
           rows.push(...((data ?? []) as Record<string, unknown>[]));
           if (!data || data.length < BATCH_SIZE) break;
