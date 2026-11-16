@@ -5952,6 +5952,47 @@ export type Database = {
         Args: { _object_name: string; _permission: string; _user_id: string }
         Returns: boolean
       }
+      can_access_pm_project: {
+        Args: { _project_id: string; _uid: string }
+        Returns: boolean
+      }
+      can_access_pm_task: {
+        Args: { _task_id: string; _uid: string }
+        Returns: boolean
+      }
+      can_access_pm_template: {
+        Args: { _template_id: string; _uid: string }
+        Returns: boolean
+      }
+      can_manage_master_data: { Args: { _uid: string }; Returns: boolean }
+      can_manage_pm_project: {
+        Args: { _project_id: string; _uid: string }
+        Returns: boolean
+      }
+      can_manage_pm_template: {
+        Args: { _template_id: string; _uid: string }
+        Returns: boolean
+      }
+      can_notify_user: {
+        Args: { _target: string; _uid: string }
+        Returns: boolean
+      }
+      can_read_customer_document_file: {
+        Args: { _name: string; _uid: string }
+        Returns: boolean
+      }
+      can_read_pm_attachment_file: {
+        Args: { _name: string; _uid: string }
+        Returns: boolean
+      }
+      can_read_procurement_order: {
+        Args: { _order_id: string; _uid: string }
+        Returns: boolean
+      }
+      can_read_site_attachment_file: {
+        Args: { _name: string; _uid: string }
+        Returns: boolean
+      }
       compute_filtered_distance_km: {
         Args: { _date: string; _user_id: string }
         Returns: number
@@ -6029,6 +6070,7 @@ export type Database = {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
       }
+      is_active_member: { Args: { _uid: string }; Returns: boolean }
       list_export_tables: { Args: never; Returns: string[] }
       recalculate_monthly_leave_accruals: {
         Args: { _target_user_id?: string }
