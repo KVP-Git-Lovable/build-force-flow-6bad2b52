@@ -87,7 +87,7 @@ export default function ActivityReport() {
     try {
       let q = supabase
         .from("activity_events")
-        .select("id, user_id, lead_id, activity_date, site_id, milestone_id, activity_type, description, total_hours, status, outcome")
+        .select("id, user_id, lead_id, activity_date, site_id, milestone_id, activity_type, description, total_hours, start_time, end_time, status, outcome")
         .order("activity_date", { ascending: false });
 
       if (state.field === "activity_date") {
@@ -127,7 +127,13 @@ export default function ActivityReport() {
           milestone: r.milestone_id ? msMap.get(r.milestone_id) || "-" : "-",
           activity_type: r.activity_type || "-",
           description: r.description || "-",
-          total_hours: r.total_hours,
+          // total_hours is only filled when typed manually; activities that are
+          // checked in / completed from the app only carry start/end times.
+          total_hours:
+            r.total_hours ||
+            (r.start_time && r.end_time && new Date(r.end_time) > new Date(r.start_time)
+              ? (new Date(r.end_time).getTime() - new Date(r.start_time).getTime()) / 3600000
+              : r.total_hours),
           status: r.status,
           outcome: (r as { outcome?: string | null }).outcome || "-",
         }))
