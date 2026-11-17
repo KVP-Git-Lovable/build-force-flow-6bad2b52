@@ -9,6 +9,16 @@ def releaseStorePassword = project.findProperty('RELEASE_STORE_PASSWORD')
 def releaseKeyAlias = project.findProperty('RELEASE_KEY_ALIAS')
 def releaseKeyPassword = project.findProperty('RELEASE_KEY_PASSWORD')
 
+// Computed as plain locals, not inline in the DSL block below: Groovy's
+// parenthesis-less command-call syntax (`versionName expr ?: fallback`)
+// does NOT bind the elvis operator into the call's argument the way it
+// reads — it parses as `versionName(expr) ?: fallback`, silently calling
+// the DSL setter with a null/wrong value. Resolving to a simple local
+// first and passing that bare variable into the DSL sidesteps the
+// ambiguity entirely (same shape as the original hardcoded `versionCode 1`).
+def ciVersionCode = (project.findProperty('appVersionCode') ?: '1').toString().toInteger()
+def ciVersionName = (project.findProperty('appVersionName') ?: '1.0').toString()
+
 android {
     namespace = "ai.quickapp.fieldforce"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -20,8 +30,8 @@ android {
         // whatever is already live (required for Android to accept it as
         // an update) — see android-apk.yml. Falls back to the previous
         // hardcoded values when not passed.
-        versionCode (project.findProperty('appVersionCode') ?: 1).toInteger()
-        versionName project.findProperty('appVersionName') ?: "1.0"
+        versionCode ciVersionCode
+        versionName ciVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
