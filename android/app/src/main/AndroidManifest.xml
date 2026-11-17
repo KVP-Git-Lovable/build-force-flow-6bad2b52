@@ -44,8 +44,16 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
-    <!-- Photo library: picking and saving images -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Photo library: saving images.
+         READ_MEDIA_IMAGES / READ_MEDIA_VIDEO are deliberately NOT declared —
+         flagged by Google Play's "Use alternative system pickers for photos /
+         videos" policy. Confirmed unused: the app only ever calls
+         Camera.getPhoto({ source: CameraSource.Camera }) (live capture, never
+         CameraSource.Photos/gallery picking, never saveToGallery), and
+         @capacitor/camera's own plugin manifest/permission annotations don't
+         reference either permission in this version — its PHOTOS alias has
+         an empty permission-strings array, since Android 13+'s system photo
+         picker needs none. -->
     <!-- Declared WITHOUT maxSdkVersion on purpose: @capacitor/camera checks the
          manifest for READ_EXTERNAL_STORAGE unconditionally and throws
          "Missing the following permissions in AndroidManifest.xml" if the cap
