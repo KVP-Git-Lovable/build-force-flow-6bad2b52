@@ -1,0 +1,141 @@
+name: Build Android APK
+
+# Manual, on-demand build only — never runs automatically on push, so it
+# never adds to normal CI cost. Trigger it from the Actions tab ("Run
+# workflow") whenever a fresh installable build is needed.
+#
+# Produces a RELEASE build signed with the keystore in the
+# ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS /
+# ANDROID_KEY_PASSWORD repo secrets. The keystore file itself only ever
+# exists on the ephemeral runner (decoded from the secret, never committed).
+# If those secrets are not set, android/app/build.gradle's signingConfigs
+# block is left empty and this produces an UNSIGNED apk instead of failing
+# outright — upload still happens so the failure mode is visible in the
+# artifact, not just in gradle's log.
+#
+# version_code MUST be set higher than whatever versionCode is already
+# installed on devices — Android refuses to install a lower versionCode
+# over an existing app even when the signature matches
+# (INSTALL_FAILED_VERSION_DOWNGRADE). This workflow has no way to read
+# what's currently live, so there is deliberately no safe default: the
+# person triggering the run has to know and supply it.
+#
+# Web content: unlike staging (which migrated to TanStack Start and has no
+# static dist/), this app still builds a normal dist/ via `vite build`, so
+# this bundles that real local build — no CAP_REMOTE / placeholder-dist
+# trick needed here.
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: "versionCode — must be HIGHER than whatever is currently live on devices, or installs will fail with INSTALL_FAILED_VERSION_DOWNGRADE"
+        required: true
+        type: string
+      version_name:
+        description: "versionName — cosmetic, shown in Settings > Apps"
+        required: false
+        default: "ci-build"
+        type: string
+
+jobs:
+  build-release-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Decode release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 not set — build will be UNSIGNED"
+          fi
+
+      - name: Sync Capacitor Android (patches + cap sync)
+        run: npm run sync:android
+
+      - name: Accept SDK licenses & install required platform
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -maxdepth 4 -name sdkmanager -type f | sort -r | head -1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::No sdkmanager found under $SDK_ROOT/cmdline-tools"
+            find "$SDK_ROOT" -maxdepth 3
+            exit 1
+          fi
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+          yes | "$SDKMANAGER" --licenses --sdk_root="$SDK_ROOT" >/dev/null 2>&1 || true
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platform-tools" "platforms;android-36"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build release APK
+        working-directory: android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          VERSION_CODE: ${{ inputs.version_code }}
+          VERSION_NAME: ${{ inputs.version_name }}
+        run: |
+          # Secrets are read from env (not interpolated directly into this
+          # script) so a value containing shell metacharacters can't break
+          # out of the command line.
+          SIGNING_ARGS=()
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            SIGNING_ARGS=(
+              "-PRELEASE_STORE_FILE=release.keystore"
+              "-PRELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD"
+              "-PRELEASE_KEY_ALIAS=$KEY_ALIAS"
+              "-PRELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+            )
+          fi
+          ./gradlew assembleRelease --no-daemon --stacktrace \
+            -PappVersionCode="$VERSION_CODE" \
+            -PappVersionName="$VERSION_NAME" \
+            "${SIGNING_ARGS[@]}"
+
+      - name: Rename output
+        run: cp android/app/build/outputs/apk/release/app-release.apk Quick-Locate.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Quick-Locate
+          path: Quick-Locate.apk
+          retention-days: 14
+          if-no-files-found: error

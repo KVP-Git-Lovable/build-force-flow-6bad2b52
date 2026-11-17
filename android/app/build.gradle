@@ -1,5 +1,14 @@
 apply plugin: 'com.android.application'
 
+// CI-overridable release signing: unset locally (no keystore is ever
+// committed to this repo), populated only by -P flags the android-apk.yml
+// workflow passes from GitHub secrets. A local/manual build with none of
+// these set behaves exactly as before this change — release stays unsigned.
+def releaseStoreFile = project.findProperty('RELEASE_STORE_FILE')
+def releaseStorePassword = project.findProperty('RELEASE_STORE_PASSWORD')
+def releaseKeyAlias = project.findProperty('RELEASE_KEY_ALIAS')
+def releaseKeyPassword = project.findProperty('RELEASE_KEY_PASSWORD')
+
 android {
     namespace = "ai.quickapp.fieldforce"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +16,12 @@ android {
         applicationId "ai.quickapp.fieldforce"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // CI-overridable so a release build's version can be set above
+        // whatever is already live (required for Android to accept it as
+        // an update) — see android-apk.yml. Falls back to the previous
+        // hardcoded values when not passed.
+        versionCode (project.findProperty('appVersionCode') ?: 1).toInteger()
+        versionName project.findProperty('appVersionName') ?: "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +29,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (releaseStoreFile) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
+            if (releaseStoreFile) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
