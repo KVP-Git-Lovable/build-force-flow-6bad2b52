@@ -53,11 +53,18 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install JS dependencies
-        run: npm ci
+        # npm ci requires package-lock.json to be in exact sync with
+        # package.json — it currently is not (pre-existing drift unrelated
+        # to this workflow: several devDependencies, e.g. drizzle-kit/
+        # drizzle-orm/postgres, aren't reflected in the committed lock
+        # file). npm install resolves that drift instead of hard-failing;
+        # the resulting lock file only ever exists on this ephemeral
+        # runner, never committed back.
+        run: npm install
 
       - name: Build web app
         run: npm run build
