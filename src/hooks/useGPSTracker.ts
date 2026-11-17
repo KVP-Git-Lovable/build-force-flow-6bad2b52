@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentPosition, isNative, prepareNativeLocationSettings } from "@/utils/nativePermissions";
+import { getCurrentPosition, isNative, prepareNativeLocationSettings, getNativeLocationPowerStatus, requestLocationPermissionCoordinated } from "@/utils/nativePermissions";
 import { shouldAcceptMove, isCoarseFix, GPS_CAPTURE_CONFIG } from "@/utils/gpsCaptureGate";
 import { GPS_PROCESSING_CONFIG, haversineMeters as haversine } from "@/utils/gpsDistance";
 import {
@@ -15,6 +15,15 @@ import { logTrackerEvent } from "@/services/trackerHealth";
 import { setTrackerStatus } from "@/services/trackerStatus";
 import { format } from "date-fns";
 
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
 
 const MIN_FORCED_WRITE_MS = 15_000;  // min spacing for non-moving trail-density writes
 const FOREGROUND_POLL_MS = 15_000;   // web / non-native fallback (screen-on only)
@@ -315,44 +324,124 @@ export function useGPSTracker(userId: string | null | undefined) {
       persistPoint(lat, lng, accuracy, now, true, speed, heading);
     }
 
-    async function startNativeBackground() {
+    async function startNativeBackground(opts: { quiet?: boolean } = {}) {
       // Idempotent start: never create a second watcher/location stream.
       if (watcherIdRef.current) {
         console.debug("[GPSTracker] duplicate start attempt ignored — watcher already active");
         return true;
       }
-      try {
-        // Foreground-service prerequisites: fine location, background
-        // location and the battery-optimisation exemption. Logged so a
-        // workday's logs show whether Android is allowed to keep us alive.
-        const powerStatus = await prepareNativeLocationSettings();
-        console.info("[GPSTracker] native location power status", powerStatus);
-        void logTrackerEvent(userId, "permission_status", { ...(powerStatus ?? {}) });
+      // Tracks which await was in flight if this function times out or
+      // throws, so the single catch at the bottom can log a stage-specific
+      // native_start_timeout/native_start_error instead of a bare failure —
+      // previously a hang anywhere in this try block produced NO event at
+      // all (the catch only fires on rejection, never a hang), which is what
+      // let this function wedge silently for however long the app stayed open.
+      let stage = "checkPermissions";
+      const startedAt = Date.now();
 
-
-
-
-        // Only register the watcher once the OS has actually granted location.
-        // Requesting here too would race the startup permission request and
-        // Android would abandon one of the callbacks, leaving location denied.
-        try {
-          const { Geolocation } = await import("@capacitor/geolocation");
-          const perm = await Geolocation.checkPermissions();
-          if (perm.location !== "granted") {
-            // Approximate-only is NOT precise: fused ~35 m guesses flatten a
-            // day to 0 km. Surface it (health card + event log) instead of
-            // silently tracking coarse.
-            void logTrackerEvent(userId, "permission_status", {
-              precise: false,
-              approximateOnly: perm.coarseLocation === "granted",
+      // Foreground-service prerequisites (background location "allow all
+      // the time", battery-optimisation exemption, notifications) plus the
+      // permission_status logging. This USED TO gate watcher registration —
+      // a stall anywhere in this chain (the native_start_timeout failures
+      // seen in production, stage "prepareLocationSettings") meant
+      // addWatcher() never ran and zero watcher_registered events all day,
+      // even though basic foreground location was already granted. It is
+      // now a non-blocking side effect: fired once a registration attempt
+      // has happened either way (success or failure), and its own
+      // timeout/rejection is only logged — it never aborts or unregisters a
+      // running watcher. Retries run quietly (status read only) so the
+      // recovery loop never re-opens permission/battery screens repeatedly.
+      let settingsPrepFired = false;
+      const fireSettingsPrep = () => {
+        if (settingsPrepFired) return;
+        settingsPrepFired = true;
+        void withTimeout(
+          opts.quiet ? getNativeLocationPowerStatus() : prepareNativeLocationSettings(),
+          75_000,
+          "prepareLocationSettings"
+        )
+          .then((powerStatus) => {
+            console.info("[GPSTracker] native location power status", powerStatus);
+            void logTrackerEvent(userId, "permission_status", { ...(powerStatus ?? {}) });
+          })
+          .catch((e) => {
+            console.warn("[GPSTracker] location settings prep failed (watcher unaffected)", e);
+            const timedOut = e instanceof Error && e.message.includes("timed out");
+            void logTrackerEvent(userId, timedOut ? "native_start_timeout" : "native_start_error", {
+              stage: "prepareLocationSettings",
+              elapsedMs: Date.now() - startedAt,
+              message: e instanceof Error ? e.message : String(e),
             });
-          }
-          if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
-            console.warn("[GPSTracker] Location not granted yet — skipping background watcher");
-            return false;
-          }
+          });
+      };
+
+      try {
+        // Permission state is read FIRST (timeout-guarded, no UI). If
+        // foreground location (fine or coarse) is already granted, the
+        // watcher registers immediately, without waiting on the
+        // settings-prep chain above — that chain is what was observed
+        // wedging for 75s+ on some devices even with permission already
+        // granted, silently blocking registration the whole time it ran.
+        const { Geolocation } = await import("@capacitor/geolocation");
+        const readPerm = () => withTimeout(Geolocation.checkPermissions(), 10_000, "checkPermissions");
+        const hasLocation = (p: { location?: string; coarseLocation?: string }) =>
+          p.location === "granted" || p.coarseLocation === "granted";
+
+        let perm: Awaited<ReturnType<typeof readPerm>>;
+        try {
+          perm = await readPerm();
         } catch (e) {
           console.warn("[GPSTracker] Could not check location permission:", e);
+          const timedOut = e instanceof Error && e.message.includes("timed out");
+          void logTrackerEvent(userId, timedOut ? "native_start_timeout" : "native_start_error", {
+            stage,
+            elapsedMs: Date.now() - startedAt,
+            message: e instanceof Error ? e.message : String(e),
+          });
+          fireSettingsPrep();
+          return false;
+        }
+
+        if (!hasLocation(perm) && !opts.quiet) {
+          // Nothing granted yet: request ONLY foreground location here, via
+          // the shared/deduped coordinated request (never a second parallel
+          // Geolocation.requestPermissions — Android abandons one callback
+          // when two overlap). The rest of settings prep still runs
+          // non-blocking after registration.
+          stage = "requestLocationPermission";
+          try {
+            await requestLocationPermissionCoordinated();
+          } catch (e) {
+            console.warn("[GPSTracker] Foreground location request failed:", e);
+          }
+          stage = "checkPermissions";
+          try {
+            perm = await readPerm();
+          } catch (e) {
+            console.warn("[GPSTracker] Could not re-check location permission:", e);
+            const timedOut = e instanceof Error && e.message.includes("timed out");
+            void logTrackerEvent(userId, timedOut ? "native_start_timeout" : "native_start_error", {
+              stage,
+              elapsedMs: Date.now() - startedAt,
+              message: e instanceof Error ? e.message : String(e),
+            });
+            fireSettingsPrep();
+            return false;
+          }
+        }
+
+        if (perm.location !== "granted") {
+          // Approximate-only is NOT precise: fused ~35 m guesses flatten a
+          // day to 0 km. Surface it (health card + event log) instead of
+          // silently tracking coarse.
+          void logTrackerEvent(userId, "permission_status", {
+            precise: false,
+            approximateOnly: perm.coarseLocation === "granted",
+          });
+        }
+        if (!hasLocation(perm)) {
+          console.warn("[GPSTracker] Location not granted yet — skipping background watcher");
+          fireSettingsPrep();
           return false;
         }
 
@@ -361,7 +450,12 @@ export function useGPSTracker(userId: string | null | undefined) {
         if (!BackgroundGeolocation?.addWatcher) return false;
 
         const register = async () => {
-          const id = await BackgroundGeolocation.addWatcher(
+          // Covers both call sites (initial registration below, and
+          // forceReregisterRef's rebuild on watchdog/resume) — addWatcher is
+          // a RETURN_CALLBACK plugin method expected to resolve almost
+          // immediately (it only registers the callback id; it doesn't wait
+          // for a fix), so 15s is generous margin, not an accommodation.
+          const id = await withTimeout(BackgroundGeolocation.addWatcher(
             {
               backgroundMessage: "Tracking your workday location. Tap to open JOVO.",
               backgroundTitle: "JOVO — Day Tracking active",
@@ -415,8 +509,8 @@ export function useGPSTracker(userId: string | null | undefined) {
                 );
               } catch { /* ignore */ }
             }
-          );
-          watcherIdRef.current = id;
+          ), 15_000, "registerWatcher");
+          watcherIdRef.current = id as string | null;
         };
 
         /**
@@ -493,7 +587,11 @@ export function useGPSTracker(userId: string | null | undefined) {
         };
 
 
+        stage = "registerWatcher";
         await register();
+        // Watcher is running — now (and only now) kick off the remaining
+        // settings prep as a side effect that can never undo it.
+        fireSettingsPrep();
         lastWriteRef.current = Date.now();
         lastCallbackTsRef.current = Date.now();
         setTrackerStatus({
@@ -591,6 +689,21 @@ export function useGPSTracker(userId: string | null | undefined) {
         return true;
       } catch (e) {
         console.warn("[GPSTracker] background plugin unavailable, falling back", e);
+        // This used to be the ONLY catch in the whole function — and it only
+        // fires on a rejection, never a hang, which is exactly how this
+        // function could previously wedge indefinitely with zero events
+        // logged. Every risky await above is now timeout-bounded, so this
+        // catch is reachable again either way — log which stage and whether
+        // it was a timeout or a genuine rejection.
+        const timedOut = e instanceof Error && e.message.includes("timed out");
+        void logTrackerEvent(userId, timedOut ? "native_start_timeout" : "native_start_error", {
+          stage,
+          elapsedMs: Date.now() - startedAt,
+          message: e instanceof Error ? e.message : String(e),
+        });
+        // Registration failed — still give settings prep its chance so the
+        // next retry has better odds (no-op if it already fired).
+        fireSettingsPrep();
         return false;
       }
     }
@@ -625,6 +738,48 @@ export function useGPSTracker(userId: string | null | undefined) {
     // checks in later). Single-flight + idempotent-start guards make it safe
     // to call from every evaluate() — it can never create a second stream.
     let startingAcquisition = false;
+    // Native recovery loop: when the background watcher can't start (e.g.
+    // permission not granted yet, or the attempt got interrupted by the
+    // screen locking mid-registration) we no longer settle for
+    // foreground-only polling forever — keep retrying in the background,
+    // with no user action needed, while the day stays open.
+    const NATIVE_RETRY_DELAYS_MS = [30_000, 60_000, 120_000, 300_000];
+    let nativeRetryTimer: number | null = null;
+    let nativeRetryAttempt = 0;
+    function clearNativeRetry() {
+      if (nativeRetryTimer != null) { window.clearTimeout(nativeRetryTimer); nativeRetryTimer = null; }
+    }
+    async function retryNativeNow(reason: string) {
+      clearNativeRetry();
+      if (cancelled || !activeRef.current || !isNative()) return;
+      if (watcherIdRef.current != null || startingAcquisition) return;
+      startingAcquisition = true;
+      let ok = false;
+      try {
+        ok = await startNativeBackground({ quiet: true });
+      } finally {
+        startingAcquisition = false;
+      }
+      if (ok) {
+        nativeRetryAttempt = 0;
+        // Native watcher is the single source — stop the screen-on poll.
+        if (timerRef.current) { window.clearInterval(timerRef.current); timerRef.current = null; }
+        setTrackerStatus({ foregroundOnly: false });
+        void logTrackerEvent(userId, "native_recovered", { reason });
+      } else {
+        scheduleNativeRetry();
+      }
+    }
+    function scheduleNativeRetry() {
+      if (cancelled || !activeRef.current || nativeRetryTimer != null) return;
+      setTrackerStatus({ foregroundOnly: true });
+      const delay = NATIVE_RETRY_DELAYS_MS[Math.min(nativeRetryAttempt, NATIVE_RETRY_DELAYS_MS.length - 1)]!;
+      nativeRetryAttempt++;
+      nativeRetryTimer = window.setTimeout(() => {
+        nativeRetryTimer = null;
+        void retryNativeNow("retry_timer");
+      }, delay);
+    }
     async function ensureAcquisitionRunning() {
       if (startingAcquisition || cancelled || !activeRef.current) return;
       if (watcherIdRef.current != null || timerRef.current != null) return;
@@ -632,7 +787,10 @@ export function useGPSTracker(userId: string | null | undefined) {
       try {
         if (isNative()) {
           const ok = await startNativeBackground();
-          if (!ok) await startForeground();
+          if (!ok) {
+            await startForeground();
+            scheduleNativeRetry();
+          }
         } else {
           await startForeground();
         }
@@ -648,6 +806,8 @@ export function useGPSTracker(userId: string | null | undefined) {
       activeRef.current = open;
       setTrackerStatus({ active: open, native: isNative() });
       if (!open) {
+        clearNativeRetry();
+        setTrackerStatus({ foregroundOnly: false });
         // Day closed → stop background watcher if any, then drain the queue
         if (stopBackground) { await stopBackground(); stopBackground = null; }
         if (pollTimer) { window.clearInterval(pollTimer); pollTimer = null; }
@@ -682,7 +842,12 @@ export function useGPSTracker(userId: string | null | undefined) {
       const silenceMs = Date.now() - lastCallbackTsRef.current;
       if (!isNative()) return;
       if (watcherIdRef.current == null) {
-        void ensureAcquisitionRunning();
+        // A foreground-only fallback already running means a native retry is
+        // either in flight or scheduled — jump the queue now that the app is
+        // actually visible, the best moment for the attempt to succeed,
+        // instead of waiting out whatever backoff delay is left.
+        if (timerRef.current != null) void retryNativeNow("app_resume");
+        else void ensureAcquisitionRunning();
         return;
       }
       if (silenceMs > RESUME_SILENCE_MS) {
@@ -751,6 +916,7 @@ export function useGPSTracker(userId: string | null | undefined) {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("attendance-changed", onAttendanceChanged);
       removeAppListener?.();
+      clearNativeRetry();
       if (timerRef.current) window.clearInterval(timerRef.current);
       if (pollTimer) window.clearInterval(pollTimer);
       if (stopBackground) stopBackground();
