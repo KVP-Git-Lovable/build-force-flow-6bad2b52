@@ -36,6 +36,11 @@ on:
         required: false
         default: "ci-build"
         type: string
+      apk_name:
+        description: "Output file name for the built APK (e.g. Quick-Locate.apk)"
+        required: false
+        default: "Quick-Locate.apk"
+        type: string
 
 jobs:
   build-release-apk:
@@ -137,12 +142,14 @@ jobs:
             "${SIGNING_ARGS[@]}"
 
       - name: Rename output
-        run: cp android/app/build/outputs/apk/release/app-release.apk Quick-Locate.apk
+        env:
+          APK_NAME: ${{ inputs.apk_name }}
+        run: cp android/app/build/outputs/apk/release/app-release.apk "$APK_NAME"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Quick-Locate
-          path: Quick-Locate.apk
+          name: ${{ inputs.apk_name }}
+          path: ${{ inputs.apk_name }}
           retention-days: 14
           if-no-files-found: error
