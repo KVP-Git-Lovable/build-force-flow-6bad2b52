@@ -41,6 +41,16 @@ on:
         required: false
         default: "Quick-Locate.apk"
         type: string
+      build_aab:
+        description: "Also build a Play Store .aab bundle (same signing/version as the APK)"
+        required: false
+        default: false
+        type: boolean
+      aab_name:
+        description: "Output file name for the .aab (only used when build_aab is checked)"
+        required: false
+        default: "app-release.aab"
+        type: string
 
 jobs:
   build-release-apk:
@@ -114,7 +124,7 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build release APK
+      - name: Build release APK (and AAB bundle if requested)
         working-directory: android
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -123,6 +133,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           VERSION_CODE: ${{ inputs.version_code }}
           VERSION_NAME: ${{ inputs.version_name }}
+          BUILD_AAB: ${{ inputs.build_aab }}
         run: |
           # Secrets are read from env (not interpolated directly into this
           # script) so a value containing shell metacharacters can't break
@@ -136,12 +147,19 @@ jobs:
               "-PRELEASE_KEY_PASSWORD=$KEY_PASSWORD"
             )
           fi
-          ./gradlew assembleRelease --no-daemon --stacktrace \
+          TASKS=(assembleRelease)
+          if [ "$BUILD_AAB" = "true" ]; then
+            # Same signingConfig/version properties produce the matching
+            # Play Store bundle in the same invocation — no need to
+            # reconfigure or re-run anything.
+            TASKS+=(bundleRelease)
+          fi
+          ./gradlew "${TASKS[@]}" --no-daemon --stacktrace \
             -PappVersionCode="$VERSION_CODE" \
             -PappVersionName="$VERSION_NAME" \
             "${SIGNING_ARGS[@]}"
 
-      - name: Rename output
+      - name: Rename APK output
         env:
           APK_NAME: ${{ inputs.apk_name }}
         run: cp android/app/build/outputs/apk/release/app-release.apk "$APK_NAME"
@@ -151,5 +169,20 @@ jobs:
         with:
           name: ${{ inputs.apk_name }}
           path: ${{ inputs.apk_name }}
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Rename AAB output
+        if: ${{ inputs.build_aab == true || inputs.build_aab == 'true' }}
+        env:
+          AAB_NAME: ${{ inputs.aab_name }}
+        run: cp android/app/build/outputs/bundle/release/app-release.aab "$AAB_NAME"
+
+      - name: Upload AAB
+        if: ${{ inputs.build_aab == true || inputs.build_aab == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.aab_name }}
+          path: ${{ inputs.aab_name }}
           retention-days: 14
           if-no-files-found: error
