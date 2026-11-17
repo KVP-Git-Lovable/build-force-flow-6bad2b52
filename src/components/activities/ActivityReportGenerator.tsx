@@ -127,9 +127,9 @@ export default function ActivityReportGenerator({ isAdmin, filtersOpen, onFilter
       const leadIds = [...new Set((data || []).filter((a: any) => a.lead_id).map((a: any) => a.lead_id))];
       let leadMap: Record<string, string> = {};
       if (leadIds.length > 0) {
-        const { data: leadData } = await supabase.from('leads').select('id, company_name').in('id', leadIds);
+        const { data: leadData } = await supabase.from('leads').select('id, company').in('id', leadIds);
         (leadData || []).forEach((l: any) => {
-          leadMap[l.id] = l.company_name || '';
+          leadMap[l.id] = l.company || '';
         });
       }
 
