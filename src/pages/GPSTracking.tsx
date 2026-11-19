@@ -585,6 +585,10 @@ export default function GPSTracking() {
                 </>
               )}
 
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                Please wait for 30 sec for the complete distance to be displayed in the map
+              </div>
+
               <p className="text-sm font-medium">Select Date Range</p>
               <Select value={dateRangeOption} onValueChange={(v) => setDateRangeOption(v as DateRangeOption)}>
                 <SelectTrigger>
